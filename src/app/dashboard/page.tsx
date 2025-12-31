@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/dashboard/ValidationList'
+import { CreatedMatchesList } from '@/components/dashboard/CreatedMatchesList'
 import { NewMatchForm } from '@/components/matches/new-match-form'
 import { PlusCircle, Trophy, Activity, Medal } from 'lucide-react'
 
@@ -34,14 +35,20 @@ export default async function DashboardPage() {
   const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%' // Assuming win_ratio is decimal
   const ranking = profile?.ranking ?? '-' // Assuming ranking column
 
-  // Fetch Pending Validation Matches
-  // Logic: User is a player AND status is pending AND user is NOT creator
+  // Fetch Pending Validation Matches (User is NOT creator)
   const { data: pendingMatches } = await supabase
     .from('matches')
     .select('*')
     .eq('status', 'pending')
     .neq('creator_id', user.id)
     .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+
+  // Fetch Created Matches (User IS creator and pending)
+  const { data: createdMatches } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('status', 'pending')
+    .eq('creator_id', user.id)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -75,7 +82,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -109,16 +116,20 @@ export default async function DashboardPage() {
         </div>
 
         {/* Action Required Section */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-             <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-                Partidos por Validar
-             </h2>
-             {pendingMatches && pendingMatches.length > 0 && (
-                <Badge variant="destructive">{pendingMatches.length}</Badge>
-             )}
+        <section className="space-y-8">
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Partidos por Validar
+              </h2>
+              {pendingMatches && pendingMatches.length > 0 && (
+                  <Badge variant="destructive">{pendingMatches.length}</Badge>
+              )}
+            </div>
+            <ValidationList matches={pendingMatches || []} userId={user.id} />
           </div>
-          <ValidationList matches={pendingMatches || []} userId={user.id} />
+
+          <CreatedMatchesList matches={createdMatches || []} />
         </section>
 
       </main>
