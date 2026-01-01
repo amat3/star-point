@@ -9,8 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { NewMatchForm } from './new-match-form'
-import { NewMixingForm } from './new-mixing-form'
+import { NewMatchForm } from './forms/new-match-form'
+import { NewMixingForm } from './forms/new-mixing-form'
 
 export function MatchesActions() {
   const [showMatchForm, setShowMatchForm] = useState(false)

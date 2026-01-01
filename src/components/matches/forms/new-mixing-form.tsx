@@ -22,8 +22,9 @@ import {
 } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { PlayerSelect, Profile } from './player-select'
-import { ScoreInput } from './score-input'
+import { PlayerSelect } from '../shared/player-select'
+import { ScoreInput } from '../shared/score-input'
+import { PlayerOption } from '@/types'
 
 const formSchema = z.object({
   player_a1: z.string().uuid({ message: "Selecciona un jugador" }),
@@ -62,7 +63,7 @@ interface NewMixingFormProps {
 export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlledOpen, trigger }: NewMixingFormProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [players, setPlayers] = useState<Profile[]>([])
+  const [players, setPlayers] = useState<PlayerOption[]>([])
   const [currentUserProfile, setCurrentUserProfile] = useState<{ id: string, role: string } | null>(null)
   const isOpen = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
