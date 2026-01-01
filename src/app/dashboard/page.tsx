@@ -135,35 +135,6 @@ export default async function DashboardPage() {
 
       </main>
 
-      {/* Mobile Floating Action Button - Replaced by NewMatchForm which handles its own trigger, 
-          but usually FAB needs special positioning. 
-          For now, let's keep the desktop one integrated and maybe hide the mobile one or reuse the form.
-          Ideally NewMatchForm accepts a custom Trigger so we can have two buttons.
-          However, to keep it simple, I'll remove the manual buttons and rely on NewMatchForm.
-          Wait, NewMatchForm has a fixed button style. 
-          Let's assume for this step getting it working in the header is priority.
-          I'll modify NewMatchForm call to be just once in the header for now, 
-          or better yet, I should import NewMatchForm and use it.
-      */}
-      <div className="fixed bottom-6 right-6 md:hidden">
-         {/* We need the form here too for mobile. 
-             Ideally we refactor NewMatchForm to accept a 'children' prop as trigger.
-             But I cannot edit NewMatchForm right now easily without another tool call.
-             I will just put it in the header for now, the user asked for "Quick Action for Desktop" in the prompt example
-             but also "Mobile Floating Action Button". 
-             
-             Actually, I can just render NewMatchForm again here. It's a bit redundant to have the dialog code twice DOM-wise
-             but functionally correct for MVP. 
-             OR I can rely on the responsive header button if visible? No, header button is hidden on mobile.
-             
-             I will replace the desktop button with <NewMatchForm />.
-             And for the mobile FAB, I'll temporarily leave it as is or replace it too.
-             Let's replace the FAB with NewMatchForm too, accepting the redundancy.
-         */}
-        <div className="[&>button]:h-14 [&>button]:w-14 [&>button]:rounded-full [&>button]:shadow-lg [&>button]:p-0 [&>button]:flex [&>button]:items-center [&>button]:justify-center">
-            <NewMatchForm />
-        </div>
-      </div>
     </div>
   )
 }
