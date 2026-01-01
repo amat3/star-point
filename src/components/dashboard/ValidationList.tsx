@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { confirmMatch } from '@/app/actions/matches'
+import { toast } from 'sonner'
 
 interface Match {
   id: string
@@ -34,17 +35,25 @@ export function ValidationList({ matches, userId }: ValidationListProps) {
 
   const handleConfirm = async (matchId: string) => {
     setLoadingIds(prev => new Set(prev).add(matchId))
+    const promise = confirmMatch(matchId)
     
+    toast.promise(promise, {
+      loading: 'Confirmando partido...',
+      success: (result) => {
+        if (!result.success) throw new Error(result.error)
+        router.refresh()
+        return '¡Partido confirmado con éxito!'
+      },
+      error: (err) => {
+        console.error('Error al confirmar:', err)
+        return err.message || 'Error al confirmar el partido'
+      },
+    })
+
     try {
-      const result = await confirmMatch(matchId)
-      if (!result.success) {
-        throw new Error(result.error)
-      }
-      // Refresh the page to show updated ratings
-      router.refresh()
-    } catch (error: any) {
-      console.error('Error confirming match:', error)
-      alert(error.message || 'Error al confirmar el partido')
+      await promise
+    } catch (error) {
+      // Handled by toast.promise
     } finally {
       setLoadingIds(prev => {
         const next = new Set(prev)
