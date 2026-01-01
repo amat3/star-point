@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/dashboard/ValidationList'
 import { CreatedMatchesList } from '@/components/dashboard/CreatedMatchesList'
 import { NewMatchForm } from '@/components/matches/new-match-form'
+import { UserMenu } from '@/components/dashboard/UserMenu'
 import { PlusCircle, Trophy, Activity, Medal } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -38,7 +39,13 @@ export default async function DashboardPage() {
   // Fetch Pending Validation Matches (User is NOT creator)
   const { data: pendingMatches } = await supabase
     .from('matches')
-    .select('*')
+    .select(`
+      *,
+      p_a1:profiles!player_a1(full_name),
+      p_a2:profiles!player_a2(full_name),
+      p_b1:profiles!player_b1(full_name),
+      p_b2:profiles!player_b2(full_name)
+    `)
     .eq('status', 'pending')
     .neq('creator_id', user.id)
     .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
@@ -46,39 +53,33 @@ export default async function DashboardPage() {
   // Fetch Created Matches (User IS creator and pending)
   const { data: createdMatches } = await supabase
     .from('matches')
-    .select('*')
+    .select(`
+      *,
+      p_a1:profiles!player_a1(full_name),
+      p_a2:profiles!player_a2(full_name),
+      p_b1:profiles!player_b1(full_name),
+      p_b2:profiles!player_b2(full_name)
+    `)
     .eq('status', 'pending')
     .eq('creator_id', user.id)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 animate-in fade-in duration-500">
       {/* Header Section */}
-      <header className="bg-white shadow dark:bg-gray-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
-          <Link href="/profile" className="flex items-center space-x-3 sm:space-x-4 overflow-hidden hover:opacity-80 transition-opacity">
-            <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-lime-500 flex-shrink-0">
-               {/* Use avatar_url if available, else fallback */}
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="bg-lime-100 text-lime-800 text-lg sm:text-xl font-bold">
-                {userName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                Hola, {userName}
-              </h1>
-              <div className="flex items-center space-x-2">
-                 <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">Nivel Actual:</span>
-                 <Badge className="bg-lime-500 hover:bg-lime-600 text-white text-xs sm:text-md px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap">
-                    {userLevel}
-                 </Badge>
-              </div>
+      <header className="bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-800/80 sticky top-0 z-10 transition-all border-b border-gray-100 dark:border-gray-700">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-4">
+            <UserMenu profile={profile} userName={userName} />
+            <div className="hidden xs:flex items-center space-x-2 border-l border-gray-200 dark:border-gray-700 pl-4 h-8">
+               <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Nivel:</span>
+               <Badge className="bg-lime-500 hover:bg-lime-600 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {userLevel}
+               </Badge>
             </div>
-          </Link>
-          {/* Quick Action for Desktop */}
-          <div className="hidden md:block">
-            <NewMatchForm />
           </div>
+          
+          {/* Quick Action */}
+          <NewMatchForm />
         </div>
       </header>
 

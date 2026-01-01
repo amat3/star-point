@@ -9,6 +9,10 @@ interface Match {
   created_at: string
   score_details: string
   status: string
+  p_a1?: { full_name: string }
+  p_a2?: { full_name: string }
+  p_b1?: { full_name: string }
+  p_b2?: { full_name: string }
 }
 
 interface CreatedMatchesListProps {
@@ -23,23 +27,48 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
       <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
         Mis Partidos Registrados
       </h2>
-      <div className="space-y-3">
+    <div className="space-y-3">
         {matches.map((match) => (
           <div 
             key={match.id} 
-            className="flex flex-col items-start justify-between space-y-3 rounded-lg border border-gray-100 p-4 sm:flex-row sm:items-center sm:space-y-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+            className="flex flex-col space-y-3 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm animate-in zoom-in-95 duration-300"
           >
-            <div className="space-y-1">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(match.created_at).toLocaleDateString()}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                {/* Team A */}
+                <div className="text-right space-y-0.5">
+                  <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Equipo A</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                    <p className="truncate">{match.p_a1?.full_name}</p>
+                    <p className="truncate">{match.p_a2?.full_name}</p>
+                  </div>
+                </div>
+
+                {/* VS & Score */}
+                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50/50 dark:bg-gray-950/50 rounded-lg border border-gray-100/50 dark:border-gray-800/50 min-w-[70px]">
+                  <span className="text-[10px] font-black text-lime-500 italic">VS</span>
+                  <div className="text-lg font-black leading-none text-gray-900 dark:text-white">
+                    {match.score_details}
+                  </div>
+                </div>
+
+                {/* Team B */}
+                <div className="text-left space-y-0.5">
+                  <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Equipo B</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                    <p className="truncate">{match.p_b1?.full_name}</p>
+                    <p className="truncate">{match.p_b2?.full_name}</p>
+                  </div>
+                </div>
               </div>
-              <div className="font-medium text-gray-900 dark:text-white">
-                Resultado: {match.score_details}
+
+              <div className="flex items-center justify-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full text-[10px] font-bold border border-amber-100 dark:border-amber-900/30 uppercase tracking-tight">
+                <Clock className="h-3 w-3" />
+                <span>Pendiente</span>
               </div>
             </div>
-            <div className="flex items-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium border border-amber-100 dark:border-amber-900/30">
-              <Clock className="h-3 w-3" />
-              <span>Esperando validación</span>
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 text-right">
+              Registrado el {new Date(match.created_at).toLocaleDateString()}
             </div>
           </div>
         ))}

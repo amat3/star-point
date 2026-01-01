@@ -84,12 +84,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-12 sm:px-6 lg:px-8 animate-in fade-in duration-1000">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">StarPoint</h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Tu app de pádel
+          <h2 className="mt-6 text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            Star<span className="text-lime-500">Point</span>
+          </h2>
+          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
+            Tu app de Padel & Risas
           </p>
         </div>
 
