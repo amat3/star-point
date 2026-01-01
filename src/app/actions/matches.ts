@@ -5,13 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { calculateNewRating } from '@/lib/rating-logic'
 
 /**
- * Utilidad para extraer el total de juegos de un string tipo "6-4 6-2"
+ * Utilidad para extraer el total de juegos de un string tipo "6-4 6-2" o "12-5"
  */
 function parseGames(score: string) {
   let gamesA = 0
   let gamesB = 0
   
-  const sets = score.split(' ') // ["6-4", "6-2"]
+  // Normalizamos espacios y separamos por bloques
+  const sets = score.trim().split(/\s+/) // ["6-4", "6-2"] o ["12-5"]
   
   sets.forEach(set => {
     const [a, b] = set.split('-').map(Number)
@@ -44,6 +45,11 @@ export async function confirmMatch(matchId: string) {
     return { success: false, error: 'Este partido ya fue validado anteriormente' }
   }
 
+  const isMixing = match.match_type === 'mixing'
+  if (isMixing) {
+    console.log('🔄 Procesando partido tipo MIXING (Factor 0.25)')
+  }
+
   // 2. Obtener los niveles actuales (rating) de los 4 jugadores
   const playerIds = [match.player_a1, match.player_a2, match.player_b1, match.player_b2]
   
@@ -54,14 +60,13 @@ export async function confirmMatch(matchId: string) {
 
   if (profilesError || !profiles || profiles.length !== 4) {
     console.error('❌ Error al obtener perfiles:', profilesError)
-    // Log specifically if columns are missing
     if (profilesError?.message?.includes('column')) {
       console.warn('⚠️ Parece que faltan columnas en la tabla profiles:', profilesError.message)
     }
     return { success: false, error: 'No se pudieron cargar los perfiles de los jugadores' }
   }
 
-  // Mapa para acceso rápido: { id_jugador: { rating, matches_played, matches_won } }
+  // Mapa para acceso rápido
   const profileMap = Object.fromEntries(profiles.map(p => [
     p.id, 
     { 
@@ -73,44 +78,52 @@ export async function confirmMatch(matchId: string) {
 
   // 3. Preparar datos para el cálculo (Juegos y Ganador)
   const { gamesA, gamesB } = parseGames(match.score_details || "")
-  const teamAWon = match.sets_a > match.sets_b
+  
+  // Determinación del ganador:
+  // - Si es partido estándar: sets_a > sets_b
+  // - Si es mixing: gamesA > gamesB (no hay sets)
+  let teamAWon = false
+  if (isMixing) {
+    teamAWon = gamesA > gamesB
+  } else {
+    teamAWon = match.sets_a > match.sets_b
+  }
 
-  console.log(`📊 Análisis: Team A (${gamesA} juegos) vs Team B (${gamesB} juegos). Ganador: ${teamAWon ? 'A' : 'B'}`)
+  console.log(`📊 Análisis (${isMixing ? 'Mixing' : 'Partido'}): Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
 
-  // 4. Calcular nuevos ratings usando la lógica de margen de victoria
+  // 4. Calcular nuevos ratings (pasando isMixing)
   // TEAM A
   const resultA1 = calculateNewRating(
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon
+    gamesA, gamesB, teamAWon, isMixing
   )
   const resultA2 = calculateNewRating(
     profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon
+    gamesA, gamesB, teamAWon, isMixing
   )
 
   // TEAM B
   const resultB1 = calculateNewRating(
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon
+    gamesB, gamesA, !teamAWon, isMixing
   )
   const resultB2 = calculateNewRating(
     profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon
+    gamesB, gamesA, !teamAWon, isMixing
   )
 
   // 5. Actualizar Base de Datos
-  // A. Actualizar ratings, partidos jugados, partidos ganados y ratio en profiles
   const playerUpdates = [
     { id: match.player_a1, result: resultA1, teamWon: teamAWon },
     { id: match.player_a2, result: resultA2, teamWon: teamAWon },
     { id: match.player_b1, result: resultB1, teamWon: !teamAWon },
     { id: match.player_b2, result: resultB2, teamWon: !teamAWon },
   ]
-  // 5. Actualizar Base de Datos (Secuencial para mejor control de errores)
+
   try {
     // A. Actualizar perfiles de uno en uno
     for (const pu of playerUpdates) {
@@ -159,7 +172,6 @@ export async function confirmMatch(matchId: string) {
     const { error: hError } = await supabase.from('rating_history').insert(historyEntries)
     if (hError) {
       console.warn('⚠️ No se pudo guardar el historial de nivel:', hError.message)
-      // No bloqueamos por el historial
     }
 
     // C. Marcar partido como confirmado
@@ -171,7 +183,6 @@ export async function confirmMatch(matchId: string) {
 
     if (mError) {
       console.error('❌ Error al actualizar estado del partido:', mError)
-      // Intento sin rating_change por si no existe la columna
       const { error: mErrorMin } = await supabase.from('matches').update({ 
         status: 'confirmed'
       }).eq('id', matchId)

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/dashboard/ValidationList'
 import { CreatedMatchesList } from '@/components/dashboard/CreatedMatchesList'
-import { NewMatchForm } from '@/components/matches/new-match-form'
+import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { PlusCircle, Trophy, Activity, Medal } from 'lucide-react'
 
@@ -33,14 +33,17 @@ export default async function DashboardPage() {
     .single()
 
   // Fallback defaults if profile doesn't exist yet (or handle error)
+  const userRole = profile?.role ?? 'player'
   const userLevel = profile?.rating?.toFixed(2) ?? '0.00'
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
   const matchesPlayed = profile?.matches_played ?? 0
   const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%' // Assuming win_ratio is decimal
   const ranking = profile?.ranking ?? '-' // Assuming ranking column
 
-  // Fetch Pending Validation Matches (User is NOT creator)
-  const { data: pendingMatches } = await supabase
+  // Fetch Pending Validation Matches
+  // ADMIN: Ver todos los pendientes excepto los suyos (o todos).
+  // USER: Ver solo donde participa
+  let pendingQuery = supabase
     .from('matches')
     .select(`
       *,
@@ -50,8 +53,13 @@ export default async function DashboardPage() {
       p_b2:profiles!player_b2(full_name)
     `)
     .eq('status', 'pending')
-    .neq('creator_id', user.id)
-    .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+    .neq('creator_id', user.id) // Siempre excluimos los creados por uno mismo para no auto-validar (aunque admin podría)
+
+  if (userRole !== 'admin') {
+     pendingQuery = pendingQuery.or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+  }
+
+  const { data: pendingMatches } = await pendingQuery
 
   // Fetch Created Matches (User IS creator and pending)
   const { data: createdMatches } = await supabase
@@ -82,7 +90,7 @@ export default async function DashboardPage() {
           </div>
           
           {/* Quick Action */}
-          <NewMatchForm />
+          <MatchesActions />
         </div>
       </header>
 
@@ -130,7 +138,7 @@ export default async function DashboardPage() {
                   <Badge variant="destructive">{pendingMatches.length}</Badge>
               )}
             </div>
-            <ValidationList matches={pendingMatches || []} userId={user.id} />
+            <ValidationList matches={pendingMatches || []} userId={user.id} userRole={userRole} />
           </div>
 
           <CreatedMatchesList matches={createdMatches || []} />

@@ -13,6 +13,7 @@ interface Match {
   p_a2?: { full_name: string }
   p_b1?: { full_name: string }
   p_b2?: { full_name: string }
+  match_type?: string
 }
 
 interface CreatedMatchesListProps {
@@ -37,7 +38,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
               <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 {/* Team A */}
                 <div className="text-right space-y-0.5">
-                  <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Equipo A</div>
+                  <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Pareja A</div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                     <p className="truncate">{match.p_a1?.full_name}</p>
                     <p className="truncate">{match.p_a2?.full_name}</p>
@@ -45,16 +46,20 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
 
                 {/* VS & Score */}
-                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50/50 dark:bg-gray-950/50 rounded-lg border border-gray-100/50 dark:border-gray-800/50 min-w-[70px]">
-                  <span className="text-[10px] font-black text-lime-500 italic">VS</span>
-                  <div className="text-lg font-black leading-none text-gray-900 dark:text-white">
+                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50/50 dark:bg-gray-950/50 rounded-lg border border-gray-100/50 dark:border-gray-800/50 min-w-[70px] relative">
+                  {match.match_type === 'mixing' ? (
+                     <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Mixing</Badge>
+                  ) : (
+                     <span className="text-[10px] font-black text-lime-500 italic">VS</span>
+                  )}
+                  <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
                     {match.score_details}
                   </div>
                 </div>
 
                 {/* Team B */}
                 <div className="text-left space-y-0.5">
-                  <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Equipo B</div>
+                  <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Pareja B</div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                     <p className="truncate">{match.p_b1?.full_name}</p>
                     <p className="truncate">{match.p_b2?.full_name}</p>

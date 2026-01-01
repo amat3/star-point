@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { confirmMatch } from '@/app/actions/matches'
+import { deleteMatch } from '@/app/actions/admin-matches' // New import
 import { toast } from 'sonner'
+import { Trash2 } from 'lucide-react'
 
 interface Match {
   id: string
@@ -22,31 +24,39 @@ interface Match {
   p_a2?: { full_name: string }
   p_b1?: { full_name: string }
   p_b2?: { full_name: string }
+  match_type?: string
 }
 
 interface ValidationListProps {
   matches: Match[]
   userId: string
+  userRole: string
 }
 
-export function ValidationList({ matches, userId }: ValidationListProps) {
+export function ValidationList({ matches, userId, userRole }: ValidationListProps) {
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
   const router = useRouter()
 
-  const handleConfirm = async (matchId: string) => {
+  const handleAction = async (matchId: string, action: 'confirm' | 'delete') => {
     setLoadingIds(prev => new Set(prev).add(matchId))
-    const promise = confirmMatch(matchId)
     
+    const promise = action === 'confirm' 
+      ? confirmMatch(matchId)
+      : deleteMatch(matchId)
+
+    const loadingText = action === 'confirm' ? 'Confirmando...' : 'Eliminando...'
+    const successText = action === 'confirm' ? '¡Partido confirmado!' : '¡Partido eliminado!'
+
     toast.promise(promise, {
-      loading: 'Confirmando partido...',
+      loading: loadingText,
       success: (result) => {
         if (!result.success) throw new Error(result.error)
         router.refresh()
-        return '¡Partido confirmado con éxito!'
+        return successText
       },
       error: (err) => {
-        console.error('Error al confirmar:', err)
-        return err.message || 'Error al confirmar el partido'
+        console.error(`Error al ${action}:`, err)
+        return err.message || `Error al ${action} el partido`
       },
     })
 
@@ -84,7 +94,7 @@ export function ValidationList({ matches, userId }: ValidationListProps) {
             <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               {/* Team A */}
               <div className="text-right space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Equipo A</div>
+                <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Pareja A</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate">{match.p_a1?.full_name}</p>
                   <p className="truncate">{match.p_a2?.full_name}</p>
@@ -92,16 +102,20 @@ export function ValidationList({ matches, userId }: ValidationListProps) {
               </div>
 
               {/* VS & Score */}
-              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px]">
-                <span className="text-[10px] font-black text-lime-500 italic">VS</span>
-                <div className="text-lg font-black leading-none text-gray-900 dark:text-white">
+              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative">
+                {match.match_type === 'mixing' ? (
+                   <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Mixing</Badge>
+                ) : (
+                   <span className="text-[10px] font-black text-lime-500 italic mb-1">VS</span>
+                )}
+                <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
                   {match.score_details}
                 </div>
               </div>
 
               {/* Team B */}
               <div className="text-left space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Equipo B</div>
+                <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Pareja B</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate">{match.p_b1?.full_name}</p>
                   <p className="truncate">{match.p_b2?.full_name}</p>
@@ -110,18 +124,32 @@ export function ValidationList({ matches, userId }: ValidationListProps) {
             </div>
 
             <div className="flex w-full sm:w-auto items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
-                onClick={() => alert('Funcionalidad de impugnación pendiente')}
-              >
-                Impugnar
-              </Button>
+               {userRole === 'admin' ? (
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
+                   onClick={() => handleAction(match.id, 'delete')}
+                   disabled={loadingIds.has(match.id)}
+                 >
+                   <Trash2 className="w-4 h-4 mr-1" />
+                   Eliminar
+                 </Button>
+               ) : (
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
+                   onClick={() => alert('Funcionalidad de impugnación pendiente')}
+                 >
+                   Impugnar
+                 </Button>
+               )}
+              
               <Button 
                 size="sm"
                 className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 shadow-md shadow-lime-500/20 h-9 font-bold"
-                onClick={() => handleConfirm(match.id)}
+                onClick={() => handleAction(match.id, 'confirm')}
                 disabled={loadingIds.has(match.id)}
               >
                 {loadingIds.has(match.id) ? '...' : 'Confirmar'}
