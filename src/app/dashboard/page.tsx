@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       p_b1:profiles!player_b1(full_name),
       p_b2:profiles!player_b2(full_name)
     `)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'disputed'])
     .neq('creator_id', user.id) // Siempre excluimos los creados por uno mismo para no auto-validar (aunque admin podría)
 
   if (userRole !== 'admin') {
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       p_b1:profiles!player_b1(full_name),
       p_b2:profiles!player_b2(full_name)
     `)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'disputed'])
     .eq('creator_id', user.id)
 
   return (

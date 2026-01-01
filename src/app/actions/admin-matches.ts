@@ -24,14 +24,9 @@ export async function deleteMatch(matchId: string) {
     return { success: false, error: 'No se encontró el partido o el usuario' }
   }
 
-  // Verificar que el partido esté pendiente
-  // (Aunque sea admin, borrar partidos confirmados afecta al Elo histórico)
-  // El 'status' no venía en la query anterior, vamos a añadirlo
-  if (match.status !== 'pending') {
-    // Si no lo trajimos en la query, deberíamos. Pero arriba hice `.select('creator_id')`.
-    // Voy a corregir la query arriba también.
-    // De hecho, en el TargetContent de abajo tengo que coincidir con lo que hay.
-    return { success: false, error: 'Solo se pueden eliminar partidos pendientes.' }
+  // Verificar que el partido esté pendiente o en disputa
+  if (match.status !== 'pending' && match.status !== 'disputed') {
+    return { success: false, error: 'Solo se pueden eliminar partidos pendientes o en disputa.' }
   }
 
   const isAdmin = profile.role === 'admin'
