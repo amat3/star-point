@@ -3,18 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock } from 'lucide-react'
-
-interface Match {
-  id: string
-  created_at: string
-  score_details: string
-  status: string
-  p_a1?: { full_name: string }
-  p_a2?: { full_name: string }
-  p_b1?: { full_name: string }
-  p_b2?: { full_name: string }
-  match_type?: string
-}
+import { Match } from '@/types'
 
 interface CreatedMatchesListProps {
   matches: Match[]

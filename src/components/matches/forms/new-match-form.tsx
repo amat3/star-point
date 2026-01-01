@@ -16,8 +16,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { PlayerSelect } from './player-select'
-import { ScoreInput } from './score-input'
+import { PlayerSelect } from '../shared/player-select'
+import { ScoreInput } from '../shared/score-input'
+import { PlayerOption } from '@/types'
 import {
   Popover,
   PopoverContent,
@@ -128,10 +129,7 @@ const formSchema = z.object({
   }
 })
 
-interface Profile {
-  id: string
-  full_name: string
-}
+// Local Profile removed
 
 // Extracted component to manage state properly
 // Helper component for Score with buttons
@@ -143,7 +141,7 @@ function MatchSummary({
   currentUserProfile 
 }: { 
   form: any, 
-  players: Profile[],
+  players: PlayerOption[],
   currentUserProfile: { id: string, role: string } | null
 }) {
   const values = form.watch()
@@ -251,7 +249,7 @@ interface NewMatchFormProps {
 export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlledOpen, trigger }: NewMatchFormProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [players, setPlayers] = useState<Profile[]>([])
+  const [players, setPlayers] = useState<PlayerOption[]>([])
   
   const isOpen = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen

@@ -10,22 +10,7 @@ import { confirmMatch } from '@/app/actions/matches'
 import { deleteMatch } from '@/app/actions/admin-matches' // New import
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
-
-interface Match {
-  id: string
-  created_at: string
-  score_details: string
-  player_a1: string
-  player_a2: string
-  player_b1: string
-  player_b2: string
-  status: string
-  p_a1?: { full_name: string }
-  p_a2?: { full_name: string }
-  p_b1?: { full_name: string }
-  p_b2?: { full_name: string }
-  match_type?: string
-}
+import { Match } from '@/types'
 
 interface ValidationListProps {
   matches: Match[]

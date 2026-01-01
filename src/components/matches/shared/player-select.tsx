@@ -24,11 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-// Define Profile interface locally to avoid circular dependencies
-export interface Profile {
-  id: string
-  full_name: string | null
-}
+import { PlayerOption } from '@/types'
 
 export function PlayerSelect({ 
   name, 
@@ -39,7 +35,7 @@ export function PlayerSelect({
   name: string, 
   label: string, 
   form: any,
-  players: Profile[]
+  players: PlayerOption[]
 }) {
   const [open, setOpen] = useState(false)
 
