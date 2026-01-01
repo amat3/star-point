@@ -16,6 +16,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { PlayerSelect } from './player-select'
+import { ScoreInput } from './score-input'
 import {
   Popover,
   PopoverContent,
@@ -132,125 +134,7 @@ interface Profile {
 }
 
 // Extracted component to manage state properly
-function PlayerSelect({ 
-  name, 
-  label, 
-  form, 
-  players 
-}: { 
-  name: "player_a1" | "player_a2" | "player_b1" | "player_b2", 
-  label: string,
-  form: any,
-  players: Profile[]
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className={cn(
-                    "w-full justify-between",
-                    !field.value && "text-muted-foreground"
-                  )}
-                >
-                  {field.value
-                    ? players.find((player) => player.id === field.value)?.full_name
-                    : "Seleccionar jugador"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0">
-              <Command>
-                <CommandInput placeholder="Buscar jugador..." />
-                <CommandList>
-                  <CommandEmpty>No encontrado.</CommandEmpty>
-                  <CommandGroup>
-                    {players.map((player) => (
-                      <CommandItem
-                        value={player.full_name}
-                        key={player.id}
-                        onSelect={() => {
-                          form.setValue(name, player.id, { shouldValidate: true })
-                          setOpen(false) // Close popover on selection
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            player.id === field.value
-                              ? "opacity-100"
-                              : "opacity-0"
-                          )}
-                        />
-                        {player.full_name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  )
-}
-
 // Helper component for Score with buttons
-function ScoreInput({ 
-  name, 
-  form, 
-  labelColor 
-}: { 
-  name: "set1_a" | "set1_b" | "set2_a" | "set2_b" | "set3_a" | "set3_b", 
-  form: any,
-  labelColor: string
-}) {
-  const value = form.watch(name) ?? 0
-
-  const updateValue = (delta: number) => {
-    const newValue = Math.max(0, Math.min(7, (Number(value) || 0) + delta))
-    form.setValue(name, newValue, { shouldValidate: true })
-  }
-
-  return (
-    <div className="flex flex-col items-center space-y-1">
-      <span className={cn("text-xs font-bold", labelColor)}>{name.endsWith('_a') ? 'A' : 'B'}</span>
-      <div className="flex items-center border rounded-md overflow-hidden bg-white dark:bg-gray-950">
-        <button
-          type="button"
-          onClick={() => updateValue(-1)}
-          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
-        </button>
-        <div className="w-8 sm:w-10 h-8 flex items-center justify-center border-x text-sm font-medium">
-          {value}
-        </div>
-        <button
-          type="button"
-          onClick={() => updateValue(1)}
-          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-        </button>
-      </div>
-      <FormMessage className="text-[10px] sm:text-xs" />
-    </div>
-  )
-}
 
 // Real-time Summary Component
 function MatchSummary({ 
@@ -358,10 +242,20 @@ function MatchSummary({
   )
 }
 
-export function NewMatchForm() {
-  const [open, setOpen] = useState(false)
+interface NewMatchFormProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}
+
+export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlledOpen, trigger }: NewMatchFormProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [players, setPlayers] = useState<Profile[]>([])
+  
+  const isOpen = controlledOpen ?? internalOpen
+  const setOpen = setControlledOpen ?? setInternalOpen
+
   const [currentUserProfile, setCurrentUserProfile] = useState<{ id: string, role: string } | null>(null)
   const supabase = createClient()
   const router = useRouter()
@@ -474,13 +368,15 @@ export function NewMatchForm() {
 
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogTrigger asChild>
+        {trigger || (
         <Button className="flex bg-lime-500 hover:bg-lime-600 text-white shadow-lg shadow-lime-500/30 hover:shadow-lime-500/50 transition-all duration-300 px-3 sm:px-4">
           <PlusCircle className="h-5 w-5 sm:mr-2 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Nuevo Partido</span>
           <span className="sr-only sm:hidden">Nuevo Partido</span>
         </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-[95%] rounded-lg max-w-[425px] overflow-y-auto max-h-[90vh]">
         <DialogHeader>
@@ -496,13 +392,13 @@ export function NewMatchForm() {
           })} className="space-y-4">
             
             <div className="space-y-4 rounded-lg border p-3 bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/20">
-              <h3 className="font-bold text-center text-indigo-700 dark:text-indigo-400">Equipo A</h3>
+              <h3 className="font-bold text-center text-indigo-700 dark:text-indigo-400">Pareja A</h3>
               <PlayerSelect name="player_a1" label="Jugador 1" form={form} players={players} />
               <PlayerSelect name="player_a2" label="Jugador 2" form={form} players={players} />
             </div>
 
             <div className="space-y-4 rounded-lg border p-3 bg-lime-50/30 dark:bg-lime-900/10 border-lime-100 dark:border-lime-900/20">
-              <h3 className="font-bold text-center text-lime-700 dark:text-lime-400">Equipo B</h3>
+              <h3 className="font-bold text-center text-lime-700 dark:text-lime-400">Pareja B</h3>
               <PlayerSelect name="player_b1" label="Jugador 3" form={form} players={players} />
               <PlayerSelect name="player_b2" label="Jugador 4" form={form} players={players} />
             </div>
