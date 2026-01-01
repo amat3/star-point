@@ -17,11 +17,21 @@ export async function deleteMatch(matchId: string) {
   }
 
   // Verificar permisos (Admin o Creador)
-  const { data: match } = await supabase.from('matches').select('creator_id').eq('id', matchId).single()
+  const { data: match } = await supabase.from('matches').select('creator_id, status').eq('id', matchId).single()
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
 
   if (!match || !profile) {
     return { success: false, error: 'No se encontró el partido o el usuario' }
+  }
+
+  // Verificar que el partido esté pendiente
+  // (Aunque sea admin, borrar partidos confirmados afecta al Elo histórico)
+  // El 'status' no venía en la query anterior, vamos a añadirlo
+  if (match.status !== 'pending') {
+    // Si no lo trajimos en la query, deberíamos. Pero arriba hice `.select('creator_id')`.
+    // Voy a corregir la query arriba también.
+    // De hecho, en el TargetContent de abajo tengo que coincidir con lo que hay.
+    return { success: false, error: 'Solo se pueden eliminar partidos pendientes.' }
   }
 
   const isAdmin = profile.role === 'admin'

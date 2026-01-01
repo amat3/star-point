@@ -109,25 +109,20 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
             </div>
 
             <div className="flex w-full sm:w-auto items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">
-               {userRole === 'admin' ? (
+               {(userRole === 'admin' || userId === match.creator_id) && (
                  <Button 
-                   variant="outline" 
+                   variant="destructive" 
                    size="sm"
-                   className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
-                   onClick={() => handleAction(match.id, 'delete')}
+                   className="flex-1 sm:flex-none h-9 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 border border-red-100 dark:border-red-900"
+                   onClick={() => {
+                     if (window.confirm("¿Estás seguro de que quieres eliminar este partido? Esta acción no se puede deshacer.")) {
+                       handleAction(match.id, 'delete')
+                     }
+                   }}
                    disabled={loadingIds.has(match.id)}
                  >
                    <Trash2 className="w-4 h-4 mr-1" />
                    Eliminar
-                 </Button>
-               ) : (
-                 <Button 
-                   variant="outline" 
-                   size="sm"
-                   className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
-                   onClick={() => alert('Funcionalidad de impugnación pendiente')}
-                 >
-                   Impugnar
                  </Button>
                )}
               
