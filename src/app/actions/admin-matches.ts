@@ -32,7 +32,12 @@ export async function deleteMatch(matchId: string) {
   }
 
   // Intentar borrado como Admin (Service Role) si es necesario y posible
-  if (isAdmin && !isCreator && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (isAdmin && !isCreator) {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Falta SUPABASE_SERVICE_ROLE_KEY para borrar como admin')
+      return { success: false, error: 'Configuración incompleta: Falta la clave de servicio (Service Role Key). Pídela al desarrollador.' }
+    }
+
     console.log('⚡️ Usando Service Role para eliminación de Admin')
     const adminSupabase = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,28 +50,33 @@ export async function deleteMatch(matchId: string) {
       }
     )
     
-    const { error } = await adminSupabase.from('matches').delete().eq('id', matchId)
+    // Usamos count para verificar si realmente se borró
+    const { error, count } = await adminSupabase.from('matches').delete({ count: 'exact' }).eq('id', matchId)
     
     if (error) {
       console.error('❌ Error eliminando (Admin):', error)
-      return { success: false, error: error.message }
+      return { success: false, error: `Error DB: ${error.message}` }
+    }
+
+    if (count === 0) {
+      return { success: false, error: 'No se encontró el partido o ya fue eliminado.' }
     }
     
     revalidatePath('/dashboard')
     return { success: true }
   }
 
-  // Borrado estándar (User RLS)
-  const { error } = await supabase.from('matches').delete().eq('id', matchId)
+  // Borrado estándar (User RLS) - Solo si es creador (ya validado arriba, pero por seguridad)
+  const { error, count } = await supabase.from('matches').delete({ count: 'exact' }).eq('id', matchId)
 
   if (error) {
     console.error('❌ Error eliminando partido:', error)
     return { success: false, error: error.message }
   }
 
-  // Verificación adicional: Si no dio error pero RLS bloqueó, el partido seguirá existiendo.
-  // Podríamos consultar si existe, pero el usuario lo notará. 
-  // Lo ideal es tener el SERVICE_ROLE_KEY configurado.
+  if (count === 0) {
+     return { success: false, error: 'No se pudo eliminar. Verifica permisos RLS.' }
+  }
 
   revalidatePath('/dashboard')
   return { success: true }
