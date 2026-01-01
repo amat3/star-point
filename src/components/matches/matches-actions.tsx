@@ -25,13 +25,13 @@ export function MatchesActions() {
             <span className="hidden sm:inline">Nuevo Resultado</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => setShowMatchForm(true)} className="cursor-pointer gap-2">
-            <Sword className="h-4 w-4 text-lime-600" />
+        <DropdownMenuContent align="end" className="w-64 p-2">
+          <DropdownMenuItem onClick={() => setShowMatchForm(true)} className="cursor-pointer gap-3 p-3 text-base font-medium">
+            <Sword className="h-5 w-5 text-lime-600" />
             <span>Nuevo Partido</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowMixingForm(true)} className="cursor-pointer gap-2">
-            <Shuffle className="h-4 w-4 text-indigo-500" />
+          <DropdownMenuItem onClick={() => setShowMixingForm(true)} className="cursor-pointer gap-3 p-3 text-base font-medium">
+            <Shuffle className="h-5 w-5 text-indigo-500" />
             <span>Nuevo Mixing</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
