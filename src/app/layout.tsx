@@ -28,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800`}
       >
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           {children}
         </div>
         <Footer />
