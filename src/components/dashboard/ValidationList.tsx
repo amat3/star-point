@@ -17,10 +17,14 @@ interface Match {
   player_b1: string
   player_b2: string
   status: string
+  p_a1?: { full_name: string }
+  p_a2?: { full_name: string }
+  p_b1?: { full_name: string }
+  p_b2?: { full_name: string }
 }
 
 interface ValidationListProps {
-  matches: any[]
+  matches: Match[]
   userId: string
 }
 
@@ -65,31 +69,58 @@ export function ValidationList({ matches, userId }: ValidationListProps) {
       {matches.map((match) => (
         <div 
           key={match.id} 
-          className="flex flex-col items-start justify-between space-y-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:space-y-0 bg-white dark:bg-gray-800"
+          className="flex flex-col space-y-4 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-sm animate-in zoom-in-95 duration-300"
         >
-          <div className="space-y-1">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {new Date(match.created_at).toLocaleDateString()}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+              {/* Team A */}
+              <div className="text-right space-y-0.5">
+                <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Equipo A</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                  <p className="truncate">{match.p_a1?.full_name}</p>
+                  <p className="truncate">{match.p_a2?.full_name}</p>
+                </div>
+              </div>
+
+              {/* VS & Score */}
+              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px]">
+                <span className="text-[10px] font-black text-lime-500 italic">VS</span>
+                <div className="text-lg font-black leading-none text-gray-900 dark:text-white">
+                  {match.score_details}
+                </div>
+              </div>
+
+              {/* Team B */}
+              <div className="text-left space-y-0.5">
+                <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Equipo B</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                  <p className="truncate">{match.p_b1?.full_name}</p>
+                  <p className="truncate">{match.p_b2?.full_name}</p>
+                </div>
+              </div>
             </div>
-            <div className="font-medium text-gray-900 dark:text-white">
-              Resultado: {match.score_details}
+
+            <div className="flex w-full sm:w-auto items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-9"
+                onClick={() => alert('Funcionalidad de impugnación pendiente')}
+              >
+                Impugnar
+              </Button>
+              <Button 
+                size="sm"
+                className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 shadow-md shadow-lime-500/20 h-9 font-bold"
+                onClick={() => handleConfirm(match.id)}
+                disabled={loadingIds.has(match.id)}
+              >
+                {loadingIds.has(match.id) ? '...' : 'Confirmar'}
+              </Button>
             </div>
           </div>
-          <div className="flex w-full flex-shrink-0 flex-wrap gap-2 sm:w-auto sm:space-x-2">
-            <Button 
-              variant="outline" 
-              className="flex-1 sm:flex-none text-red-500 hover:text-red-600 hover:bg-red-50 px-2 sm:px-4 text-xs sm:text-sm"
-              onClick={() => alert('Funcionalidad de impugnación pendiente')}
-            >
-              Impugnar
-            </Button>
-            <Button 
-              className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 dark:bg-lime-600 dark:hover:bg-lime-700 px-2 sm:px-4 text-xs sm:text-sm"
-              onClick={() => handleConfirm(match.id)}
-              disabled={loadingIds.has(match.id)}
-            >
-              {loadingIds.has(match.id) ? 'Confirmando...' : 'Confirmar'}
-            </Button>
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 text-right">
+            Registrado el {new Date(match.created_at).toLocaleDateString()}
           </div>
         </div>
       ))}
