@@ -75,7 +75,7 @@ export default async function DashboardPage() {
     .eq('creator_id', user.id)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 animate-in fade-in duration-500">
+    <div className="animate-in fade-in duration-500">
       {/* Header Section */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-800/80 sticky top-0 z-10 transition-all border-b border-gray-100 dark:border-gray-700">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
