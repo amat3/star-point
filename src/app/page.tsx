@@ -10,7 +10,7 @@ export default async function Home() {
   const destination = user ? '/dashboard' : '/login'
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 animate-in fade-in duration-1000">
+    <div className="flex flex-col items-center justify-center flex-1 p-8 animate-in fade-in duration-1000">
       <div className="text-center space-y-6 max-w-2xl transform transition-all duration-700 hover:scale-105">
         <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight">
           Star<span className="text-lime-500">Point</span>
