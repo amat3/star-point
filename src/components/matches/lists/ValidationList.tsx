@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { confirmMatch } from '@/app/actions/matches'
-import { deleteMatch } from '@/app/actions/admin-matches' // New import
+import { disputeMatch } from '@/app/actions/dispute'
+import { deleteMatch } from '@/app/actions/admin-matches'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
 import { Match } from '@/types'
@@ -22,19 +23,21 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
   const router = useRouter()
 
-  const handleAction = async (matchId: string, action: 'confirm' | 'delete') => {
+  const handleAction = async (matchId: string, action: 'confirm' | 'delete' | 'dispute') => {
     setLoadingIds(prev => new Set(prev).add(matchId))
     
     const promise = action === 'confirm' 
       ? confirmMatch(matchId)
-      : deleteMatch(matchId)
+      : action === 'delete'
+      ? deleteMatch(matchId)
+      : disputeMatch(matchId)
 
-    const loadingText = action === 'confirm' ? 'Confirmando...' : 'Eliminando...'
-    const successText = action === 'confirm' ? '¡Partido confirmado!' : '¡Partido eliminado!'
+    const loadingText = action === 'confirm' ? 'Confirmando...' : action === 'delete' ? 'Eliminando...' : 'Impugnando...'
+    const successText = action === 'confirm' ? '¡Partido confirmado!' : action === 'delete' ? '¡Partido eliminado!' : '¡Partido impugnado!'
 
     toast.promise(promise, {
       loading: loadingText,
-      success: (result) => {
+      success: (result: any) => {
         if (!result.success) throw new Error(result.error)
         router.refresh()
         return successText
@@ -125,15 +128,39 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
                    Eliminar
                  </Button>
                )}
+               
+               {userRole !== 'admin' && userId !== match.creator_id && match.status !== 'disputed' && (
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   className="flex-1 sm:flex-none text-amber-500 hover:text-amber-600 hover:bg-amber-50 border-amber-100 h-9"
+                   onClick={() => {
+                     if (window.confirm("¿El resultado es incorrecto? Al impugnar, el partido quedará bloqueado hasta que el creador o un admin lo revise.")) {
+                       handleAction(match.id, 'dispute')
+                     }
+                   }}
+                   disabled={loadingIds.has(match.id)}
+                 >
+                   Impugnar
+                 </Button>
+               )}
+
+               {match.status === 'disputed' && (
+                  <Badge variant="outline" className="border-red-200 text-red-500 bg-red-50 h-9 flex items-center px-3">
+                    Impugnado
+                  </Badge>
+               )}
               
-              <Button 
-                size="sm"
-                className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 shadow-md shadow-lime-500/20 h-9 font-bold"
-                onClick={() => handleAction(match.id, 'confirm')}
-                disabled={loadingIds.has(match.id)}
-              >
-                {loadingIds.has(match.id) ? '...' : 'Confirmar'}
-              </Button>
+              {match.status !== 'disputed' && (
+                <Button 
+                  size="sm"
+                  className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 shadow-md shadow-lime-500/20 h-9 font-bold"
+                  onClick={() => handleAction(match.id, 'confirm')}
+                  disabled={loadingIds.has(match.id)}
+                >
+                  {loadingIds.has(match.id) ? '...' : 'Confirmar'}
+                </Button>
+              )}
             </div>
           </div>
           <div className="text-[10px] text-gray-400 dark:text-gray-500 text-right">
