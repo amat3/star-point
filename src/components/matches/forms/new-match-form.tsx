@@ -376,7 +376,7 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
         </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="w-[95%] rounded-lg max-w-[425px] overflow-y-auto max-h-[90vh] no-scrollbar">
+      <DialogContent className="w-[95%] rounded-lg max-w-[425px] overflow-y-auto max-h-[90vh] no-scrollbar p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Registrar Resultado</DialogTitle>
           <DialogDescription>
