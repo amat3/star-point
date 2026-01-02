@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Eye, EyeOff } from 'lucide-react'
+import { RATING_CONFIG } from '@/lib/config'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -43,12 +44,13 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          rating: RATING_CONFIG.INITIAL_RATING
         },
       },
     })
@@ -57,6 +59,12 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
+      // Force update profile just in case trigger doesn't pick up metadata rating
+      if (data.user) {
+        await supabase.from('profiles').update({ 
+          rating: RATING_CONFIG.INITIAL_RATING 
+        }).eq('id', data.user.id)
+      }
       router.push('/dashboard')
     }
   }

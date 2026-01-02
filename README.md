@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StarPoint 🎾
 
-## Getting Started
+**StarPoint** es una PWA (Progressive Web App) moderna diseñada para gestionar partidos, rankings y niveles de jugadores de pádel de forma justa y automatizada. Creada con **Next.js 14**, **Supabase** y **TailwindCSS**.
 
-First, run the development server:
+## ✨ Características Principales
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 🏆 Sistema de Ranking ELO Avanzado
+El corazón de la aplicación es su algoritmo de nivel dinámico, diseñado para mantener el equilibrio competitivo:
+- **K-Factor Dinámico**: Los nuevos jugadores (primeros 10 partidos) suben/bajan más rápido (`K=0.40`) para encontrar su nivel real. Jugadores consolidados tienen un factor más estable (`K=0.15`).
+- **Score Multiplier**: No es lo mismo ganar 6-0 que 7-6. La contundencia de la victoria afecta a los puntos ganados.
+- **Protección contra Farming**: Partidos con diferencia de nivel > 2.0 no afectan al ranking.
+- **Corrección de Inflación**: A partir de nivel 5.0, es más difícil sumar puntos.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ⚔️ Gestión de Partidos
+- **Validación en Tiempo Real**: El formulario de "Nuevo Partido" valida reglas de pádel al instante (Sets, Tie-breaks, Super Tie-break de desempate).
+- **Flujo de Confirmación**:
+  - Los partidos creados quedan en estado `pending`.
+  - Deben ser validados por los propios jugadores o un administrador.
+  - Se pueden **Impugnar** si el resultado es incorrecto, bloqueando la confirmación hasta que un Admin intervenga.
+- **Soporte Mixing**: Modalidad especial donde el resultado se basa en juegos totales, no sets (afecta un 25% al ranking).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 👥 Perfiles y Estadísticas
+- Gráficos de evolución de nivel.
+- Estadísticas de victorias/derrotas.
+- Historial detallado de partidos con cambios de nivel (ej. `+0.12`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 🛠️ Roles
+- **Jugador**: Puede crear partidos, ver estadísticas y validar partidos donde ha participado.
+- **Admin**: Control total. Puede confirmar, eliminar o editar cualquier partido y gestionar usuarios.
 
-## Learn More
+## 🚀 Tecnologías
 
-To learn more about Next.js, take a look at the following resources:
+- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Shadcn/UI.
+- **Backend & Auth**: Supabase (PostgreSQL + Auth).
+- **Infraestructura**: Vercel.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📱 Instalación (Local)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/amat3/star-point.git
+   ```
 
-## Deploy on Vercel
+2. **Instalar dependencias**:
+   ```bash
+   npm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Configurar variables de entorno**:
+   Crea un archivo `.env.local` con tus claves de Supabase:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=tu_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key # Solo para tareas de admin
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Ejecutar servidor de desarrollo**:
+   ```bash
+   npm run dev
+   ```
+
+---
+Creado con ❤️ para la comunidad de pádel.
