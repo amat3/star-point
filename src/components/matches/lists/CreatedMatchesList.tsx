@@ -24,7 +24,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
             className="flex flex-col space-y-3 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm animate-in zoom-in-95 duration-300"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+              <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 {/* Team A */}
                 <div className="text-right space-y-0.5">
                   <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Pareja A</div>

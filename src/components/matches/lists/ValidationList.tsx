@@ -79,7 +79,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
           className="flex flex-col space-y-4 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-sm animate-in zoom-in-95 duration-300"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               {/* Team A */}
               <div className="text-right space-y-0.5">
                 <div className="text-[10px] uppercase tracking-wider text-primary font-bold">Pareja A</div>
