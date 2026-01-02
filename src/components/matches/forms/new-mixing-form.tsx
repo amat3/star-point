@@ -149,7 +149,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
                 </Button>
             )}
         </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh] no-scrollbar">
+      <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh] no-scrollbar p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Registrar Mixing</DialogTitle>
           <DialogDescription>

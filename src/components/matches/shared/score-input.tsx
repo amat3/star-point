@@ -35,19 +35,19 @@ export function ScoreInput({
         <button
           type="button"
           onClick={() => updateValue(-1)}
-          className="p-3 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:bg-gray-200 dark:active:bg-gray-700 touch-manipulation"
+          className="p-2 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:bg-gray-200 dark:active:bg-gray-700 touch-manipulation"
         >
-          <Minus className="h-5 w-5 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
+          <Minus className="h-4 w-4 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
         </button>
-        <div className="w-12 sm:w-10 h-10 sm:h-8 flex items-center justify-center border-x text-lg sm:text-sm font-bold bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="w-10 sm:w-10 h-8 sm:h-8 flex items-center justify-center border-x text-sm sm:text-sm font-bold bg-gray-50/50 dark:bg-gray-900/50">
           {value}
         </div>
         <button
           type="button"
           onClick={() => updateValue(1)}
-          className="p-3 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:bg-gray-200 dark:active:bg-gray-700 touch-manipulation"
+          className="p-2 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:bg-gray-200 dark:active:bg-gray-700 touch-manipulation"
         >
-          <Plus className="h-5 w-5 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
+          <Plus className="h-4 w-4 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
         </button>
       </div>
       <FormMessage className="text-[10px] sm:text-xs" />
