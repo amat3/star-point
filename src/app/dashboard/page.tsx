@@ -12,6 +12,7 @@ import { ValidationList } from '@/components/matches/lists/ValidationList'
 import { CreatedMatchesList } from '@/components/matches/lists/CreatedMatchesList'
 import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
+import { LevelCard } from '@/components/dashboard/LevelCard'
 import { PlusCircle, Trophy, Activity, Medal } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -100,15 +101,7 @@ export default async function DashboardPage() {
         
         {/* Statistics Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Card className="col-span-2 sm:col-span-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Nivel</CardTitle>
-              <Medal className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{userLevel}</div>
-            </CardContent>
-          </Card>
+          <LevelCard level={userLevel} />
           <Card className="col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
