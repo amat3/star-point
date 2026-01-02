@@ -231,7 +231,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
 
             <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-gradient-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 text-white border-none" 
                 disabled={(() => {
                     const values = form.watch()
                     const selectedIds = [values.player_a1, values.player_a2, values.player_b1, values.player_b2].filter(Boolean)

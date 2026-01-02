@@ -20,7 +20,7 @@ export default async function Home() {
         </p>
         <div className="pt-8">
           <Link href={destination}>
-            <Button size="lg" className="px-8 py-6 text-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300">
+            <Button size="lg" className="px-8 py-6 text-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 bg-gradient-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 text-white border-none">
               Entrar
             </Button>
           </Link>
