@@ -431,7 +431,7 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
 
             <Button 
               type="submit" 
-              className="w-full font-bold py-6 text-lg" 
+              className="w-full font-bold py-6 text-lg bg-gradient-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 text-white border-none" 
               disabled={
                 isSubmitting || 
                 !form.formState.isValid || 

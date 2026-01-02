@@ -20,7 +20,7 @@ export function MatchesActions() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="flex shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 px-3 sm:px-4 gap-2">
+          <Button className="flex shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 px-3 sm:px-4 gap-2 bg-gradient-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 text-white border-none">
             <PlusCircle className="h-5 w-5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Nuevo Resultado</span>
           </Button>
