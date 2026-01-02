@@ -3,7 +3,30 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { calculateNewRating } from '@/lib/rating-logic'
-import { parseGames } from '@/lib/match-utils'
+
+/**
+ * Helper para extraer juegos totales de un marcador tipo "6-4 6-2" o "12-5"
+ */
+function parseGames(score: string) {
+  let gamesA = 0
+  let gamesB = 0
+  
+  if (!score) return { gamesA: 0, gamesB: 0 }
+
+  // Divide por espacios para separar sets
+  const parts = score.split(' ') 
+  
+  parts.forEach(part => {
+    // Divide por guión para sacar juegos de cada lado
+    const [a, b] = part.split('-').map(Number)
+    if (!isNaN(a) && !isNaN(b)) {
+      gamesA += a
+      gamesB += b
+    }
+  })
+  
+  return { gamesA, gamesB }
+}
 
 export async function confirmMatch(matchId: string) {
   console.log('🎾 Iniciando confirmación de partido:', matchId)
@@ -30,7 +53,7 @@ export async function confirmMatch(matchId: string) {
     console.log('🔄 Procesando partido tipo MIXING (Factor 0.25)')
   }
 
-  // 2. Obtener los niveles actuales (rating) de los 4 jugadores
+  // 2. Obtener los perfiles actuales de los 4 jugadores
   const playerIds = [match.player_a1, match.player_a2, match.player_b1, match.player_b2]
   
   const { data: profiles, error: profilesError } = await supabase
@@ -40,13 +63,10 @@ export async function confirmMatch(matchId: string) {
 
   if (profilesError || !profiles || profiles.length !== 4) {
     console.error('❌ Error al obtener perfiles:', profilesError)
-    if (profilesError?.message?.includes('column')) {
-      console.warn('⚠️ Parece que faltan columnas en la tabla profiles:', profilesError.message)
-    }
     return { success: false, error: 'No se pudieron cargar los perfiles de los jugadores' }
   }
 
-  // Mapa para acceso rápido
+  // Mapa para acceso rápido a datos del perfil
   const profileMap = Object.fromEntries(profiles.map(p => [
     p.id, 
     { 
@@ -56,12 +76,31 @@ export async function confirmMatch(matchId: string) {
     }
   ]))
 
-  // 3. Preparar datos para el cálculo (Juegos y Ganador)
+  // 3. Obtener Experiencia Previa (CRÍTICO PARA ELO DINÁMICO)
+  // Consultamos cuántos registros hay en rating_history para saber el K-Factor a aplicar
+  const getMatchCount = async (playerId: string) => {
+    const { count } = await supabase
+      .from('rating_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+    return count || 0
+  }
+
+  // Ejecutamos las 4 consultas en paralelo
+  const [matchesA1, matchesA2, matchesB1, matchesB2] = await Promise.all([
+    getMatchCount(match.player_a1),
+    getMatchCount(match.player_a2),
+    getMatchCount(match.player_b1),
+    getMatchCount(match.player_b2)
+  ])
+
+  console.log('📊 Experiencia (Partidos previos jugados):', {
+    A1: matchesA1, A2: matchesA2, B1: matchesB1, B2: matchesB2
+  })
+
+  // 4. Preparar datos de juego (Juegos y Ganador)
   const { gamesA, gamesB } = parseGames(match.score_details || "")
   
-  // Determinación del ganador:
-  // - Si es partido estándar: sets_a > sets_b
-  // - Si es mixing: gamesA > gamesB (no hay sets)
   let teamAWon = false
   if (isMixing) {
     teamAWon = gamesA > gamesB
@@ -69,34 +108,36 @@ export async function confirmMatch(matchId: string) {
     teamAWon = match.sets_a > match.sets_b
   }
 
-  console.log(`📊 Análisis (${isMixing ? 'Mixing' : 'Partido'}): Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
+  console.log(`📊 Análisis: Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
 
-  // 4. Calcular nuevos ratings (pasando isMixing)
+  // 5. Calcular nuevos ratings
+  // Pasamos 'matchesXX' (experiencia) a la función de cálculo
+  
   // TEAM A
   const resultA1 = calculateNewRating(
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, isMixing
+    gamesA, gamesB, teamAWon, matchesA1, isMixing
   )
   const resultA2 = calculateNewRating(
     profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, isMixing
+    gamesA, gamesB, teamAWon, matchesA2, isMixing
   )
 
   // TEAM B
   const resultB1 = calculateNewRating(
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, isMixing
+    gamesB, gamesA, !teamAWon, matchesB1, isMixing
   )
   const resultB2 = calculateNewRating(
     profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, isMixing
+    gamesB, gamesA, !teamAWon, matchesB2, isMixing
   )
 
-  // 5. Actualizar Base de Datos
+  // 6. Preparar actualizaciones de BD
   const playerUpdates = [
     { id: match.player_a1, result: resultA1, teamWon: teamAWon },
     { id: match.player_a2, result: resultA2, teamWon: teamAWon },
@@ -105,18 +146,14 @@ export async function confirmMatch(matchId: string) {
   ]
 
   try {
-    // A. Actualizar perfiles de uno en uno
+    // A. Actualizar perfiles (Rating + Estadísticas)
     for (const pu of playerUpdates) {
       const pm = profileMap[pu.id]
       const newPlayed = (pm.matches_played || 0) + 1
       const newWon = (pm.matches_won || 0) + (pu.teamWon ? 1 : 0)
       const newRatio = newPlayed > 0 ? newWon / newPlayed : 0
 
-      console.log(`👤 Actualizando jugador ${pu.id}:`)
-      console.log(`   - Partidos: ${pm.matches_played} -> ${newPlayed}`)
-      console.log(`   - Ganados: ${pm.matches_won} -> ${newWon}`)
-      console.log(`   - Win Ratio: ${newRatio}`)
-      
+      // Intentamos actualizar todo (stats + rating)
       const { error: pError } = await supabase.from('profiles').update({ 
         rating: pu.result.newRating,
         matches_played: newPlayed,
@@ -125,23 +162,17 @@ export async function confirmMatch(matchId: string) {
       }).eq('id', pu.id)
 
       if (pError) {
-        console.error(`❌ Error actualizando perfil ${pu.id} (Full Update):`, pError)
-        // Intentamos actualización mínima si falla por columnas nuevas
+        console.error(`❌ Error actualizando stats perfil ${pu.id}:`, pError)
+        // Fallback: Si fallan las stats, actualizamos solo el rating
         const { error: pErrorMin } = await supabase.from('profiles').update({ 
-          rating: pu.result.newRating,
-          matches_played: newPlayed
+          rating: pu.result.newRating
         }).eq('id', pu.id)
         
-        if (pErrorMin) {
-          console.error(`❌ Error actualizando perfil ${pu.id} (Min Update):`, pErrorMin)
-          throw new Error(`Error al actualizar el perfil del jugador: ${pErrorMin.message}`)
-        }
-      } else {
-        console.log(`✅ Perfil ${pu.id} actualizado con éxito incluyendo stats.`)
+        if (pErrorMin) throw new Error(`Error crítico al actualizar perfil: ${pErrorMin.message}`)
       }
     }
 
-    // B. Insertar en el historial de niveles (rating_history)
+    // B. Insertar historial de cambios
     const historyEntries = playerUpdates.map(pu => ({
       player_id: pu.id,
       match_id: match.id,
@@ -150,29 +181,19 @@ export async function confirmMatch(matchId: string) {
     }))
 
     const { error: hError } = await supabase.from('rating_history').insert(historyEntries)
-    if (hError) {
-      console.warn('⚠️ No se pudo guardar el historial de nivel:', hError.message)
-    }
+    if (hError) console.warn('⚠️ Error guardando historial:', hError.message)
 
     // C. Marcar partido como confirmado
-    console.log('🏁 Marcando partido como confirmado...')
     const { error: mError } = await supabase.from('matches').update({ 
       status: 'confirmed',
-      rating_change: resultA1.change
+      rating_change: resultA1.change // Guardamos referencia del cambio de A1
     }).eq('id', matchId)
 
-    if (mError) {
-      console.error('❌ Error al actualizar estado del partido:', mError)
-      const { error: mErrorMin } = await supabase.from('matches').update({ 
-        status: 'confirmed'
-      }).eq('id', matchId)
-      
-      if (mErrorMin) throw new Error(`Error al confirmar el partido: ${mErrorMin.message}`)
-    }
+    if (mError) throw new Error(`Error al confirmar partido: ${mError.message}`)
 
-    console.log('✅ Partido confirmado con éxito.')
+    console.log('✅ Partido confirmado y procesado con éxito.')
 
-    // 6. Refrescar la UI
+    // 7. Refrescar UI
     revalidatePath('/dashboard')
     revalidatePath('/ranking')
     revalidatePath('/profile')
@@ -180,7 +201,7 @@ export async function confirmMatch(matchId: string) {
     return { success: true }
 
   } catch (error: any) {
-    console.error('❌ Error crítico en la transacción:', error)
-    return { success: false, error: error.message || 'Error al procesar la validación' }
+    console.error('❌ Error en transacción:', error)
+    return { success: false, error: error.message || 'Error desconocido al confirmar' }
   }
 }

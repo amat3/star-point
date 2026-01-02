@@ -21,6 +21,7 @@ async function seed() {
     options: {
       data: {
         full_name: user.full_name,
+        rating: 3.5
       },
     },
   });
@@ -28,6 +29,9 @@ async function seed() {
   if (error) {
     console.error(`Failed to create ${user.email}: ${error.message}`);
   } else {
+    if (data.user) {
+      await supabase.from('profiles').update({ rating: 3.5 }).eq('id', data.user.id);
+    }
     console.log(`Successfully requested creation for ${user.email}. ID: ${data.user?.id}`);
   }
 }
