@@ -82,7 +82,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
             <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               {/* Team A */}
               <div className="text-right space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Pareja A</div>
+                <div className="text-[10px] uppercase tracking-wider text-primary font-bold">Pareja A</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate">{match.p_a1?.full_name}</p>
                   <p className="truncate">{match.p_a2?.full_name}</p>
@@ -92,9 +92,9 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
               {/* VS & Score */}
               <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative">
                 {match.match_type === 'mixing' ? (
-                   <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Mixing</Badge>
+                   <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-primary/10 text-primary hover:bg-primary/20">Mixing</Badge>
                 ) : (
-                   <span className="text-[10px] font-black text-lime-500 italic mb-1">VS</span>
+                   <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
                 )}
                 <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
                   {match.score_details}
@@ -103,7 +103,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
 
               {/* Team B */}
               <div className="text-left space-y-0.5">
-                <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Pareja B</div>
+                <div className="text-[10px] uppercase tracking-wider text-secondary font-bold">Pareja B</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate">{match.p_b1?.full_name}</p>
                   <p className="truncate">{match.p_b2?.full_name}</p>
@@ -154,7 +154,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
               {match.status !== 'disputed' && (
                 <Button 
                   size="sm"
-                  className="flex-1 sm:flex-none bg-lime-500 text-white hover:bg-lime-600 shadow-md shadow-lime-500/20 h-9 font-bold"
+                  className="flex-1 sm:flex-none text-white shadow-md shadow-primary/20 h-9 font-bold"
                   onClick={() => handleAction(match.id, 'confirm')}
                   disabled={loadingIds.has(match.id)}
                 >

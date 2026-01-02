@@ -83,7 +83,7 @@ export default async function DashboardPage() {
             <UserMenu profile={profile} userName={userName} />
             <div className="hidden xs:flex items-center space-x-2 border-l border-gray-200 dark:border-gray-700 pl-4 h-8">
                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Nivel:</span>
-               <Badge className="bg-lime-500 hover:bg-lime-600 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
+               <Badge className="bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
                   {userLevel}
                </Badge>
             </div>
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
-              <Trophy className="h-4 w-4 text-lime-500" />
+              <Trophy className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{winRatio}</div>
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Nivel</CardTitle>
-              <Medal className="h-4 w-4 text-yellow-500" />
+              <Medal className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{userLevel}</div>

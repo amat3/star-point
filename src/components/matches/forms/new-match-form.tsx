@@ -369,7 +369,7 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
     <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-        <Button className="flex bg-lime-500 hover:bg-lime-600 text-white shadow-lg shadow-lime-500/30 hover:shadow-lime-500/50 transition-all duration-300 px-3 sm:px-4">
+        <Button className="flex shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 px-3 sm:px-4">
           <PlusCircle className="h-5 w-5 sm:mr-2 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Nuevo Partido</span>
           <span className="sr-only sm:hidden">Nuevo Partido</span>
@@ -389,14 +389,14 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
             toast.error("Faltan datos o hay errores en el formulario")
           })} className="space-y-4">
             
-            <div className="space-y-4 rounded-lg border p-3 bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/20">
-              <h3 className="font-bold text-center text-indigo-700 dark:text-indigo-400">Pareja A</h3>
+            <div className="space-y-4 rounded-lg border p-3 bg-primary/10 dark:bg-primary/20 border-primary/20">
+              <h3 className="font-bold text-center text-primary">Pareja A</h3>
               <PlayerSelect name="player_a1" label="Jugador 1" form={form} players={players} />
               <PlayerSelect name="player_a2" label="Jugador 2" form={form} players={players} />
             </div>
 
-            <div className="space-y-4 rounded-lg border p-3 bg-lime-50/30 dark:bg-lime-900/10 border-lime-100 dark:border-lime-900/20">
-              <h3 className="font-bold text-center text-lime-700 dark:text-lime-400">Pareja B</h3>
+            <div className="space-y-4 rounded-lg border p-3 bg-secondary/25 dark:bg-secondary/30 border-secondary/20">
+              <h3 className="font-bold text-center text-secondary-foreground">Pareja B</h3>
               <PlayerSelect name="player_b1" label="Jugador 3" form={form} players={players} />
               <PlayerSelect name="player_b2" label="Jugador 4" form={form} players={players} />
             </div>
@@ -431,7 +431,7 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
 
             <Button 
               type="submit" 
-              className="w-full bg-lime-500 hover:bg-lime-600 text-white font-bold py-6 text-lg" 
+              className="w-full font-bold py-6 text-lg" 
               disabled={
                 isSubmitting || 
                 !form.formState.isValid || 

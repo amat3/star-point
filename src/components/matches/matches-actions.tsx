@@ -20,18 +20,18 @@ export function MatchesActions() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="flex bg-lime-500 hover:bg-lime-600 text-white shadow-lg shadow-lime-500/30 hover:shadow-lime-500/50 transition-all duration-300 px-3 sm:px-4 gap-2">
+          <Button className="flex shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 px-3 sm:px-4 gap-2">
             <PlusCircle className="h-5 w-5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Nuevo Resultado</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 p-2">
           <DropdownMenuItem onClick={() => setShowMatchForm(true)} className="cursor-pointer gap-3 p-3 text-base font-medium">
-            <Sword className="h-5 w-5 text-lime-600" />
+            <Sword className="h-5 w-5 text-secondary" />
             <span>Nuevo Partido</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setShowMixingForm(true)} className="cursor-pointer gap-3 p-3 text-base font-medium">
-            <Shuffle className="h-5 w-5 text-indigo-500" />
+            <Shuffle className="h-5 w-5 text-primary" />
             <span>Nuevo Mixing</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -161,8 +161,8 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* EQUIPO A */}
-            <div className="space-y-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/20">
-                <h3 className="font-bold text-center text-indigo-700 dark:text-indigo-400 text-sm uppercase">Pareja A</h3>
+            <div className="space-y-3 p-3 bg-primary/10 dark:bg-primary/20 rounded-lg border border-primary/20">
+                <h3 className="font-bold text-center text-primary text-sm uppercase">Pareja A</h3>
                 <PlayerSelect name="player_a1" label="Jugador 1" form={form} players={players} />
                 <PlayerSelect name="player_a2" label="Jugador 2" form={form} players={players} />
             </div>
@@ -174,8 +174,8 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
             </div>
 
             {/* EQUIPO B */}
-            <div className="space-y-3 p-3 bg-lime-50/50 dark:bg-lime-900/10 rounded-lg border border-lime-100 dark:border-lime-900/20">
-                <h3 className="font-bold text-center text-lime-700 dark:text-lime-400 text-sm uppercase">Pareja B</h3>
+            <div className="space-y-3 p-3 bg-secondary/25 dark:bg-secondary/30 rounded-lg border border-secondary/20">
+                <h3 className="font-bold text-center text-secondary-foreground text-sm uppercase">Pareja B</h3>
                 <PlayerSelect name="player_b1" label="Jugador 3" form={form} players={players} />
                 <PlayerSelect name="player_b2" label="Jugador 4" form={form} players={players} />
             </div>
@@ -187,7 +187,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
               <div className="flex items-center justify-center gap-4 sm:gap-8">
                 {/* Score A */}
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold text-indigo-600">A</span>
+                  <span className="text-xs font-bold text-primary">A</span>
                   <ScoreInput name="games_a" form={form} labelColor="hidden" max={50} />
                 </div>
 
@@ -195,7 +195,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
 
                 {/* Score B */}
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold text-lime-600">B</span>
+                  <span className="text-xs font-bold text-secondary-foreground">B</span>
                   <ScoreInput name="games_b" form={form} labelColor="hidden" max={50} />
                 </div>
               </div>
@@ -231,7 +231,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
 
             <Button 
                 type="submit" 
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
+                className="w-full" 
                 disabled={(() => {
                     const values = form.watch()
                     const selectedIds = [values.player_a1, values.player_a2, values.player_b1, values.player_b2].filter(Boolean)
