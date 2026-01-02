@@ -99,8 +99,17 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
         {/* Statistics Grid */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Card className="col-span-2 sm:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Nivel</CardTitle>
+              <Medal className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userLevel}</div>
+            </CardContent>
+          </Card>
+          <Card className="col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
               <Activity className="h-4 w-4 text-gray-500" />
@@ -109,22 +118,13 @@ export default async function DashboardPage() {
               <div className="text-2xl font-bold">{matchesPlayed}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
               <Trophy className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{winRatio}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Nivel</CardTitle>
-              <Medal className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{userLevel}</div>
             </CardContent>
           </Card>
         </div>
