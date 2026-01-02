@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Gestión de ranking y partidos de pádel',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#ffffff',
+    background_color: '#F0EEE9',
+    theme_color: '#F0EEE9',
     icons: [
       {
         src: '/icon.png',
