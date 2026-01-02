@@ -53,10 +53,12 @@ export default async function DashboardPage() {
       p_b2:profiles!player_b2(full_name)
     `)
     .in('status', ['pending', 'disputed'])
-    .neq('creator_id', user.id) // Siempre excluimos los creados por uno mismo para no auto-validar (aunque admin podría)
 
+    
   if (userRole !== 'admin') {
-     pendingQuery = pendingQuery.or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+     pendingQuery = pendingQuery
+       .neq('creator_id', user.id) // Players cannot validate their own matches
+       .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
   }
 
   const { data: pendingMatches } = await pendingQuery
