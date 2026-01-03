@@ -29,7 +29,7 @@ const formSchema = z.object({
   date: z.string(),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
   max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
-  rounds: z.number().min(1).max(10),
+  rounds: z.number().min(1).max(6),
   duration_minutes: z.number().min(30)
 })
 
@@ -169,24 +169,6 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
 
               <FormField
                 control={form.control}
-                name="max_spots"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Plazas</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(4, field.value - 4))}>-</Button>
-                            <Input type="number" {...field} className="text-center" readOnly />
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 4)}>+</Button>
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="duration_minutes"
                 render={({ field }) => (
                   <FormItem>
@@ -207,22 +189,32 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
                 control={form.control}
                 name="rounds"
                 render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Partidos</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
+                        <Input type="number" {...field} className="text-center" readOnly />
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(6, field.value + 1))}>+</Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="max_spots"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Partidos (Rondas)</FormLabel>
+                    <FormLabel>Plazas</FormLabel>
                     <FormControl>
-                        <div className="flex gap-2">
-                        {[1, 2, 3, 4].map(num => (
-                            <Button
-                                key={num}
-                                type="button"
-                                variant={field.value === num ? "default" : "outline"}
-                                className="flex-1"
-                                onClick={() => field.onChange(num)}
-                            >
-                                {num}
-                            </Button>
-                        ))}
-                      </div>
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(4, field.value - 4))}>-</Button>
+                            <Input type="number" {...field} className="text-center" readOnly />
+                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 4)}>+</Button>
+                        </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
