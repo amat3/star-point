@@ -114,24 +114,7 @@ export default async function DashboardPage() {
         {/* Statistics Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <LevelCard level={userLevel} />
-          <Card className="col-span-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
-              <Activity className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{matchesPlayed}</div>
-            </CardContent>
-          </Card>
-          <Card className="col-span-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
-              <Trophy className="h-4 w-4 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{winRatio}</div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Next Mixings Section */}
