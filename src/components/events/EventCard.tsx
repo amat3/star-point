@@ -1,0 +1,235 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Calendar, Clock, Trophy, Users, UserMinus, UserPlus, Pencil, Trash2, X } from 'lucide-react'
+import { MixingEvent, EventParticipant } from '@/types/events'
+import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
+import { EditEventDialog } from './EditEventDialog'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+
+interface EventCardProps {
+  event: MixingEvent
+  userId: string
+  userRole: string
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+}
+
+function getInitials(name: string | null | undefined) {
+  if (!name) return 'JU'
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+}
+
+export function EventCard({ event, userId, userRole }: EventCardProps) {
+  const [isPending, startTransition] = useTransition()
+  // const [participants, setParticipants] = useState<EventParticipant[]>([]) // Not needed anymore as passed in event
+  const [showParticipants, setShowParticipants] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+
+  const participantsCount = event.participants_count || 0
+  const isFull = participantsCount >= event.max_spots
+  const isJoined = event.is_joined
+
+  const handleJoin = () => {
+    startTransition(async () => {
+      try {
+        await joinEvent(event.id)
+        toast.success("Te has apuntado al evento")
+      } catch (error: any) {
+        toast.error(error.message)
+      }
+    })
+  }
+
+  const handleLeave = () => {
+    startTransition(async () => {
+      try {
+        await leaveEvent(event.id)
+        toast.success("Te has dado de baja del evento")
+      } catch (error: any) {
+        toast.error(error.message)
+      }
+    })
+  }
+
+  const handleRemoveParticipant = (targetUserId: string) => {
+    if (!confirm("¿Estás seguro de eliminar a este jugador?")) return
+    startTransition(async () => {
+        try {
+            await removeParticipant(event.id, targetUserId)
+            toast.success("Jugador eliminado")
+        } catch(error: any) {
+            toast.error(error.message)
+        }
+    })
+  }
+
+  const handleDeleteEvent = () => {
+      if (!confirm("¿Estás seguro de anular este evento? Se borrarán todos los participantes.")) return
+      startTransition(async () => {
+          try {
+              await deleteEvent(event.id)
+              toast.success("Evento anulado")
+          } catch(error: any) {
+              toast.error(error.message)
+          }
+      })
+  }
+
+
+
+
+  return (
+    <Card className="w-full relative overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-all">
+      <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+            <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
+            {userRole === 'admin' && (
+                <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditOpen(true)}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={handleDeleteEvent}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pb-4">
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <Calendar className="w-4 h-4 mr-2 text-primary" />
+            <span className="capitalize">{formatDate(event.start_time)}</span>
+        </div>
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <Clock className="w-4 h-4 mr-2 text-primary" />
+            <span>{formatTime(event.start_time)}</span>
+        </div>
+        
+        {/* Participants List */}
+        <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+                <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Jugadores {Math.min(participantsCount, event.max_spots)}/{event.max_spots}
+                </h4>
+            </div>
+            
+            {/* Titulares */}
+            <div className="space-y-1 pl-1 mb-4">
+                {Array.from({ length: event.max_spots }).map((_, index) => {
+                    const participant = event.participants?.[index]
+                    
+                    return (
+                        <div key={`main-${index}`} className="flex items-center justify-between text-sm h-6 group">
+                            <div className="flex items-center overflow-hidden">
+                                <span className="mr-2 text-base shrink-0">🎾</span>
+                                <span className={`truncate ${participant ? "text-gray-700 dark:text-gray-200 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
+                                    {participant?.full_name || "Libre"}
+                                </span>
+                            </div>
+                            {participant && userRole === 'admin' && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleRemoveParticipant(participant.user_id)}
+                                    title="Eliminar jugador"
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Reservas */}
+            <div className="border-t pt-2 mt-2">
+                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Reservas {Math.max(0, participantsCount - event.max_spots)}/4
+                </h4>
+                <div className="space-y-1 pl-1">
+                    {Array.from({ length: 4 }).map((_, index) => {
+                        const reserveIndex = event.max_spots + index
+                        const participant = event.participants?.[reserveIndex]
+                        
+                        return (
+                            <div key={`reserve-${index}`} className="flex items-center justify-between text-sm h-6 group">
+                                <div className="flex items-center overflow-hidden">
+                                    <span className="mr-2 text-base text-amber-500 shrink-0">🎾</span>
+                                    <span className={`truncate ${participant ? "text-amber-700 dark:text-amber-400 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
+                                        {participant?.full_name || "Hueco reserva"}
+                                    </span>
+                                </div>
+                                {participant && userRole === 'admin' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => handleRemoveParticipant(participant.user_id)}
+                                        title="Eliminar jugador"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        </div>
+
+      </CardContent>
+      <CardFooter className="pt-2">
+        {isJoined ? (
+          <Button 
+            variant="destructive" 
+            className="w-full" 
+            onClick={handleLeave} 
+            disabled={isPending}
+          >
+            {isPending ? "Procesando..." : (
+                <>
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    Desapuntarme
+                </>
+            )}
+          </Button>
+        ) : (
+          <Button 
+            className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-white border-none shadow-md" 
+            onClick={handleJoin} 
+            disabled={isPending || participantsCount >= (event.max_spots + 4)}
+          >
+            {isPending ? "Procesando..." : (
+                <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    {participantsCount >= event.max_spots ? "Apuntarme (Reserva)" : "Apuntarme"}
+                </>
+            )}
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  )
+}
