@@ -31,7 +31,8 @@ const formSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   date: z.string(), // Relaxed validation for now
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
-  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas")
+  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
+  rounds: z.number().min(1).max(10).default(1)
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -46,7 +47,8 @@ export function CreateEventDialog() {
       title: "Mixing Padel",
       max_spots: 12,
       date: new Date().toISOString().split('T')[0],
-      time: "20:00"
+      time: "20:00",
+      rounds: 1
     }
   })
 
@@ -59,7 +61,8 @@ export function CreateEventDialog() {
       await createEvent({
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.max_spots
+        max_spots: values.max_spots,
+        rounds: values.rounds
       })
 
       toast.success("Evento creado correctamente")

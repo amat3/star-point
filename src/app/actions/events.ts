@@ -13,7 +13,15 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
   // Fetch events
   const { data: events, error } = await supabase
     .from('events')
-    .select('*')
+    .select(`
+        id, 
+        title, 
+        start_time, 
+        max_spots,
+        rounds,
+        status,
+        created_by
+    `)
     .eq('status', 'open')
     .order('start_time', { ascending: true })
 
@@ -65,6 +73,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
 
     return {
       ...event,
+      rounds: event.rounds || 1,
       participants_count: rawParticipants?.length || 0,
       participants: formattedParticipants,
       is_joined: isJoined
@@ -126,7 +135,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number }) {
   try {
     const supabase = await createClient()
     
@@ -152,6 +161,7 @@ export async function createEvent(data: { title: string, start_time: string, max
         title: data.title,
         start_time: data.start_time,
         max_spots: data.max_spots,
+        rounds: data.rounds,
         created_by: user.id,
         status: 'open'
       })
@@ -187,7 +197,7 @@ export async function getEventParticipants(eventId: string): Promise<EventPartic
   return data as unknown as EventParticipant[]
 }
 
-export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number }) {
+export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number }) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -202,7 +212,8 @@ export async function updateEvent(eventId: string, data: { title: string, start_
       .update({
         title: data.title,
         start_time: data.start_time,
-        max_spots: data.max_spots
+        max_spots: data.max_spots,
+        rounds: data.rounds
       })
       .eq('id', eventId)
 

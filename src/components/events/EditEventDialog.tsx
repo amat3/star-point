@@ -28,7 +28,8 @@ const formSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   date: z.string(),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
-  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas")
+  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
+  rounds: z.number().min(1).max(10)
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -48,7 +49,8 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       title: event.title,
       date: datePart,
       time: timePart ? timePart.substring(0, 5) : '12:00',
-      max_spots: event.max_spots
+      max_spots: event.max_spots,
+      rounds: event.rounds || 1
     }
   })
 
@@ -61,7 +63,8 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       await updateEvent(event.id, {
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.max_spots
+        max_spots: values.max_spots,
+        rounds: values.rounds
       })
       
       toast.success("Evento actualizado")
@@ -127,19 +130,45 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="max_spots"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Plazas</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="max_spots"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plazas</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="rounds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Partidos (Rondas)</FormLabel>
+                    <FormControl>
+                        <div className="flex gap-2">
+                        {[1, 2, 3, 4].map(num => (
+                            <Button
+                                key={num}
+                                type="button"
+                                variant={field.value === num ? "default" : "outline"}
+                                className="flex-1"
+                                onClick={() => field.onChange(num)}
+                            >
+                                {num}
+                            </Button>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Guardando..." : "Guardar Cambios"}

@@ -11,6 +11,9 @@ export interface Profile {
   matches_won: number;
   win_ratio: number;
   ranking?: number;
+  gender?: 'masculino' | 'femenino' | 'otro';
+  preferred_hand?: 'diestro' | 'zurdo' | 'ambidiestro';
+  court_position?: 'reves' | 'drive' | 'ambos';
   updated_at?: string;
 }
 

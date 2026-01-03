@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { LogOut, Eye, EyeOff } from 'lucide-react'
+import { updateProfile } from '@/app/actions/users'
 
 // Change Password Component
 function ChangePasswordForm() {
@@ -119,14 +120,18 @@ function ChangePasswordForm() {
 
 const formSchema = z.object({
   full_name: z.string().min(1, { message: 'El nombre no puede estar vacío' }),
+  gender: z.enum(['masculino', 'femenino', 'otro']).optional(),
+  preferred_hand: z.enum(['diestro', 'zurdo', 'ambidiestro']).optional(),
+  court_position: z.enum(['reves', 'drive', 'ambos']).optional(),
 })
 
 interface ProfileFormProps {
   userId: string
   currentName: string
+  profile?: any // Pass full profile to pre-fill
 }
 
-export function ProfileForm({ userId, currentName }: ProfileFormProps) {
+export function ProfileForm({ userId, currentName, profile }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -135,24 +140,22 @@ export function ProfileForm({ userId, currentName }: ProfileFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: currentName,
+      gender: profile?.gender || undefined,
+      preferred_hand: profile?.preferred_hand || undefined,
+      court_position: profile?.court_position || undefined,
     },
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: values.full_name })
-        .eq('id', userId)
-
-      if (error) throw error
+      await updateProfile(values)
 
       toast.success('Perfil actualizado correctamente')
       router.refresh()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error)
-      toast.error('Error al actualizar el perfil')
+      toast.error(error.message || 'Error al actualizar el perfil')
     } finally {
       setIsLoading(false)
     }
@@ -185,6 +188,80 @@ export function ProfileForm({ userId, currentName }: ProfileFormProps) {
               </FormItem>
             )}
           />
+
+          {/* Technical Profile Section */}
+          <div className="pt-4 border-t">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Perfil Técnico
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Género</FormLabel>
+                    <FormControl>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferred_hand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mano Preferida</FormLabel>
+                    <FormControl>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="diestro">Diestro</option>
+                        <option value="zurdo">Zurdo</option>
+                        <option value="ambidiestro">Ambidiestro</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="court_position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Posición en Pista</FormLabel>
+                    <FormControl>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="reves">Revés (Izquierda)</option>
+                        <option value="drive">Drive (Derecha)</option>
+                        <option value="ambos">Ambos Lados</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
           <Button type="submit" disabled={isLoading}>
             {isLoading ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
