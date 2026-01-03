@@ -45,7 +45,7 @@ export function CreateEventDialog() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
-      title: "Mixing Padel",
+      title: "Mixing",
       max_spots: 12,
       date: new Date().toISOString().split('T')[0],
       time: "20:00",
