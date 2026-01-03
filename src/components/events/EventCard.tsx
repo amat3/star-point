@@ -3,11 +3,12 @@
 import { useState, useTransition } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, Trophy, Users, UserMinus, UserPlus, Pencil, Trash2, X } from 'lucide-react'
+import { Calendar, Clock, Trophy, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle } from 'lucide-react'
 import { MixingEvent, EventParticipant } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
 import { toast } from 'sonner'
+import Link from 'next/link'
 import {
   Dialog,
   DialogContent,
@@ -104,6 +105,11 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
             <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
             {userRole === 'admin' && (
                 <div className="flex gap-1">
+                    <Link href={`/admin/events/${event.id}/generate`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
+                            <Shuffle className="h-4 w-4" />
+                        </Button>
+                    </Link>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditOpen(true)}>
                         <Pencil className="h-4 w-4" />
                     </Button>

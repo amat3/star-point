@@ -205,3 +205,74 @@ export async function confirmMatch(matchId: string) {
     return { success: false, error: error.message || 'Error desconocido al confirmar' }
   }
 }
+
+export async function updateMatchScore(
+  matchId: string, 
+  data: { 
+    sets_a?: number
+    sets_b?: number
+    games_a?: number // For Mixing
+    games_b?: number // For Mixing
+    score_details: string
+  }
+) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuario no autenticado')
+
+  // 1. Get Match to verify permission
+  const { data: match, error: fetchError } = await supabase
+    .from('matches')
+    .select('creator_id, status, match_type')
+    .eq('id', matchId)
+    .single()
+
+  if (fetchError || !match) throw new Error('Partido no encontrado')
+
+  // 2. Permission check (Creator or Admin)
+  const isCreator = match.creator_id === user.id
+  
+  if (!isCreator) {
+    // Check if admin
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      throw new Error('No tienes permiso para editar este partido')
+    }
+  }
+
+  // 3. Status check
+  if (match.status !== 'pending' && match.status !== 'disputed') {
+    throw new Error('Solo se pueden editar partidos pendientes o disputados')
+  }
+
+  // 4. Update logic
+  const updateData: any = {
+    score_details: data.score_details,
+    // Reset disputes if edited
+    status: 'pending' 
+  }
+
+  if (match.match_type === 'mixing') {
+    updateData.sets_a = 0
+    updateData.sets_b = 0
+    // We rely on score_details for the games
+  } else {
+    // Standard match
+    if (data.sets_a === undefined || data.sets_b === undefined) {
+      throw new Error('Faltan datos de sets para partido estándar')
+    }
+    updateData.sets_a = data.sets_a
+    updateData.sets_b = data.sets_b
+  }
+
+  const { error } = await supabase
+    .from('matches')
+    .update(updateData)
+    .eq('id', matchId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/dashboard')
+  return { success: true }
+}

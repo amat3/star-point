@@ -289,14 +289,7 @@ export function NewMatchForm({ open: controlledOpen, onOpenChange: setControlled
   })
 
   // DEBUG: Seguimiento del estado del formulario
-  console.log("DEBUG Form State:", {
-    isValid: form.formState.isValid,
-    isDirty: form.formState.isDirty,
-    errors: form.formState.errors,
-    values: form.watch(),
-    role: currentUserProfile?.role,
-    userId: currentUserProfile?.id
-  })
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     console.log("Form submitted with values:", values)

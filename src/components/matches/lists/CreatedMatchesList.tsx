@@ -1,19 +1,30 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock } from 'lucide-react'
+import { Clock, Pencil } from 'lucide-react'
 import { Match } from '@/types'
+import { Button } from '@/components/ui/button'
+import { EditMatchDialog } from '../dialogs/EditMatchDialog'
 
 interface CreatedMatchesListProps {
   matches: Match[]
 }
 
 export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null)
+
   if (matches.length === 0) return null
 
   return (
     <div className="space-y-4">
+      <EditMatchDialog 
+        match={editingMatch!} 
+        open={!!editingMatch} 
+        onOpenChange={(open) => !open && setEditingMatch(null)} 
+      />
+      
       <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
         Mis Partidos Registrados
       </h2>
@@ -56,9 +67,22 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full text-[10px] font-bold border border-amber-100 dark:border-amber-900/30 uppercase tracking-tight">
-                <Clock className="h-3 w-3" />
-                <span>Pendiente</span>
+              <div className="flex items-center gap-2">
+                 {(match.status === 'pending' || match.status === 'disputed') && (
+                     <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => setEditingMatch(match)}
+                        title="Editar resultado"
+                     >
+                        <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                     </Button>
+                 )}
+                 <div className="flex items-center justify-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full text-[10px] font-bold border border-amber-100 dark:border-amber-900/30 uppercase tracking-tight">
+                    <Clock className="h-3 w-3" />
+                    <span>{match.status === 'disputed' ? 'Impugnado' : 'Pendiente'}</span>
+                 </div>
               </div>
             </div>
             <div className="text-[10px] text-gray-400 dark:text-gray-500 text-right">
