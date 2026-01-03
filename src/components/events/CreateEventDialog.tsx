@@ -32,7 +32,7 @@ const formSchema = z.object({
   date: z.string(), // Relaxed validation for now
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
   max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
-  rounds: z.number().min(1).max(10).default(1),
+  rounds: z.number().min(1).max(6).default(3),
   duration_minutes: z.number().min(30).default(90)
 })
 
@@ -49,7 +49,7 @@ export function CreateEventDialog() {
       max_spots: 12,
       date: new Date().toISOString().split('T')[0],
       time: "20:00",
-      rounds: 1,
+      rounds: 3,
       duration_minutes: 90
     }
   })
@@ -151,6 +151,24 @@ export function CreateEventDialog() {
                         <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(30, field.value - 30))}>-</Button>
                         <Input type="number" {...field} className="text-center" readOnly />
                         <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 30)}>+</Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="rounds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Partidos</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
+                        <Input type="number" {...field} className="text-center" readOnly />
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(6, field.value + 1))}>+</Button>
                     </div>
                   </FormControl>
                   <FormMessage />
