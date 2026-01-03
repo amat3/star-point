@@ -61,12 +61,8 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
       const { participants: data, max_spots, rounds } = await getEventMixingData(id)
       console.log("Data received:", { count: data.length, max_spots, rounds })
       
-      // Convert serialized Array back to Set
-      const participantsWithSets = data.map((p: any) => ({
-          ...p,
-          past_partners: new Set(p.past_partners)
-      }))
-      setParticipants(participantsWithSets)
+      // Use Arrays directly as per new interface
+      setParticipants(data)
       setMaxSpots(max_spots)
       setRoundsCount(rounds)
     } catch (error: any) {
@@ -95,10 +91,8 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
         const newProposals: RoundProposal[] = []
         
         console.log("Cloning participants...")
-        let currentParticipants: MixingParticipant[] = participants.map(p => ({
-            ...p,
-            past_partners: new Set(p.past_partners)
-        }))
+        // Deep clone to avoid mutating state directly and to reset for calculation
+        let currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
 
         console.log("Starting loop", roundsCount)
         for (let i = 0; i < roundsCount; i++) {
@@ -109,11 +103,25 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
             
             // Update history for next round
             result.matches.forEach(m => {
-                 currentParticipants.find(p => p.id === m.player1.id)?.past_partners.add(m.player2.id)
-                 currentParticipants.find(p => p.id === m.player2.id)?.past_partners.add(m.player1.id)
-                 
-                 currentParticipants.find(p => p.id === m.player3.id)?.past_partners.add(m.player4.id)
-                 currentParticipants.find(p => p.id === m.player4.id)?.past_partners.add(m.player3.id)
+                 const updateHistory = (pid: string, partnerId: string, opponents: string[]) => {
+                    const p = currentParticipants.find(cp => cp.id === pid)
+                    if (p) {
+                        if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
+                        opponents.forEach(oid => {
+                            if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
+                        })
+                    }
+                 }
+
+                 // Update for all 4 players
+                 // P1: Partner P2, Opponents P3, P4
+                 updateHistory(m.player1.id, m.player2.id, [m.player3.id, m.player4.id])
+                 // P2: Partner P1, Opponents P3, P4
+                 updateHistory(m.player2.id, m.player1.id, [m.player3.id, m.player4.id])
+                 // P3: Partner P4, Opponents P1, P2
+                 updateHistory(m.player3.id, m.player4.id, [m.player1.id, m.player2.id])
+                 // P4: Partner P3, Opponents P1, P2
+                 updateHistory(m.player4.id, m.player3.id, [m.player1.id, m.player2.id])
             })
         }
 
