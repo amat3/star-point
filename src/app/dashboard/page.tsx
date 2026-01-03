@@ -13,7 +13,10 @@ import { CreatedMatchesList } from '@/components/matches/lists/CreatedMatchesLis
 import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { LevelCard } from '@/components/dashboard/LevelCard'
-import { PlusCircle, Trophy, Activity, Medal } from 'lucide-react'
+import { PlusCircle, Trophy, Activity, Medal, CalendarDays } from 'lucide-react'
+import { getOpenEvents } from '@/app/actions/events'
+import { EventCard } from '@/components/events/EventCard'
+import { CreateEventDialog } from '@/components/events/CreateEventDialog'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -77,6 +80,8 @@ export default async function DashboardPage() {
     .in('status', ['pending', 'disputed'])
     .eq('creator_id', user.id)
 
+  const openEvents = await getOpenEvents()
+
   return (
     <div className="animate-in fade-in duration-500">
       {/* Header Section */}
@@ -121,6 +126,29 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Next Mixings Section */}
+        <section className="space-y-4">
+           <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                 <CalendarDays className="h-5 w-5 text-primary" />
+                 Próximos Mixings
+              </h2>
+              {userRole === 'admin' && <CreateEventDialog />}
+           </div>
+           
+           {openEvents.length === 0 ? (
+               <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                    <p className="text-muted-foreground text-sm">No hay convocatorias abiertas en este momento.</p>
+               </div>
+           ) : (
+               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                   {openEvents.map(event => (
+                       <EventCard key={event.id} event={event} userId={user.id} userRole={userRole} />
+                   ))}
+               </div>
+           )}
+        </section>
 
         {/* Action Required Section */}
         <section className="space-y-8">
