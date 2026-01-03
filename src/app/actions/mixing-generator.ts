@@ -61,23 +61,42 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
     .eq('match_type', 'mixing') 
   
   const historyMap = new Map<string, Set<string>>()
+  const opponentsMap = new Map<string, Set<string>>()
   
   titulares.forEach((p: any) => {
       historyMap.set(p.user_id, new Set())
+      opponentsMap.set(p.user_id, new Set())
   })
 
-  // Build history (who played with whom as PARTNER)
+  // Build history (who played with whom as PARTNER and OPPONENT)
   if (matches) {
       matches.forEach((m: any) => {
-          // Pair A
-          if (m.player_a1 && m.player_a2) {
-              historyMap.get(m.player_a1)?.add(m.player_a2)
-              historyMap.get(m.player_a2)?.add(m.player_a1)
+          const a1 = m.player_a1
+          const a2 = m.player_a2
+          const b1 = m.player_b1
+          const b2 = m.player_b2
+
+          // Pair A Partners
+          if (a1 && a2) {
+              historyMap.get(a1)?.add(a2)
+              historyMap.get(a2)?.add(a1)
           }
-          // Pair B
-          if (m.player_b1 && m.player_b2) {
-              historyMap.get(m.player_b1)?.add(m.player_b2)
-              historyMap.get(m.player_b2)?.add(m.player_b1)
+          // Pair B Partners
+          if (b1 && b2) {
+              historyMap.get(b1)?.add(b2)
+              historyMap.get(b2)?.add(b1)
+          }
+
+          // Opponents (A vs B)
+          // A1 vs B1/B2
+          if (a1) {
+              if (b1) { opponentsMap.get(a1)?.add(b1); opponentsMap.get(b1)?.add(a1); }
+              if (b2) { opponentsMap.get(a1)?.add(b2); opponentsMap.get(b2)?.add(a1); }
+          }
+          // A2 vs B1/B2
+          if (a2) {
+              if (b1) { opponentsMap.get(a2)?.add(b1); opponentsMap.get(b1)?.add(a2); }
+              if (b2) { opponentsMap.get(a2)?.add(b2); opponentsMap.get(b2)?.add(a2); }
           }
       })
   }
@@ -91,7 +110,8 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           full_name: profile.full_name || 'Jugador',
           gender: profile.gender || 'otro',
           court_position: profile.court_position || 'ambos',
-          past_partners: Array.from(historyMap.get(p.user_id) || [])
+          past_partners: Array.from(historyMap.get(p.user_id) || []),
+          past_opponents: Array.from(opponentsMap.get(p.user_id) || [])
       }
   })
 

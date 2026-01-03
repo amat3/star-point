@@ -7,7 +7,8 @@ export interface MixingParticipant {
   // URLs for avatar if needed involved in UI, but logic only needs ID/Rating/Pos
   full_name: string
   // Map of user_ids they have played with in this event
-  past_partners: Set<string>
+  past_partners: string[]
+  past_opponents: string[]
 }
 
 export interface MixingConfig {
@@ -42,7 +43,20 @@ export function generateMixingRound(
   config: MixingConfig
 ): RoundProposal {
   // 1. Sort by Rating (High to Low)
-  const sorted = [...participants].sort((a, b) => b.rating - a.rating)
+  // If 'avoidRepetition' is ON, we add a small "jitter" to the rating to allow
+  // players on the border of a court group (e.g. #4 and #5) to swap places.
+  // This promotes "socialization" across courts as requested.
+  const sorted = [...participants].sort((a, b) => {
+      if (config.avoidRepetition) {
+          // Jitter range: +/- 0.25 (Total 0.5 variation)
+          // Enough to mix close levels, but preserves general hierarchy.
+          const noise = 0.5 
+          const ratingA = a.rating + ((Math.random() - 0.5) * noise)
+          const ratingB = b.rating + ((Math.random() - 0.5) * noise)
+          return ratingB - ratingA
+      }
+      return b.rating - a.rating
+  })
 
   const matches: MatchProposal[] = []
   const leftovers: MixingParticipant[] = []
@@ -79,12 +93,14 @@ export function generateMixingRound(
     for (const perm of permutations) {
         let score = 0
         const pairs = perm.pairs as [MixingParticipant, MixingParticipant][]
+        const pairA = pairs[0]
+        const pairB = pairs[1]
         
         // A. Balance Strategy Score
         if (config.balanceStrategy === 'similar_levels') {
             // Prefer balanced matches (Team A rating approx Team B rating)
-            const teamARating = pairs[0][0].rating + pairs[0][1].rating
-            const teamBRating = pairs[1][0].rating + pairs[1][1].rating
+            const teamARating = pairA[0].rating + pairA[1].rating
+            const teamBRating = pairB[0].rating + pairB[1].rating
             const diff = Math.abs(teamARating - teamBRating)
             // Lower diff is better. 
             // Max typical rating sum diff might be ~2-3. We subtract diff * 10.
@@ -106,12 +122,34 @@ export function generateMixingRound(
         
         // C. Repetition Score
         if (config.avoidRepetition) {
+            // 1. Avoid repeating Partners (Critical) - Check Pair Internal
             pairs.forEach(pair => {
                 const [a, b] = pair
-                if (a.past_partners.has(b.id) || b.past_partners.has(a.id)) {
-                    score -= 1000 // Huge penalty for repeating pairs
+                if (a.past_partners.includes(b.id) || b.past_partners.includes(a.id)) {
+                    score -= 2000 // Huge penalty for repeating pairs
                 }
             })
+
+            // 2. Avoid repeating Opponents (High Priority) - Check Pair A vs Pair B
+            const [a1, a2] = pairA
+            const [b1, b2] = pairB
+            
+            // Check if any A played against any B
+            // A1 vs B1, A1 vs B2, A2 vs B1, A2 vs B2
+            let repetitionCount = 0
+            if (a1.past_opponents.includes(b1.id)) repetitionCount++
+            if (a1.past_opponents.includes(b2.id)) repetitionCount++
+            if (a2.past_opponents.includes(b1.id)) repetitionCount++
+            if (a2.past_opponents.includes(b2.id)) repetitionCount++
+            
+            // Penalty per repetition
+            score -= (repetitionCount * 500)
+            
+            // 3. Avoid previous partners becoming opponents? (Optional)
+            if (a1.past_partners.includes(b1.id)) score -= 200
+            if (a1.past_partners.includes(b2.id)) score -= 200
+            if (a2.past_partners.includes(b1.id)) score -= 200
+            if (a2.past_partners.includes(b2.id)) score -= 200
         }
         
         if (score > bestScore) {
