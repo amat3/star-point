@@ -91,7 +91,8 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
 
       if (isMixing) {
         if (values.games_a === undefined || values.games_b === undefined) throw new Error("Faltan juegos")
-        if (values.games_a === values.games_b) throw new Error("No se permite empate en Mixing")
+        // Draws allowed in Mixing
+        // if (values.games_a === values.games_b) throw new Error("No se permite empate en Mixing")
         
         payload = {
             games_a: values.games_a,

@@ -1,0 +1,1 @@
+ALTER TABLE matches ADD COLUMN round_number INTEGER DEFAULT 1;

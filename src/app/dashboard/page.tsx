@@ -54,7 +54,11 @@ export default async function DashboardPage() {
       p_a1:profiles!player_a1(full_name),
       p_a2:profiles!player_a2(full_name),
       p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name)
+      p_b2:profiles!player_b2(full_name),
+      last_updated_by,
+      court_number,
+      event:events(title, start_time, duration_minutes, rounds),
+      created_at
     `)
     .in('status', ['pending', 'disputed'])
 
@@ -75,10 +79,13 @@ export default async function DashboardPage() {
       p_a1:profiles!player_a1(full_name),
       p_a2:profiles!player_a2(full_name),
       p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name)
+      p_b2:profiles!player_b2(full_name),
+      court_number,
+      event:events(title, start_time, duration_minutes, rounds)
     `)
     .in('status', ['pending', 'disputed'])
     .eq('creator_id', user.id)
+    .neq('match_type', 'mixing')
 
   const openEvents = await getOpenEvents()
 

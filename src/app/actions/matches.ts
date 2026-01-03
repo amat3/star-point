@@ -48,6 +48,20 @@ export async function confirmMatch(matchId: string) {
     return { success: false, error: 'Este partido ya fue validado anteriormente' }
   }
 
+  // Check Auth and Permissions
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Acceso denegado' }
+
+  // Check Admin
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const isAdmin = profile?.role === 'admin'
+  const isCreator = match.creator_id === user.id
+  const isParticipant = [match.player_a1, match.player_a2, match.player_b1, match.player_b2].includes(user.id)
+
+  if (!isAdmin && !isCreator && !isParticipant) {
+     return { success: false, error: 'No tienes permisos para confirmar este partido' }
+  }
+
   const isMixing = match.match_type === 'mixing'
   if (isMixing) {
     console.log('🔄 Procesando partido tipo MIXING (Factor 0.25)')
@@ -224,20 +238,27 @@ export async function updateMatchScore(
   // 1. Get Match to verify permission
   const { data: match, error: fetchError } = await supabase
     .from('matches')
-    .select('creator_id, status, match_type')
+    .select('creator_id, status, match_type, player_a1, player_a2, player_b1, player_b2')
     .eq('id', matchId)
     .single()
 
   if (fetchError || !match) throw new Error('Partido no encontrado')
 
-  // 2. Permission check (Creator or Admin)
+  // 2. Permission check (Creator, Admin, or Participant)
   const isCreator = match.creator_id === user.id
   
   if (!isCreator) {
-    // Check if admin
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
-      throw new Error('No tienes permiso para editar este partido')
+    // Check if participant
+    const isParticipant = [match.player_a1, match.player_a2, match.player_b1, match.player_b2].includes(user.id)
+    
+    if (isParticipant) {
+        // Participants can only edit if status is pending/disputed (checked below)
+    } else {
+        // Check if admin
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+        if (profile?.role !== 'admin') {
+          throw new Error('No tienes permiso para editar este partido')
+        }
     }
   }
 
@@ -250,7 +271,8 @@ export async function updateMatchScore(
   const updateData: any = {
     score_details: data.score_details,
     // Reset disputes if edited
-    status: 'pending' 
+    status: 'pending',
+    last_updated_by: user.id 
   }
 
   if (match.match_type === 'mixing') {

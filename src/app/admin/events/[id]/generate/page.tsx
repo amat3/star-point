@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveRoundMatches } from '@/app/actions/mixing-generator'
 import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
@@ -12,11 +12,15 @@ import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface PageProps {
-  params: { id: string }
+  params: any // Deprecated in client components usually
 }
 
-export default function GenerateMixPage({ params }: PageProps) {
+export default function GenerateMixPage({ params: propParams }: PageProps) {
   const router = useRouter()
+  // Safer way to get params in client component
+  const params = useParams()
+  const id = params?.id as string
+  
   const [participants, setParticipants] = useState<MixingParticipant[]>([])
   const [loadingData, setLoadingData] = useState(true)
   
@@ -43,64 +47,85 @@ export default function GenerateMixPage({ params }: PageProps) {
   const [maxSpots, setMaxSpots] = useState(0)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (id) {
+        console.log("Loading data for event ID:", id)
+        loadData()
+    } else {
+        console.error("No ID found in params")
+    }
+  }, [id])
 
   async function loadData() {
     try {
-      const { participants: data, max_spots, rounds } = await getEventMixingData(params.id)
-      setParticipants(data)
+      console.log("Calling getEventMixingData...")
+      const { participants: data, max_spots, rounds } = await getEventMixingData(id)
+      console.log("Data received:", { count: data.length, max_spots, rounds })
+      
+      // Convert serialized Array back to Set
+      const participantsWithSets = data.map((p: any) => ({
+          ...p,
+          past_partners: new Set(p.past_partners)
+      }))
+      setParticipants(participantsWithSets)
       setMaxSpots(max_spots)
       setRoundsCount(rounds)
-    } catch (error) {
-      toast.error('Error cargando participantes')
-      console.error(error)
+    } catch (error: any) {
+      toast.error(`Error cargando: ${error.message}`)
+      console.error("LoadData Error:", error)
     } finally {
       setLoadingData(false)
     }
   }
 
   function handleGenerate() {
-    if (participants.length < 4) {
-      toast.error('Necesitas al menos 4 jugadores para generar una ronda')
-      return
-    }
-    
-    if (participants.length < maxSpots) {
-        toast.error(`La lista no está completa (${participants.length}/${maxSpots}). Faltan jugadores.`)
-        return
-    }
-
-    const newProposals: RoundProposal[] = []
-    
-    // We need a working copy of participants to update past_partners locally during the loop
-    // Deep copy participants structure properly (Set needs recreation)
-    let currentParticipants: MixingParticipant[] = participants.map(p => ({
-        ...p,
-        past_partners: new Set(p.past_partners)
-    }))
-
-    for (let i = 0; i < roundsCount; i++) {
-        const result = generateMixingRound(currentParticipants, config)
-        newProposals.push(result)
+    console.log("HANDLE GENERATE CLICKED")
+    try {
+        if (participants.length < 4) {
+          console.log("Not enough participants")
+          toast.error('Necesitas al menos 4 jugadores para generar una ronda')
+          return
+        }
         
-        // Update history for next round
-        result.matches.forEach(m => {
-             // For each pair in A and B
-             // Update P1 <-> P2
-             currentParticipants.find(p => p.id === m.player1.id)?.past_partners.add(m.player2.id)
-             currentParticipants.find(p => p.id === m.player2.id)?.past_partners.add(m.player1.id)
-             
-             // Update P3 <-> P4
-             currentParticipants.find(p => p.id === m.player3.id)?.past_partners.add(m.player4.id)
-             currentParticipants.find(p => p.id === m.player4.id)?.past_partners.add(m.player3.id)
-        })
-    }
+        console.log("Checking maxSpots", participants.length, maxSpots)
+        if (participants.length < maxSpots) {
+            toast.error(`La lista no está completa (${participants.length}/${maxSpots}). Faltan jugadores.`)
+            return
+        }
 
-    setProposals(newProposals)
-    setSelectedPlayerId(null)
-    setActiveTab("round-1")
-    toast.success(`${roundsCount} rondas generadas`)
+        const newProposals: RoundProposal[] = []
+        
+        console.log("Cloning participants...")
+        let currentParticipants: MixingParticipant[] = participants.map(p => ({
+            ...p,
+            past_partners: new Set(p.past_partners)
+        }))
+
+        console.log("Starting loop", roundsCount)
+        for (let i = 0; i < roundsCount; i++) {
+            console.log("Generating round", i + 1)
+            const result = generateMixingRound(currentParticipants, config)
+            console.log("Round result", result)
+            newProposals.push(result)
+            
+            // Update history for next round
+            result.matches.forEach(m => {
+                 currentParticipants.find(p => p.id === m.player1.id)?.past_partners.add(m.player2.id)
+                 currentParticipants.find(p => p.id === m.player2.id)?.past_partners.add(m.player1.id)
+                 
+                 currentParticipants.find(p => p.id === m.player3.id)?.past_partners.add(m.player4.id)
+                 currentParticipants.find(p => p.id === m.player4.id)?.past_partners.add(m.player3.id)
+            })
+        }
+
+        console.log("Setting proposals", newProposals)
+        setProposals(newProposals)
+        setSelectedPlayerId(null)
+        setActiveTab("round-1")
+        toast.success(`${roundsCount} rondas generadas`)
+    } catch (e: any) {
+        console.error("CRITICAL ERROR IN GENERATE:", e)
+        toast.error(`Error crítico: ${e.message}`)
+    }
   }
 
   function handleSwap(roundIndex: number, targetPlayerId: string) {
@@ -172,9 +197,11 @@ export default function GenerateMixPage({ params }: PageProps) {
         try {
             // Flatten all matches from all rounds
             const allMatches = proposals.flatMap(p => p.matches)
-            await saveRoundMatches(params.id, allMatches)
+            for (const [index, proposal] of proposals.entries()) {
+                await saveRoundMatches(id, proposal.matches, index + 1)
+            }
             toast.success('Rondas publicadas exitosamente')
-            router.push(`/admin/events/${params.id}`)
+            router.push(`/dashboard`)
         } catch (e) {
             toast.error('Error guardando las rondas')
             console.error(e)
@@ -267,7 +294,7 @@ export default function GenerateMixPage({ params }: PageProps) {
 
       {/* Results */}
       {proposals.length > 0 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Propuesta Generada</h2>
                 <Button onClick={handleSave} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
@@ -292,30 +319,36 @@ export default function GenerateMixPage({ params }: PageProps) {
                                         <CardTitle className="text-sm font-bold text-center">Pista {match.courtNumber}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-4">
-                                        <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center justify-between gap-2">
                                             {/* Team A */}
-                                            <div className="flex justify-between gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
+                                            <div className="flex-1 flex flex-col gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
                                                 <PlayerItem 
                                                     player={match.pairA[0]} 
                                                     isSelected={selectedPlayerId === match.pairA[0].id}
                                                     onSelect={() => selectedPlayerId === match.pairA[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[0].id) : setSelectedPlayerId(match.pairA[0].id))}
                                                 />
-                                                <div className="text-xs font-bold self-center text-muted-foreground">VS</div>
+                                                <div className="h-px bg-blue-200 dark:bg-blue-800 w-full" />
                                                 <PlayerItem 
                                                     player={match.pairA[1]} 
                                                     isSelected={selectedPlayerId === match.pairA[1].id}
                                                     onSelect={() => selectedPlayerId === match.pairA[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[1].id) : setSelectedPlayerId(match.pairA[1].id))}
                                                 />
                                             </div>
-                                            
+
+                                            {/* VS */}
+                                            <div className="flex flex-col items-center justify-center px-1">
+                                                <span className="text-xl font-black text-muted-foreground/50">VS</span>
+                                            </div>
+
                                             {/* Team B */}
-                                            <div className="flex justify-between gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
+                                            <div className="flex-1 flex flex-col gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
                                                 <PlayerItem 
                                                     player={match.pairB[0]} 
                                                     isSelected={selectedPlayerId === match.pairB[0].id}
                                                     onSelect={() => selectedPlayerId === match.pairB[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[0].id) : setSelectedPlayerId(match.pairB[0].id))}
                                                 />
-                                                <div className="text-xs font-bold self-center text-muted-foreground">VS</div>
+                                                <div className="h-px bg-red-200 dark:bg-red-800 w-full" />
                                                 <PlayerItem 
                                                     player={match.pairB[1]} 
                                                     isSelected={selectedPlayerId === match.pairB[1].id}
@@ -323,6 +356,7 @@ export default function GenerateMixPage({ params }: PageProps) {
                                                 />
                                             </div>
                                         </div>
+                                    </div>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -358,7 +392,9 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
                 ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-accent'}
             `}
         >
-            <div className="font-bold text-sm truncate w-full text-center">{player.full_name.split(' ')[0]}</div>
+            <div className="font-bold text-xs sm:text-sm truncate w-full text-center" title={player.full_name}>
+                {player.full_name}
+            </div>
             <div className="flex gap-1 text-[10px] text-muted-foreground">
                 <span>{player.rating.toFixed(1)}</span>
                 <span>•</span>

@@ -10,8 +10,9 @@ import { confirmMatch } from '@/app/actions/matches'
 import { disputeMatch } from '@/app/actions/dispute'
 import { deleteMatch } from '@/app/actions/admin-matches'
 import { toast } from 'sonner'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react'
 import { Match } from '@/types'
+import { EditMatchDialog } from '../dialogs/EditMatchDialog'
 
 interface ValidationListProps {
   matches: Match[]
@@ -21,6 +22,7 @@ interface ValidationListProps {
 
 export function ValidationList({ matches, userId, userRole }: ValidationListProps) {
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const router = useRouter()
 
   const handleAction = async (matchId: string, action: 'confirm' | 'delete' | 'dispute') => {
@@ -73,12 +75,52 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
 
   return (
     <div className="space-y-4">
+      {editingMatch && (
+        <EditMatchDialog 
+            match={editingMatch} 
+            open={!!editingMatch} 
+            onOpenChange={(open) => !open && setEditingMatch(null)} 
+        />
+      )}
+
       {matches.map((match) => (
         <div 
           key={match.id} 
           className="flex flex-col space-y-4 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-sm animate-in zoom-in-95 duration-300"
         >
+            
+            {/* Event & Court Banner */}
+            {match.event && match.event.start_time && (
+                <div className="w-full text-center bg-gray-50 dark:bg-gray-900/50 py-1 rounded-t border-b border-gray-100 dark:border-gray-800 text-[10px] sm:text-xs text-muted-foreground font-medium truncate px-2 mb-2 -mt-4 -ml-4 w-[calc(100%+2rem)] pt-2">
+                    {(() => {
+                        const startDate = new Date(match.event?.start_time!);
+                        const totalDuration = match.event?.duration_minutes || 90;
+                        const rounds = match.event?.rounds || 1;
+                        const durationPerRound = totalDuration / rounds;
+                        
+                        const roundOffset = ((match.round_number || 1) - 1) * durationPerRound;
+                        const matchDate = new Date(startDate.getTime() + roundOffset * 60000);
+                        
+                        const dateStr = matchDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+                            .replace(/ de /g, ' '); // Remove 'de' to match requested format "miércoles, 7 enero"
+                        
+                        const timeStr = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        // Capitalize first letter
+                        const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+                        return (
+                            <span className="font-bold text-primary">
+                                {formattedDate} · {timeStr} {match.court_number && ` · Pista ${match.court_number}`}
+                            </span>
+                        );
+                    })()}
+                </div>
+            )}
+            
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            
+            
             <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               {/* Team A */}
               <div className="text-right space-y-0.5">
@@ -111,7 +153,22 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
               </div>
             </div>
 
+
+
             <div className="flex w-full sm:w-auto items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">
+               {/* allow Edit if user is participant (implied by seeing it here) or admin */}
+               {((match.status === 'pending' && match.score_details !== '0-0') || match.status === 'disputed') && (
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   className="flex-1 sm:flex-none h-9 w-9 p-0 border-gray-200"
+                   onClick={() => setEditingMatch(match)}
+                   title="Editar resultado"
+                 >
+                   <Pencil className="w-4 h-4 text-gray-500" />
+                 </Button>
+               )}
+
                {(userRole === 'admin' || userId === match.creator_id) && (
                  <Button 
                    variant="destructive" 
@@ -151,16 +208,31 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
                   </Badge>
                )}
               
-              {match.status !== 'disputed' && (
-                <Button 
-                  size="sm"
-                  className="flex-1 sm:flex-none text-white shadow-md shadow-primary/20 h-9 font-bold"
-                  onClick={() => handleAction(match.id, 'confirm')}
-                  disabled={loadingIds.has(match.id)}
-                >
-                  {loadingIds.has(match.id) ? '...' : 'Confirmar'}
-                </Button>
-              )}
+               {match.status !== 'disputed' && (
+                 match.last_updated_by === userId && userRole !== 'admin' ? (
+                     <div className="flex items-center text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                         Esperando rival...
+                     </div>
+                 ) : match.score_details === '0-0' ? (
+                     <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 sm:flex-none h-9 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-100 dark:border-amber-900/30 font-medium"
+                        onClick={() => setEditingMatch(match)}
+                    >
+                         ✏️ Introduce resultado
+                     </Button>
+                 ) : (
+                    <Button 
+                    size="sm"
+                    className="flex-1 sm:flex-none text-white shadow-md shadow-primary/20 h-9 font-bold"
+                    onClick={() => handleAction(match.id, 'confirm')}
+                    disabled={loadingIds.has(match.id)}
+                    >
+                    {loadingIds.has(match.id) ? '...' : 'Confirmar'}
+                    </Button>
+                 )
+               )}
             </div>
           </div>
           <div className="text-[10px] text-gray-400 dark:text-gray-500 text-right">

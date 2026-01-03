@@ -19,11 +19,13 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
 
   return (
     <div className="space-y-4">
-      <EditMatchDialog 
-        match={editingMatch!} 
-        open={!!editingMatch} 
-        onOpenChange={(open) => !open && setEditingMatch(null)} 
-      />
+      {editingMatch && (
+        <EditMatchDialog 
+            match={editingMatch} 
+            open={!!editingMatch} 
+            onOpenChange={(open) => !open && setEditingMatch(null)} 
+        />
+      )}
       
       <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
         Mis Partidos Registrados
@@ -34,7 +36,35 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
             key={match.id} 
             className="flex flex-col space-y-3 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm animate-in zoom-in-95 duration-300"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Event & Court Banner */}
+            {match.event && match.event.start_time && (
+                <div className="w-full text-center bg-gray-50 dark:bg-gray-900/50 py-1 rounded-t border-b border-gray-100 dark:border-gray-800 text-[10px] sm:text-xs text-muted-foreground font-medium truncate px-2 mb-2">
+                    {(() => {
+                        const startDate = new Date(match.event?.start_time!);
+                        const totalDuration = match.event?.duration_minutes || 90;
+                        const rounds = match.event?.rounds || 1;
+                        const durationPerRound = totalDuration / rounds;
+                        
+                        const roundOffset = ((match.round_number || 1) - 1) * durationPerRound;
+                        const matchDate = new Date(startDate.getTime() + roundOffset * 60000);
+                        
+                        const dateStr = matchDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+                            .replace(/ de /g, ' ');
+                        
+                        const timeStr = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+                        return (
+                            <span className="font-bold text-primary">
+                                {formattedDate} · {timeStr} {match.court_number && ` · Pista ${match.court_number}`}
+                            </span>
+                        );
+                    })()}
+                </div>
+            )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 pb-4 pt-2">
               <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 {/* Team A */}
                 <div className="text-right space-y-0.5">
