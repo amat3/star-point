@@ -297,4 +297,38 @@ export async function updateMatchScore(
 
   revalidatePath('/dashboard')
   return { success: true }
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
+export async function getUserMatches(userId: string, limit: number, page: number) {
+  const supabase = await createClient()
+
+  // Calculate range for pagination
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  const { data, count, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      event:events(title),
+      player_a1:profiles!player_a1(full_name),
+      player_a2:profiles!player_a2(full_name),
+      player_b1:profiles!player_b1(full_name),
+      player_b2:profiles!player_b2(full_name)
+    `, { count: 'exact' })
+    .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
+    .eq('status', 'confirmed') // Only finished/confirmed matches
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    console.error('Error fetching user matches:', error)
+    return { matches: [], totalCount: 0, error: error.message }
+  }
+
+  // Transform data to flat structure if needed, or keep as is.
+  // We'll keep it as is but careful with types in the client component.
+  return { matches: data, totalCount: count || 0, error: null }
 }

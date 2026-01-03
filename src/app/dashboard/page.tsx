@@ -13,12 +13,19 @@ import { CreatedMatchesList } from '@/components/matches/lists/CreatedMatchesLis
 import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { LevelCard } from '@/components/dashboard/LevelCard'
+import { ViewToggle } from '@/components/dashboard/ViewToggle'
+import { MatchHistory } from '@/components/dashboard/MatchHistory'
 import { PlusCircle, Trophy, Activity, Medal, CalendarDays } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
 
-export default async function DashboardPage() {
+interface DashboardProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function DashboardPage(props: DashboardProps) {
+  const searchParams = await props.searchParams
   const supabase = await createClient()
 
   const {
@@ -37,7 +44,11 @@ export default async function DashboardPage() {
     .single()
 
   // Fallback defaults if profile doesn't exist yet (or handle error)
-  const userRole = profile?.role ?? 'player'
+  const realRole = profile?.role ?? 'player'
+  // If user is admin AND ?view=player is present, downgrade effective role to player
+  const isViewPlayer = searchParams?.view === 'player'
+  const userRole = (realRole === 'admin' && isViewPlayer) ? 'player' : realRole
+
   const userLevel = profile?.rating?.toFixed(2) ?? '0.00'
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
   const matchesPlayed = profile?.matches_played ?? 0
@@ -72,7 +83,7 @@ export default async function DashboardPage() {
   const { data: pendingMatches } = await pendingQuery
 
   // Fetch Created Matches (User IS creator and pending)
-  const { data: createdMatches } = await supabase
+  let createdQuery = supabase
     .from('matches')
     .select(`
       *,
@@ -86,6 +97,12 @@ export default async function DashboardPage() {
     .in('status', ['pending', 'disputed'])
     .eq('creator_id', user.id)
     .neq('match_type', 'mixing')
+
+  if (userRole !== 'admin') {
+      createdQuery = createdQuery.or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+  }
+
+  const { data: createdMatches } = await createdQuery
 
   const openEvents = await getOpenEvents()
 
@@ -104,8 +121,11 @@ export default async function DashboardPage() {
             </div>
           </div>
           
-          {/* Quick Action */}
-          <MatchesActions />
+          <div className="flex items-center gap-2">
+            {realRole === 'admin' && <ViewToggle />}
+            {/* Quick Action */}
+            <MatchesActions />
+          </div>
         </div>
       </header>
 
@@ -155,6 +175,11 @@ export default async function DashboardPage() {
           </div>
 
           <CreatedMatchesList matches={createdMatches || []} />
+        </section>
+
+        {/* Match History Section */}
+        <section>
+          <MatchHistory userId={user.id} />
         </section>
 
       </main>
