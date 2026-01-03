@@ -254,6 +254,12 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                         Pro-Am
                     </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {config.balanceStrategy === 'similar_levels' 
+                        ? 'Equilibra la media de las parejas (A vs B) para partidos reñidos.' 
+                        : 'Junta al mejor de la pista con el de menor nivel (1º+4º vs 2º+3º).'
+                    }
+                </p>
             </div>
 
             {/* Repetition */}
@@ -268,11 +274,14 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                         {config.avoidRepetition ? 'Activado' : 'Desactivado'}
                     </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Prioriza que no repitan pareja los mismos jugadores en este evento.
+                </p>
             </div>
 
             {/* Force Position */}
             <div className="space-y-2">
-                <label className="text-sm font-medium">Forzar Posición</label>
+                <label className="text-sm font-medium">Respetar Posición en Pista</label>
                  <div className="flex gap-2">
                      <Button 
                         variant={config.forcePosition ? 'default' : 'outline'}
@@ -282,6 +291,9 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                         {config.forcePosition ? 'Activado' : 'Desactivado'}
                     </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Busca parejas complementarias (Drive + Revés) y evita juntar a dos jugadores del mismo lado.
+                </p>
             </div>
 
           </div>
