@@ -10,9 +10,21 @@ if (!url || !service_role_key) {
 
 const supabase = createClient(url, service_role_key);
 
-const EVENT_ID = '157dea10-cf32-4ecb-8009-a2628cce6dbf'; // Mixing Padel
+// 1. Get Event Info
+async function getLatestEventId() {
+    const { data, error } = await supabase
+        .from('events')
+        .select('id, title')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+    if (error) throw error;
+    console.log(`Found latest event: ${data.title} (${data.id})`);
+    return data.id;
+}
 
 async function fillEvent() {
+    const EVENT_ID = await getLatestEventId();
     console.log(`Filling event ${EVENT_ID}...`);
 
     // 1. Get Event Info
