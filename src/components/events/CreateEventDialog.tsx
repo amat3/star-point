@@ -32,7 +32,8 @@ const formSchema = z.object({
   date: z.string(), // Relaxed validation for now
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
   max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
-  rounds: z.number().min(1).max(10).default(1)
+  rounds: z.number().min(1).max(10).default(1),
+  duration_minutes: z.number().min(30).default(90)
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -42,13 +43,14 @@ export function CreateEventDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: "Mixing Padel",
       max_spots: 12,
       date: new Date().toISOString().split('T')[0],
       time: "20:00",
-      rounds: 1
+      rounds: 1,
+      duration_minutes: 90
     }
   })
 
@@ -62,7 +64,8 @@ export function CreateEventDialog() {
         title: values.title,
         start_time: dateTime.toISOString(),
         max_spots: values.max_spots,
-        rounds: values.rounds
+        rounds: values.rounds,
+        duration_minutes: values.duration_minutes
       })
 
       toast.success("Evento creado correctamente")
@@ -139,12 +142,34 @@ export function CreateEventDialog() {
 
             <FormField
               control={form.control}
+              name="duration_minutes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duración (minutos)</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(30, field.value - 30))}>-</Button>
+                        <Input type="number" {...field} className="text-center" readOnly />
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 30)}>+</Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="max_spots"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Plazas Disponibles</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(4, field.value - 4))}>-</Button>
+                        <Input type="number" {...field} className="text-center" readOnly />
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 4)}>+</Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

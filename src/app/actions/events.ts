@@ -19,6 +19,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
         start_time, 
         max_spots,
         rounds,
+        duration_minutes,
         status,
         created_by
     `)
@@ -74,6 +75,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     return {
       ...event,
       rounds: event.rounds || 1,
+      duration_minutes: event.duration_minutes || 90,
       participants_count: rawParticipants?.length || 0,
       participants: formattedParticipants,
       is_joined: isJoined
@@ -135,7 +137,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
   try {
     const supabase = await createClient()
     
@@ -162,6 +164,7 @@ export async function createEvent(data: { title: string, start_time: string, max
         start_time: data.start_time,
         max_spots: data.max_spots,
         rounds: data.rounds,
+        duration_minutes: data.duration_minutes,
         created_by: user.id,
         status: 'open'
       })
@@ -197,7 +200,7 @@ export async function getEventParticipants(eventId: string): Promise<EventPartic
   return data as unknown as EventParticipant[]
 }
 
-export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number }) {
+export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -213,7 +216,8 @@ export async function updateEvent(eventId: string, data: { title: string, start_
         title: data.title,
         start_time: data.start_time,
         max_spots: data.max_spots,
-        rounds: data.rounds
+        rounds: data.rounds,
+        duration_minutes: data.duration_minutes
       })
       .eq('id', eventId)
 
@@ -263,7 +267,15 @@ export async function removeParticipant(eventId: string, userId: string) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    const { error } = await supabase
+    // Use Service Role for Admin actions to bypass RLS
+    const { createClient: createAdminClient } = require('@supabase/supabase-js')
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false } }
+    )
+
+    const { error } = await adminSupabase
       .from('event_participants')
       .delete()
       .eq('event_id', eventId)

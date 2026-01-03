@@ -127,7 +127,7 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
         </div>
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2 text-primary" />
-            <span>{formatTime(event.start_time)}</span>
+            <span>{formatTime(event.start_time)} ({event.duration_minutes || 90} min)</span>
         </div>
         
         {/* Participants List */}

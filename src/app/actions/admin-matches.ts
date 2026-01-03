@@ -36,8 +36,9 @@ export async function deleteMatch(matchId: string) {
     return { success: false, error: 'No tienes permiso para eliminar este partido' }
   }
 
-  // Intentar borrado como Admin (Service Role) si es necesario y posible
-  if (isAdmin && !isCreator) {
+  // Intentar borrado como Admin (Service Role) si es Admin (independientemente de si es creador)
+  // Esto asegura que el admin siempre pueda borrar bypassing RLS
+  if (isAdmin) {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ Falta SUPABASE_SERVICE_ROLE_KEY para borrar como admin')
       return { success: false, error: 'Configuración incompleta: Falta la clave de servicio (Service Role Key). Pídela al desarrollador.' }

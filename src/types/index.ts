@@ -20,7 +20,7 @@ export interface Profile {
 export type PlayerOption = Pick<Profile, 'id' | 'full_name'>;
 
 export type MatchStatus = 'pending' | 'confirmed' | 'disputed';
-export type MatchType = 'match' | 'mixing';
+export type MatchType = 'standard' | 'mixing';
 
 export interface Match {
   id: string;
@@ -28,6 +28,8 @@ export interface Match {
   creator_id: string;
   match_type: MatchType;
   status: MatchStatus;
+  event_id?: string;
+  last_updated_by?: string;
   
   // Players
   player_a1: string;
@@ -48,6 +50,11 @@ export interface Match {
   p_a2?: { full_name: string };
   p_b1?: { full_name: string };
   p_b2?: { full_name: string };
+  
+  // Event Metadata
+  court_number?: number;
+  event?: { title: string, start_time?: string, duration_minutes?: number, rounds?: number };
+  round_number?: number;
 }
 
 export interface RatingResult {
