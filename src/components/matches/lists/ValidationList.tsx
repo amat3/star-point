@@ -101,16 +101,19 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
                         const roundOffset = ((match.round_number || 1) - 1) * durationPerRound;
                         const matchDate = new Date(startDate.getTime() + roundOffset * 60000);
                         
+                        // Force hydration match by using suppressHydrationWarning or simpler:
+                        // Just use standard ISO or ensure we use a client component for the date.
+                        // Here we use a trick: format it, but wrap in a span with suppressHydrationWarning
+                        // to tell React it's okay if server/client differ.
+
                         const dateStr = matchDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-                            .replace(/ de /g, ' '); // Remove 'de' to match requested format "miércoles, 7 enero"
+                            .replace(/ de /g, ' '); 
                         
                         const timeStr = matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                        // Capitalize first letter
                         const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
                         return (
-                            <span className="font-bold text-primary">
+                            <span className="font-bold text-primary" suppressHydrationWarning>
                                 {formattedDate} · {timeStr} {match.court_number && ` · Pista ${match.court_number}`}
                             </span>
                         );
@@ -123,16 +126,20 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
             
             <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               {/* Team A */}
-              <div className="text-right space-y-0.5">
+              <div className="text-right space-y-0.5 min-w-0">
                 <div className="text-[10px] uppercase tracking-wider text-primary font-bold">Pareja A</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  <p className="truncate">{match.p_a1?.full_name}</p>
-                  <p className="truncate">{match.p_a2?.full_name}</p>
+                  <p className="truncate" title={match.p_a1?.full_name}>
+                    {match.p_a1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                  </p>
+                  <p className="truncate" title={match.p_a2?.full_name}>
+                    {match.p_a2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                  </p>
                 </div>
               </div>
 
               {/* VS & Score */}
-              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative">
+              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative shrink-0">
                 {match.match_type === 'mixing' ? (
                    <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-primary/10 text-primary hover:bg-primary/20">Mixing</Badge>
                 ) : (
@@ -144,11 +151,15 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
               </div>
 
               {/* Team B */}
-              <div className="text-left space-y-0.5">
+              <div className="text-left space-y-0.5 min-w-0">
                 <div className="text-[10px] uppercase tracking-wider text-secondary font-bold">Pareja B</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  <p className="truncate">{match.p_b1?.full_name}</p>
-                  <p className="truncate">{match.p_b2?.full_name}</p>
+                  <p className="truncate" title={match.p_b1?.full_name}>
+                    {match.p_b1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                  </p>
+                  <p className="truncate" title={match.p_b2?.full_name}>
+                    {match.p_b2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                  </p>
                 </div>
               </div>
             </div>
