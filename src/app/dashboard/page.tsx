@@ -14,7 +14,6 @@ import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { LevelCard } from '@/components/dashboard/LevelCard'
 import { ViewToggle } from '@/components/dashboard/ViewToggle'
-import { MatchHistory } from '@/components/dashboard/MatchHistory'
 import { PlusCircle, Trophy, Activity, Medal, CalendarDays, ClipboardCheck, ListChecks, History, ChevronRight } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
@@ -188,14 +187,17 @@ export default async function DashboardPage(props: DashboardProps) {
 
         {/* Match History Link */}
         <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  Historial de Partidos
+              </h2>
+          </div>
           <Link href="/history" className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                    <History className="h-5 w-5" />
-                </div>
+
                 <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Historial de Partidos</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Consulta todos tus resultados anteriores</p>
+                    <p className="text-muted-foreground text-sm">Consulta y filtra todos tus resultados anteriores</p>
                 </div>
              </div>
              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors" />
