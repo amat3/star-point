@@ -15,10 +15,17 @@ interface CreatedMatchesListProps {
 export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
 
-  if (matches.length === 0) return null
+  if (matches.length === 0) {
+    return (
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center gap-2">
+            <p className="text-muted-foreground text-sm">No has registrado ningún partido pendiente.</p>
+        </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white/50 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-100 dark:border-gray-800">
+      <div className="space-y-4">
       {editingMatch && (
         <EditMatchDialog 
             match={editingMatch} 
@@ -27,9 +34,6 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
         />
       )}
       
-      <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-        Mis Partidos Registrados
-      </h2>
     <div className="space-y-3">
         {matches.map((match) => (
           <div 
@@ -128,6 +132,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   )

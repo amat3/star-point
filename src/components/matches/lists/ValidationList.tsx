@@ -65,16 +65,15 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
 
   if (matches.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
-          <p>No tienes partidos pendientes de validar.</p>
-        </CardContent>
-      </Card>
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center gap-2">
+            <p className="text-muted-foreground text-sm">No tienes partidos pendientes de validar.</p>
+        </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white/50 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-100 dark:border-gray-800">
+      <div className="space-y-4">
       {editingMatch && (
         <EditMatchDialog 
             match={editingMatch} 
@@ -251,6 +250,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
           </div>
         </div>
       ))}
+      </div>
     </div>
   )
 }

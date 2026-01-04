@@ -47,7 +47,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --background: hsl(43 19% 93%);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -121,6 +121,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1 {
+    @apply scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl;
+  }
+  h2 {
+    @apply scroll-m-20 border-b pb-2 text-2xl font-semibold tracking-tight first:mt-0;
+  }
+  h3 {
+    @apply scroll-m-20 text-xl font-semibold tracking-tight;
   }
 }
 
