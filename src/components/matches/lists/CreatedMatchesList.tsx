@@ -68,7 +68,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
             )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 pb-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                 {/* Team A */}
                 <div className="text-right space-y-0.5 min-w-0">
@@ -109,19 +109,19 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex w-full sm:w-auto items-center justify-center sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">
                  {(match.status === 'pending' || match.status === 'disputed') && (
                      <Button 
-                        variant="ghost" 
+                        variant="outline" 
                         size="sm" 
-                        className="h-8 w-8 p-0"
+                        className="flex-none h-9 w-9 p-0 border-gray-200"
                         onClick={() => setEditingMatch(match)}
                         title="Editar resultado"
                      >
-                        <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        <Pencil className="h-4 w-4 text-gray-500" />
                      </Button>
                  )}
-                 <div className="flex items-center justify-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full text-[10px] font-bold border border-amber-100 dark:border-amber-900/30 uppercase tracking-tight">
+                 <div className="flex items-center justify-center space-x-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 h-9 rounded-2xl text-[10px] font-bold border border-amber-100 dark:border-amber-900/30 uppercase tracking-tight">
                     <Clock className="h-3 w-3" />
                     <span>{match.status === 'disputed' ? 'Impugnado' : 'Pendiente'}</span>
                  </div>
