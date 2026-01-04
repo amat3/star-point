@@ -1,37 +1,48 @@
 # StarPoint 🎾
 
-**StarPoint** es una PWA (Progressive Web App) moderna diseñada para gestionar partidos, rankings y niveles de jugadores de pádel de forma justa y automatizada. Creada con **Next.js 14**, **Supabase** y **TailwindCSS**.
+**StarPoint** es una PWA (Progressive Web App) moderna diseñada para gestionar partidos, rankings y niveles de jugadores de pádel de forma justa y automatizada. Creada con **Next.js 16**, **Supabase** y **TailwindCSS**.
 
 ## ✨ Características Principales
 
+### 🔄 Sistema de Mixing Automatizado (Nuevo)
+Gestión integral de eventos tipo "Mixing" (Americano/Pozo):
+- **Convocatorias**: Los admins crean eventos con fecha, hora, duración y plazas.
+- **Algoritmo Inteligente**: Genera emparejamientos automáticos maximizando la diversión:
+  - **Balance**: Busca partidos reñidos o equilibra parejas (Pro-Am).
+  - **Variedad**: Penaliza repetir compañeros o rivales consecutivos.
+  - **Posición**: Prioriza parejas Drive + Revés.
+- **Lista de Espera**: Gestión automática de titulares y reservas por orden de inscripción.
+
 ### 🏆 Sistema de Ranking ELO Avanzado
-El corazón de la aplicación es su algoritmo de nivel dinámico, diseñado para mantener el equilibrio competitivo:
-- **K-Factor Dinámico**: Los nuevos jugadores (primeros 10 partidos) suben/bajan más rápido (`K=0.40`) para encontrar su nivel real. Jugadores consolidados tienen un factor más estable (`K=0.15`).
-- **Score Multiplier**: No es lo mismo ganar 6-0 que 7-6. La contundencia de la victoria afecta a los puntos ganados.
-- **Protección contra Farming**: Partidos con diferencia de nivel > 2.0 no afectan al ranking.
-- **Corrección de Inflación**: A partir de nivel 5.0, es más difícil sumar puntos.
+El corazón de la aplicación es su algoritmo de nivel dinámico:
+- **K-Factor Dinámico**: Ajuste rápido para nuevos jugadores (`K=0.40`) y estabilidad para veteranos (`K=0.15`).
+- **Multiplicador de Intensidad**: La contundencia del resultado afecta a los puntos (+6-0 vs +7-6).
+- **Protección**: Partidos desequilibrados (>2.0 diferencia) no afectan al ranking.
 
 ### ⚔️ Gestión de Partidos
-- **Validación en Tiempo Real**: El formulario de "Nuevo Partido" valida reglas de pádel al instante (Sets, Tie-breaks, Super Tie-break de desempate).
-- **Flujo de Confirmación**:
-  - Los partidos creados quedan en estado `pending`.
-  - Deben ser validados por los propios jugadores o un administrador.
-  - Se pueden **Impugnar** si el resultado es incorrecto, bloqueando la confirmación hasta que un Admin intervenga.
-- **Soporte Mixing**: Modalidad especial donde el resultado se basa en juegos totales, no sets (afecta un 25% al ranking).
+- **Validación**: Los partidos requieren confirmación de ambos equipos.
+- **Historial**: Visión detallada de resultados, filtrado y paginación.
+- **Impugnación**: Mecanismo para reportar resultados incorrectos.
 
-### 👥 Perfiles y Estadísticas
-- Gráficos de evolución de nivel.
-- Estadísticas de victorias/derrotas.
-- Historial detallado de partidos con cambios de nivel (ej. `+0.12`).
+### 🎨 Design Soul (Nuevo)
+Interfaz renovada con identidad "Modern Padel":
+- **Identidad**: Colores Deep Navy & Fluor Green.
+- **Navegación**: Optimizada para móvil con barra de navegación inferior y cabeceras limpias.
+- **Feedback**: Estados vacíos (Empty States) amigables y loaders animados.
 
-### 🛠️ Roles
-- **Jugador**: Puede crear partidos, ver estadísticas y validar partidos donde ha participado.
-- **Admin**: Control total. Puede confirmar, eliminar o editar cualquier partido y gestionar usuarios.
+### 🛠️ Roles y Administración
+- **Jugador**: Inscribirse a mixings, registrar partidos, ver estadísticas.
+- **Admin**: 
+  - Generar cruces de mixing con un clic.
+  - Editar/Eliminar/Confirmar cualquier partido.
+  - **Difusión**: Compartir eventos por WhatsApp con formato atractivo (fecha, hora, reservas).
+  - Gestionar usuarios y roles.
+  - *Nota: El registro de nuevos usuarios está actualmente deshabilitado (solo por Admin).*
 
 ## 🚀 Tecnologías
 
-- **Frontend**: Next.js 14 (App Router), React, TailwindCSS, Shadcn/UI.
-- **Backend & Auth**: Supabase (PostgreSQL + Auth).
+- **Frontend**: Next.js 16 (App Router), React 19, TailwindCSS, Lucide Icons.
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime).
 - **Infraestructura**: Vercel.
 
 ## 📱 Instalación (Local)
