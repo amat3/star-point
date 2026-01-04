@@ -29,7 +29,7 @@ export function ShareEventButton({ event }: ShareEventButtonProps) {
         minute: '2-digit'
     })
     
-    const url = `${window.location.origin}/events/${event.id}`
+    const url = `${window.location.origin}`
 
     // 3. Construir mensaje
     // 🎾 ¡NUEVO MIXING! 🎾
