@@ -102,7 +102,9 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-            <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
+            <Link href={`/events/${event.id}`} className="hover:underline">
+                <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
+            </Link>
             {userRole === 'admin' && (
                 <div className="flex gap-1">
                     <Link href={`/admin/events/${event.id}/generate`}>
