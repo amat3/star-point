@@ -185,34 +185,40 @@ export default function LoginPage() {
               </CardHeader>
               <form onSubmit={handleRegister}>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="p-3 mb-4 text-sm text-yellow-800 bg-yellow-100 rounded-lg dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50">
+                    ⚠️ El registro de nuevos usuarios está temporalmente deshabilitado. Contacta con un administrador si necesitas acceso.
+                  </div>
+                  <div className="space-y-2 opacity-60">
                     <Label htmlFor="register-fullname">Nombre Completo</Label>
                     <Input 
                       id="register-fullname" 
                       type="text" 
                       placeholder="Juan Pérez"
+                      disabled
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 opacity-60">
                     <Label htmlFor="register-email">Email</Label>
                     <Input 
                       id="register-email" 
                       type="email" 
                       placeholder="nombre@ejemplo.com"
+                      disabled
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 opacity-60">
                     <Label htmlFor="register-password">Contraseña</Label>
                     <div className="relative">
                       <Input 
                         id="register-password" 
                         type={showPassword ? "text" : "password"}
+                        disabled
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -220,8 +226,9 @@ export default function LoginPage() {
                       />
                       <button
                         type="button"
+                        disabled
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -234,8 +241,8 @@ export default function LoginPage() {
                   )}
                 </CardContent>
                 <CardFooter className="pt-6">
-                  <Button className="w-full" type="submit" disabled={loading}>
-                    {loading ? 'Cargando...' : 'Registrarse'}
+                  <Button className="w-full" type="submit" disabled>
+                    Registrarse (Deshabilitado)
                   </Button>
                 </CardFooter>
               </form>
