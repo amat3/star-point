@@ -15,7 +15,7 @@ import { UserMenu } from '@/components/dashboard/UserMenu'
 import { LevelCard } from '@/components/dashboard/LevelCard'
 import { ViewToggle } from '@/components/dashboard/ViewToggle'
 import { MatchHistory } from '@/components/dashboard/MatchHistory'
-import { PlusCircle, Trophy, Activity, Medal, CalendarDays, ClipboardCheck, ListChecks, History } from 'lucide-react'
+import { PlusCircle, Trophy, Activity, Medal, CalendarDays, ClipboardCheck, ListChecks, History, ChevronRight } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
@@ -123,8 +123,6 @@ export default async function DashboardPage(props: DashboardProps) {
           
           <div className="flex items-center gap-2">
             {realRole === 'admin' && <ViewToggle />}
-            {/* Quick Action */}
-            <MatchesActions />
           </div>
         </div>
       </header>
@@ -182,14 +180,26 @@ export default async function DashboardPage(props: DashboardProps) {
                     <ListChecks className="h-5 w-5 text-primary" />
                     Mis Partidos Registrados
                 </h2>
+                <MatchesActions />
              </div>
              <CreatedMatchesList matches={createdMatches || []} />
           </div>
         </section>
 
-        {/* Match History Section */}
-        <section>
-          <MatchHistory userId={user.id} />
+        {/* Match History Link */}
+        <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
+          <Link href="/history" className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <History className="h-5 w-5" />
+                </div>
+                <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Historial de Partidos</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Consulta todos tus resultados anteriores</p>
+                </div>
+             </div>
+             <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors" />
+          </Link>
         </section>
 
       </main>
