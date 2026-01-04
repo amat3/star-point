@@ -8,7 +8,7 @@ import { ProfileForm } from '@/components/profile/profile-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Activity, Shield, ArrowLeft, Trophy } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -30,8 +30,7 @@ export default async function ProfilePage() {
 
   const userLevel = profile?.rating?.toFixed(2) ?? '0.00'
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
-  const matchesPlayed = profile?.matches_played ?? 0
-  const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%'
+
   const userRole = profile?.role ?? 'player'
 
   return (
@@ -78,36 +77,7 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
-              <Activity className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{matchesPlayed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
-              <Trophy className="h-4 w-4 text-lime-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{winRatio}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rol</CardTitle>
-              <Shield className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold capitalize">{userRole === 'admin' ? 'Admin' : 'Jugador'}</div>
-            </CardContent>
-          </Card>
-        </div>
+
 
         {/* Edit Form */}
         <Card>
@@ -115,7 +85,7 @@ export default async function ProfilePage() {
             <CardTitle>Editar Perfil</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProfileForm userId={user.id} currentName={userName} />
+            <ProfileForm userId={user.id} currentName={userName} profile={profile} />
           </CardContent>
         </Card>
       </main>

@@ -38,7 +38,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
         {matches.map((match) => (
           <div 
             key={match.id} 
-            className="flex flex-col space-y-3 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm animate-in zoom-in-95 duration-300"
+            className="flex flex-col space-y-3 rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 shadow-sm animate-in zoom-in-95 duration-300"
           >
               {/* Event & Court Banner */}
             {match.event && match.event.start_time && (
@@ -84,7 +84,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
 
                 {/* VS & Score */}
-                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50/50 dark:bg-gray-950/50 rounded-lg border border-gray-100/50 dark:border-gray-800/50 min-w-[70px] relative shrink-0">
+                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative shrink-0">
                   {match.match_type === 'mixing' ? (
                      <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Mixing</Badge>
                   ) : (
