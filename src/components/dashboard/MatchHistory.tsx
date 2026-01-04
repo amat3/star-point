@@ -138,7 +138,7 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                                             {scoreText}
                                          </div>
                                      ) : (
-                                         (scoreText.match(/(\d+-\d+)/g) || [scoreText]).map((part, i) => (
+                                         (scoreText.match(/(\d+-\d+)/g) || [scoreText]).map((part: string, i: number) => (
                                             <div key={i} className="text-xl font-mono font-bold tracking-tight bg-secondary/50 px-2 py-1.5 rounded-md whitespace-nowrap text-center">
                                                 {part}
                                             </div>
