@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ChevronLeft, ChevronRight, Calendar, Trophy } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Calendar, Trophy, History } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -47,9 +47,12 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
   const totalPages = Math.ceil(totalCount / 10)
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-medium">Historial de Partidos</CardTitle>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            Historial de Partidos
+        </h2>
         <div className="w-[140px]">
              <Select value={filter} onValueChange={(val: any) => setFilter(val)}>
                 <SelectTrigger>
@@ -62,8 +65,10 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                 </SelectContent>
              </Select>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      </div>
+      <Card className="shadow-lg border-none ring-1 ring-gray-200 dark:ring-gray-800">
+      {/* Removed CardHeader */}
+      <CardContent className="space-y-4 pt-6">
         {loading ? (
              <div className="flex flex-col gap-4">
                  {[1, 2, 3].map(i => (
@@ -71,9 +76,8 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                  ))}
              </div>
         ) : matches.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
-                 <Trophy className="h-8 w-8 opacity-20" />
-                 <p>Aún no tienes partidos registrados. ¡Es hora de saltar a la pista!</p>
+            <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center gap-2">
+                 <p className="text-muted-foreground text-sm">Aún no tienes partidos registrados. ¡Es hora de saltar a la pista!</p>
             </div>
         ) : (
             <div className="flex flex-col gap-3">
@@ -174,6 +178,7 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
         )}
       </CardContent>
     </Card>
+    </div>
   )
 }
 

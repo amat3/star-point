@@ -15,7 +15,7 @@ import { UserMenu } from '@/components/dashboard/UserMenu'
 import { LevelCard } from '@/components/dashboard/LevelCard'
 import { ViewToggle } from '@/components/dashboard/ViewToggle'
 import { MatchHistory } from '@/components/dashboard/MatchHistory'
-import { PlusCircle, Trophy, Activity, Medal, CalendarDays } from 'lucide-react'
+import { PlusCircle, Trophy, Activity, Medal, CalendarDays, ClipboardCheck, ListChecks, History } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
@@ -110,7 +110,7 @@ export default async function DashboardPage(props: DashboardProps) {
     <div className="animate-in fade-in duration-500">
       {/* Header Section */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-800/80 sticky top-0 z-50 transition-all border-b border-gray-100 dark:border-gray-700">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <UserMenu profile={profile} userName={userName} />
             <div className="hidden xs:flex items-center space-x-2 border-l border-gray-200 dark:border-gray-700 pl-4 h-8">
@@ -129,7 +129,7 @@ export default async function DashboardPage(props: DashboardProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
         {/* Statistics Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -164,9 +164,11 @@ export default async function DashboardPage(props: DashboardProps) {
         <section className="space-y-8">
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5 text-primary" />
                   Partidos por Validar
               </h2>
+              {/* Badge already handled in logic above? No, logic above just showed number. Let's keep it consistent pattern. */}
               {pendingMatches && pendingMatches.length > 0 && (
                   <Badge variant="destructive">{pendingMatches.length}</Badge>
               )}
@@ -174,7 +176,15 @@ export default async function DashboardPage(props: DashboardProps) {
             <ValidationList matches={pendingMatches || []} userId={user.id} userRole={userRole} />
           </div>
 
-          <CreatedMatchesList matches={createdMatches || []} />
+          <div>
+             <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <ListChecks className="h-5 w-5 text-primary" />
+                    Mis Partidos Registrados
+                </h2>
+             </div>
+             <CreatedMatchesList matches={createdMatches || []} />
+          </div>
         </section>
 
         {/* Match History Section */}
