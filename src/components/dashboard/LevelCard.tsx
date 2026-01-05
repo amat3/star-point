@@ -7,7 +7,7 @@ interface LevelCardProps {
 
 export function LevelCard({ level }: LevelCardProps) {
   return (
-    <Card className="col-span-2 sm:col-span-1 overflow-hidden relative border-none shadow-xl transform transition-all duration-300 hover:scale-[1.02] group">
+    <Card className="col-span-2 overflow-hidden relative border-none shadow-xl transform transition-all duration-300 hover:scale-[1.02] group">
       {/* Background with Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 opacity-100 z-0"></div>
       
@@ -35,7 +35,7 @@ export function LevelCard({ level }: LevelCardProps) {
 
         </div>
         
-        <Sparkles className="absolute top-3 right-3 h-5 w-5 text-secondary animate-pulse sm:relative sm:top-0 sm:right-0 sm:h-5 sm:w-5 sm:text-secondary sm:opacity-100" />
+        <Sparkles className="absolute top-3 right-3 h-5 w-5 text-secondary animate-pulse sm:top-24 sm:left-42 sm:h-5 sm:w-5 sm:text-secondary sm:opacity-100" />
       </CardContent>
     </Card>
   )

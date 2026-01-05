@@ -61,7 +61,7 @@
   --popover-foreground: hsl(222.2 84% 4.9%);
  
   /* Deep Navy Blue for Light Primary */
-  --primary: hsl(222.2 47.4% 11.2%); 
+  --primary: hsl(222, 83%, 16%); 
   --primary-foreground: hsl(210 40% 98%);
  
   /* Fluor Green for Light Secondary/Accents */
