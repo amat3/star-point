@@ -209,7 +209,7 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
         </div>
 
       </CardContent>
-      <CardFooter className="pt-2">
+      <CardFooter className="pt-2 mt-auto">
         {isJoined ? (
           <Button 
             variant="destructive" 
