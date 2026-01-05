@@ -26,7 +26,8 @@ interface EventCardProps {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+  const date = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+  return date.charAt(0).toUpperCase() + date.slice(1)
 }
 
 function formatTime(dateStr: string) {
@@ -98,7 +99,7 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
 
 
   return (
-    <Card className="w-full relative overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-all">
+    <Card className="w-full relative overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-all px-0">
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
@@ -125,7 +126,7 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
       <CardContent className="space-y-4 pb-4">
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Calendar className="w-4 h-4 mr-2 text-primary" />
-            <span className="capitalize">{formatDate(event.start_time)}</span>
+            <span>{formatDate(event.start_time)}</span>
         </div>
         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2 text-primary" />
