@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { Plus, CalendarPlus } from 'lucide-react'
+import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -29,9 +30,9 @@ import {
 
 const formSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
-  date: z.string(), // Relaxed validation for now
+  date: z.string(),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
-  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
+  courts: z.number().min(1, "Mínimo 1 pista").max(9, "Máximo 9 pistas"),
   rounds: z.number().min(1).max(6).default(3),
   duration_minutes: z.number().min(30).default(90)
 })
@@ -46,7 +47,7 @@ export function CreateEventDialog() {
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: "Mixing",
-      max_spots: 12,
+      courts: 3,
       date: new Date().toISOString().split('T')[0],
       time: "20:00",
       rounds: 3,
@@ -63,7 +64,7 @@ export function CreateEventDialog() {
       await createEvent({
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.max_spots,
+        max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes
       })
@@ -86,7 +87,7 @@ export function CreateEventDialog() {
           <span className="hidden sm:inline">Nueva Convocatoria</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Crear Convocatoria de Mixing</DialogTitle>
           <DialogDescription>
@@ -178,15 +179,15 @@ export function CreateEventDialog() {
 
             <FormField
               control={form.control}
-              name="max_spots"
+              name="courts"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plazas Disponibles</FormLabel>
+                  <FormLabel>Pistas Disponibles</FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
-                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(4, field.value - 4))}>-</Button>
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
                         <Input type="number" {...field} className="text-center" readOnly />
-                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 4)}>+</Button>
+                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(9, field.value + 1))}>+</Button>
                     </div>
                   </FormControl>
                   <FormMessage />

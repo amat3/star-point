@@ -15,6 +15,7 @@ export interface Profile {
   preferred_hand?: 'diestro' | 'zurdo' | 'ambidiestro';
   court_position?: 'reves' | 'drive' | 'ambos';
   updated_at?: string;
+  is_guest?: boolean;
 }
 
 export type PlayerOption = Pick<Profile, 'id' | 'full_name'>;
@@ -46,13 +47,14 @@ export interface Match {
   rating_change?: number;
 
   // Joined relations (optional, populated via joins)
-  p_a1?: { full_name: string };
-  p_a2?: { full_name: string };
-  p_b1?: { full_name: string };
-  p_b2?: { full_name: string };
+  p_a1?: { full_name: string; is_guest?: boolean };
+  p_a2?: { full_name: string; is_guest?: boolean };
+  p_b1?: { full_name: string; is_guest?: boolean };
+  p_b2?: { full_name: string; is_guest?: boolean };
   
   // Event Metadata
   court_number?: number;
+  court_name?: string;
   event?: { title: string, start_time?: string, duration_minutes?: number, rounds?: number };
   round_number?: number;
 }
@@ -60,12 +62,4 @@ export interface Match {
 export interface RatingResult {
   newRating: number;
   change: number;
-}
-
-export interface MatchResult {
-  gamesA: number;
-  gamesB: number;
-  setsA: number;
-  setsB: number;
-  winner: 'A' | 'B' | null;
 }

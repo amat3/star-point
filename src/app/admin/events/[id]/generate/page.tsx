@@ -3,16 +3,29 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveRoundMatches } from '@/app/actions/mixing-generator'
+import { closeEventWithGuests } from '@/app/actions/events'
 import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, RefreshCw, Save, ArrowLeftRight } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+const COURT_NAMES = [
+  'CLITECSA',
+  'JAFRISUR',
+  'DENTAL CLINIC',
+  'JOYERIA POSITO',
+  'BLANCA IMPRESORES',
+  'HACIENDA LA LAGUNA',
+  'SERVIMAIN',
+  'ESTRELLA DAMM (exterior)',
+]
+
 interface PageProps {
-  params: any // Deprecated in client components usually
+  params: any
 }
 
 export default function GenerateMixPage({ params: propParams }: PageProps) {
@@ -39,6 +52,9 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
     avoidRepetition: true,
     forcePosition: true
   })
+
+  // Optional court names (shared across rounds)
+  const [courtNames, setCourtNames] = useState<Record<number, string>>({})
 
   // Pending state for server actions
   const [isSaving, startTransition] = useTransition()
@@ -73,19 +89,27 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
     }
   }
 
-  function handleGenerate() {
-    console.log("HANDLE GENERATE CLICKED")
+  async function handleGenerate() {
     try {
         if (participants.length < 4) {
-          console.log("Not enough participants")
           toast.error('Necesitas al menos 4 jugadores para generar una ronda')
           return
         }
-        
-        console.log("Checking maxSpots", participants.length, maxSpots)
+
         if (participants.length < maxSpots) {
-            toast.error(`La lista no está completa (${participants.length}/${maxSpots}). Faltan jugadores.`)
-            return
+            const missing = maxSpots - participants.length
+            if (missing > 3) {
+                toast.error(`Faltan ${missing} jugadores. Solo se pueden completar hasta 3 huecos con invitados.`)
+                return
+            }
+            try {
+                const result = await closeEventWithGuests(id)
+                toast.info(`${result.added} invitado${result.added > 1 ? 's' : ''} añadido${result.added > 1 ? 's' : ''} automáticamente.`)
+                await loadData()
+            } catch (e: any) {
+                toast.error(e.message)
+                return
+            }
         }
 
         const newProposals: RoundProposal[] = []
@@ -206,7 +230,7 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
             // Flatten all matches from all rounds
             const allMatches = proposals.flatMap(p => p.matches)
             for (const [index, proposal] of proposals.entries()) {
-                await saveRoundMatches(id, proposal.matches, index + 1)
+                await saveRoundMatches(id, proposal.matches, index + 1, courtNames)
             }
             toast.success('Rondas publicadas exitosamente')
             router.push(`/dashboard`)
@@ -220,6 +244,10 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
   if (loadingData) {
     return <div className="p-8 flex justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
+
+  const assignedNames = Object.values(courtNames).filter(Boolean)
+  const hasDuplicateCourtNames = assignedNames.length !== new Set(assignedNames).size
+  const firstDuplicate = assignedNames.find((n, i) => assignedNames.indexOf(n) !== i)
 
   return (
     <div className="container mx-auto p-4 space-y-6 max-w-5xl">
@@ -315,12 +343,19 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
       {/* Results */}
       {proposals.length > 0 && (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Propuesta Generada</h2>
-                <Button onClick={handleSave} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
-                    <Save className="mr-2 h-4 w-4" /> 
+                <Button onClick={handleSave} disabled={isSaving || hasDuplicateCourtNames} className="bg-green-600 hover:bg-green-700 disabled:opacity-50">
+                    <Save className="mr-2 h-4 w-4" />
                     {isSaving ? 'Guardando...' : `Publicar ${proposals.flatMap(p => p.matches).length} Partidos`}
                 </Button>
+              </div>
+              {hasDuplicateCourtNames && (
+                <p className="text-sm text-destructive text-right">
+                  El nombre <strong>{firstDuplicate}</strong> está asignado a más de una pista. Cada pista debe tener un nombre único.
+                </p>
+              )}
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -336,13 +371,28 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                             {proposal.matches.map((match, mIdx) => (
                                 <Card key={mIdx} className="border-2 border-primary/10">
                                     <CardHeader className="pb-2 bg-muted/30">
-                                        <CardTitle className="text-sm font-bold text-center">Pista {match.courtNumber}</CardTitle>
+                                        <CardTitle className="text-sm font-bold text-center flex flex-col items-center gap-2">
+                                            <span>Pista {match.courtNumber}</span>
+                                            <Select
+                                                value={courtNames[match.courtNumber] ?? ''}
+                                                onValueChange={(val) => setCourtNames(prev => ({ ...prev, [match.courtNumber]: val }))}
+                                            >
+                                                <SelectTrigger className="h-7 text-xs font-normal max-w-45">
+                                                    <SelectValue placeholder="Nombre pista..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {COURT_NAMES.map(name => (
+                                                        <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-4">
                                     <div className="flex flex-col gap-3">
-                                        <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
                                             {/* Team A */}
-                                            <div className="flex-1 flex flex-col gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
+                                            <div className="flex-1 min-w-0 flex flex-col gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
                                                 <PlayerItem 
                                                     player={match.pairA[0]} 
                                                     isSelected={selectedPlayerId === match.pairA[0].id}
@@ -357,12 +407,12 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                                             </div>
 
                                             {/* VS */}
-                                            <div className="flex flex-col items-center justify-center px-1">
+                                            <div className="shrink-0 flex flex-col items-center justify-center px-1">
                                                 <span className="text-xl font-black text-muted-foreground/50">VS</span>
                                             </div>
 
                                             {/* Team B */}
-                                            <div className="flex-1 flex flex-col gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
+                                            <div className="flex-1 min-w-0 flex flex-col gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
                                                 <PlayerItem 
                                                     player={match.pairB[0]} 
                                                     isSelected={selectedPlayerId === match.pairB[0].id}
@@ -405,14 +455,14 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
     if (!player) return <div>Empty</div>
     
     return (
-        <div 
+        <div
             onClick={onSelect}
             className={`
-                flex-1 flex flex-col items-center p-2 rounded cursor-pointer transition-all
+                w-full min-w-0 flex flex-col items-center p-2 rounded cursor-pointer transition-all
                 ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-accent'}
             `}
         >
-            <div className="font-bold text-xs sm:text-sm truncate w-full text-center" title={player.full_name}>
+            <div className="font-bold text-xs sm:text-sm truncate w-full text-center min-w-0" title={player.full_name}>
                 {player.full_name}
             </div>
             <div className="flex gap-1 text-[10px] text-muted-foreground">
