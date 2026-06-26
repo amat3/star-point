@@ -62,10 +62,6 @@ export async function confirmMatch(matchId: string) {
      return { success: false, error: 'No tienes permisos para confirmar este partido' }
   }
 
-  const isMixing = match.match_type === 'mixing'
-  if (isMixing) {
-    console.log('🔄 Procesando partido tipo MIXING (Factor 0.25)')
-  }
 
   // 2. Obtener los perfiles actuales de los 4 jugadores
   const playerIds = [match.player_a1, match.player_a2, match.player_b1, match.player_b2]
@@ -115,12 +111,7 @@ export async function confirmMatch(matchId: string) {
   // 4. Preparar datos de juego (Juegos y Ganador)
   const { gamesA, gamesB } = parseGames(match.score_details || "")
   
-  let teamAWon = false
-  if (isMixing) {
-    teamAWon = gamesA > gamesB
-  } else {
-    teamAWon = match.sets_a > match.sets_b
-  }
+  const teamAWon = gamesA > gamesB
 
   console.log(`📊 Análisis: Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
 
@@ -131,24 +122,24 @@ export async function confirmMatch(matchId: string) {
   const resultA1 = calculateNewRating(
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA1, isMixing
+    gamesA, gamesB, teamAWon, matchesA1
   )
   const resultA2 = calculateNewRating(
     profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA2, isMixing
+    gamesA, gamesB, teamAWon, matchesA2
   )
 
   // TEAM B
   const resultB1 = calculateNewRating(
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB1, isMixing
+    gamesB, gamesA, !teamAWon, matchesB1
   )
   const resultB2 = calculateNewRating(
     profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB2, isMixing
+    gamesB, gamesA, !teamAWon, matchesB2
   )
 
   // 6. Preparar actualizaciones de BD

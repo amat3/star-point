@@ -9,12 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/matches/lists/ValidationList'
-import { CreatedMatchesList } from '@/components/matches/lists/CreatedMatchesList'
-import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { MotivationalCard } from '@/components/dashboard/MotivationalCard'
 import { ViewToggle } from '@/components/dashboard/ViewToggle'
-import { CalendarDays, ClipboardCheck, ListChecks, History, ChevronRight } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, History, ChevronRight } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
@@ -50,9 +48,6 @@ export default async function DashboardPage(props: DashboardProps) {
 
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
   const userGender = profile?.gender ?? 'otro'
-  const matchesPlayed = profile?.matches_played ?? 0
-  const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%' // Assuming win_ratio is decimal
-  const ranking = profile?.ranking ?? '-' // Assuming ranking column
 
   // Fetch Pending Validation Matches
   // ADMIN: Ver todos los pendientes excepto los suyos (o todos).
