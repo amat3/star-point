@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { Plus, CalendarPlus } from 'lucide-react'
+import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -63,7 +64,7 @@ export function CreateEventDialog() {
       await createEvent({
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.courts * 4,
+        max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes
       })
@@ -86,7 +87,7 @@ export function CreateEventDialog() {
           <span className="hidden sm:inline">Nueva Convocatoria</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Crear Convocatoria de Mixing</DialogTitle>
           <DialogDescription>
