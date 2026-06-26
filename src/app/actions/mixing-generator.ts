@@ -122,7 +122,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   }
 }
 
-export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1) {
+export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1, courtNames: Record<number, string> = {}) {
     const supabase = await createClient()
 
     // Verify Admin
@@ -145,6 +145,7 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
         score_details: '0-0',
         event_id: eventId,
         court_number: m.courtNumber,
+        court_name: courtNames[m.courtNumber] || null,
         round_number: roundNumber
     }))
 
