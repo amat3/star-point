@@ -182,25 +182,6 @@ export async function createEvent(data: { title: string, start_time: string, max
   }
 }
 
-export async function getEventParticipants(eventId: string): Promise<EventParticipant[]> {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('event_participants')
-    .select(`
-      *,
-      profile:profiles(full_name, avatar_url)
-    `)
-    .eq('event_id', eventId)
-    .order('joined_at', { ascending: true })
-
-  if (error) {
-    console.error(error)
-    return []
-  }
-
-  return data as unknown as EventParticipant[]
-}
 
 export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
   try {

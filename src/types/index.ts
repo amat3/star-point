@@ -63,11 +63,3 @@ export interface RatingResult {
   newRating: number;
   change: number;
 }
-
-export interface MatchResult {
-  gamesA: number;
-  gamesB: number;
-  setsA: number;
-  setsB: number;
-  winner: 'A' | 'B' | null;
-}

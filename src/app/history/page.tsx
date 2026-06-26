@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MatchHistory } from '@/components/dashboard/MatchHistory'
-import { ArrowLeft, History, Trophy, Activity, Medal } from 'lucide-react'
+import { ArrowLeft, History, Trophy, Activity } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
