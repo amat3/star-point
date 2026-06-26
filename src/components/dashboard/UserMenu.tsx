@@ -26,7 +26,7 @@ export function UserMenu({ profile, userName }: UserMenuProps) {
       </div>
       <div className="text-left py-1">
         <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white line-clamp-1 leading-tight">
-          Hola, {userName}
+          {userName}
         </p>
       </div>
     </Link>

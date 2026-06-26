@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { getUserMatches } from '@/app/actions/matches'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ChevronLeft, ChevronRight, Calendar, Trophy, History } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, History } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -95,8 +95,8 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                     const scoreText = isMixing ? `${gamesA} - ${gamesB}` : match.score_details
 
                     // Names formatting
-                    const teamANames = `${match.player_a1?.full_name?.split(' ')[0]} / ${match.player_a2?.full_name?.split(' ')[0]}`
-                    const teamBNames = `${match.player_b1?.full_name?.split(' ')[0]} / ${match.player_b2?.full_name?.split(' ')[0]}`
+                    const teamANames = `${match.p_a1?.full_name?.split(' ')[0]} / ${match.p_a2?.full_name?.split(' ')[0]}`
+                    const teamBNames = `${match.p_b1?.full_name?.split(' ')[0]} / ${match.p_b2?.full_name?.split(' ')[0]}`
                     
                     return (
                         <div key={match.id} className={`flex flex-col bg-card hover:bg-accent/5 transition-colors rounded-r-lg border-y border-r border-l-4 ${borderColor} p-3 sm:p-4 shadow-sm relative overflow-hidden`}>

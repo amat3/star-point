@@ -53,6 +53,7 @@ export interface Match {
   
   // Event Metadata
   court_number?: number;
+  court_name?: string;
   event?: { title: string, start_time?: string, duration_minutes?: number, rounds?: number };
   round_number?: number;
 }
