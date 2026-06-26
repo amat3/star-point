@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { updateEvent } from '@/app/actions/events'
 import { MixingEvent } from '@/types/events'
 
@@ -28,7 +29,7 @@ const formSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   date: z.string(),
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
-  max_spots: z.coerce.number().min(2, "Mínimo 2 plazas").max(50, "Máximo 50 plazas"),
+  courts: z.number().min(1, "Mínimo 1 pista").max(9, "Máximo 9 pistas"),
   rounds: z.number().min(1).max(6),
   duration_minutes: z.number().min(30)
 })
@@ -50,7 +51,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       title: event.title,
       date: datePart,
       time: timePart ? timePart.substring(0, 5) : '12:00',
-      max_spots: event.max_spots,
+      courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90
     }
@@ -85,7 +86,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
         title: event.title,
         date: d,
         time: t ? t.substring(0, 5) : '12:00',
-        max_spots: event.max_spots,
+        courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
         rounds: event.rounds || 1,
         duration_minutes: event.duration_minutes || 90
       })
@@ -99,7 +100,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       await updateEvent(event.id, {
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.max_spots,
+        max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes
       })
@@ -116,7 +117,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
         </DialogHeader>
@@ -205,15 +206,15 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
 
               <FormField
                 control={form.control}
-                name="max_spots"
+                name="courts"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Plazas</FormLabel>
+                    <FormLabel>Pistas Disponibles</FormLabel>
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(4, field.value - 4))}>-</Button>
+                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
                             <Input type="number" {...field} className="text-center" readOnly />
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 4)}>+</Button>
+                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(9, field.value + 1))}>+</Button>
                         </div>
                     </FormControl>
                     <FormMessage />

@@ -9,15 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/matches/lists/ValidationList'
-import { CreatedMatchesList } from '@/components/matches/lists/CreatedMatchesList'
-import { MatchesActions } from '@/components/matches/matches-actions'
 import { UserMenu } from '@/components/dashboard/UserMenu'
-import { LevelCard } from '@/components/dashboard/LevelCard'
+import { MotivationalCard } from '@/components/dashboard/MotivationalCard'
 import { ViewToggle } from '@/components/dashboard/ViewToggle'
-import { PlusCircle, Trophy, Activity, Medal, CalendarDays, ClipboardCheck, ListChecks, History, ChevronRight } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, History, ChevronRight } from 'lucide-react'
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
+import { PlayerRankingPanel } from '@/components/dashboard/PlayerRankingPanel'
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -48,11 +47,8 @@ export default async function DashboardPage(props: DashboardProps) {
   const isViewPlayer = searchParams?.view === 'player'
   const userRole = (realRole === 'admin' && isViewPlayer) ? 'player' : realRole
 
-  const userLevel = profile?.rating?.toFixed(2) ?? '0.00'
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
-  const matchesPlayed = profile?.matches_played ?? 0
-  const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%' // Assuming win_ratio is decimal
-  const ranking = profile?.ranking ?? '-' // Assuming ranking column
+  const userGender = profile?.gender ?? 'otro'
 
   // Fetch Pending Validation Matches
   // ADMIN: Ver todos los pendientes excepto los suyos (o todos).
@@ -61,10 +57,10 @@ export default async function DashboardPage(props: DashboardProps) {
     .from('matches')
     .select(`
       *,
-      p_a1:profiles!player_a1(full_name),
-      p_a2:profiles!player_a2(full_name),
-      p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name),
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest),
       last_updated_by,
       court_number,
       event:events(title, start_time, duration_minutes, rounds),
@@ -74,9 +70,10 @@ export default async function DashboardPage(props: DashboardProps) {
 
     
   if (userRole !== 'admin') {
-     pendingQuery = pendingQuery
-       .neq('creator_id', user.id) // Players cannot validate their own matches
-       .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+    const participantFilter = `player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`
+    pendingQuery = pendingQuery.or(
+      `and(match_type.eq.mixing,or(${participantFilter})),and(match_type.eq.standard,creator_id.neq.${user.id},or(${participantFilter}))`
+    )
   }
 
   const { data: pendingMatches } = await pendingQuery
@@ -86,10 +83,10 @@ export default async function DashboardPage(props: DashboardProps) {
     .from('matches')
     .select(`
       *,
-      p_a1:profiles!player_a1(full_name),
-      p_a2:profiles!player_a2(full_name),
-      p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name),
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest),
       court_number,
       event:events(title, start_time, duration_minutes, rounds)
     `)
@@ -112,12 +109,6 @@ export default async function DashboardPage(props: DashboardProps) {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <UserMenu profile={profile} userName={userName} />
-            <div className="hidden xs:flex items-center space-x-2 border-l border-gray-200 dark:border-gray-700 pl-4 h-8">
-               <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Nivel:</span>
-               <Badge className="bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
-                  {userLevel}
-               </Badge>
-            </div>
           </div>
           
           <div className="flex items-center gap-2">
@@ -128,11 +119,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <LevelCard level={userLevel} />
-
-        </div>
+        <MotivationalCard userName={userName} gender={userGender} />
 
         {/* Next Mixings Section */}
         <section className="space-y-4">
@@ -173,17 +160,15 @@ export default async function DashboardPage(props: DashboardProps) {
             <ValidationList matches={pendingMatches || []} userId={user.id} userRole={userRole} />
           </div>
 
-          <div>
-             <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <ListChecks className="h-5 w-5 text-primary" />
-                    Mis Partidos Registrados
-                </h2>
-                <MatchesActions />
-             </div>
-             <CreatedMatchesList matches={createdMatches || []} />
-          </div>
+          {/* Mis Partidos Registrados — oculto en ambos roles, lógica preservada */}
         </section>
+
+        {/* Player Ranking — solo admin */}
+        {realRole === 'admin' && (
+          <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
+            <PlayerRankingPanel />
+          </section>
+        )}
 
         {/* Match History Link */}
         <section className="pt-4 border-t border-gray-100 dark:border-gray-800">

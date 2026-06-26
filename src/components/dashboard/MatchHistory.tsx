@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { getUserMatches } from '@/app/actions/matches'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ChevronLeft, ChevronRight, Calendar, Trophy, History } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, History } from 'lucide-react'
+import { formatPlayerName } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -94,61 +95,68 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                     const borderColor = userWon ? 'border-l-green-500' : 'border-l-red-500'
                     const scoreText = isMixing ? `${gamesA} - ${gamesB}` : match.score_details
 
-                    // Names formatting
-                    const teamANames = `${match.player_a1?.full_name?.split(' ')[0]} / ${match.player_a2?.full_name?.split(' ')[0]}`
-                    const teamBNames = `${match.player_b1?.full_name?.split(' ')[0]} / ${match.player_b2?.full_name?.split(' ')[0]}`
-                    
+                    const pa1 = formatPlayerName(match.p_a1)
+                    const pa2 = formatPlayerName(match.p_a2)
+                    const pb1 = formatPlayerName(match.p_b1)
+                    const pb2 = formatPlayerName(match.p_b2)
+
                     return (
-                        <div key={match.id} className={`flex flex-col bg-card hover:bg-accent/5 transition-colors rounded-r-lg border-y border-r border-l-4 ${borderColor} p-3 sm:p-4 shadow-sm relative overflow-hidden`}>
-                             
-                             {/* Header: Date & Badge */}
-                             <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
-                                 <div className="flex items-center gap-1.5">
-                                     <Calendar className="h-3.5 w-3.5" />
-                                     <span>{format(new Date(match.created_at), "d MMM yyyy", { locale: es })}</span>
-                                 </div>
-                                 <div className="flex items-center gap-2">
-                                     <span className="font-medium text-foreground">{match.event?.title || (isMixing ? 'Mixing' : 'Partido')}</span>
-                                     <Badge variant="outline" className={`text-[10px] px-1.5 h-5 border-0 ${userWon ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
-                                         {resultLabel}
-                                     </Badge>
-                                 </div>
-                             </div>
+                        <div key={match.id} className={`flex flex-col bg-card hover:bg-accent/5 transition-colors rounded-r-lg border-y border-r border-l-4 ${borderColor} p-3 sm:p-4 shadow-sm`}>
 
-                             {/* Match Content */}
-                             <div className="flex items-center justify-between gap-4">
-                                 
-                                 {/* Teams (Stacked Left) */}
-                                 <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                                      {/* Team A */}
-                                      <div className="text-sm font-semibold text-foreground truncate">
-                                          {teamANames}
-                                      </div>
+                            {/* Header: Date & Badge */}
+                            <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    <span>{format(new Date(match.created_at), "d MMM yyyy", { locale: es })}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {match.event?.title && <span className="font-medium text-foreground">{match.event.title}</span>}
+                                    <Badge variant="outline" className={`text-[10px] px-1.5 h-5 border-0 ${userWon ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
+                                        {resultLabel}
+                                    </Badge>
+                                </div>
+                            </div>
 
-                                      {/* Team B */}
-                                      <div className="text-sm font-semibold text-foreground truncate">
-                                          {teamBNames}
-                                      </div>
-                                 </div>
+                            {/* Match Content: Team A | Score | Team B */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                                {/* Team A */}
+                                <div className="text-right space-y-0.5 min-w-0">
+                                    <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
+                                    <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                                        <p className="truncate flex items-center justify-end gap-1">
+                                            {pa1.isGuest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1 rounded shrink-0">Inv.</span>}
+                                            {pa1.name}
+                                        </p>
+                                        <p className="truncate flex items-center justify-end gap-1">
+                                            {pa2.isGuest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1 rounded shrink-0">Inv.</span>}
+                                            {pa2.name}
+                                        </p>
+                                    </div>
+                                </div>
 
-                                 {/* Score (Right) */}
-                                 <div className="flex items-center justify-end gap-2 min-w-[60px]">
-                                     {isMixing ? (
-                                         <div className="text-xl font-mono font-bold tracking-tight bg-secondary/50 px-2 py-1.5 rounded-md whitespace-nowrap text-center">
-                                            {scoreText}
-                                         </div>
-                                     ) : (
-                                       (scoreText.match(/(\d+-\d+)/g) || [scoreText]).map((part: string, i: number) => (
-  <div 
-    key={i} 
-    className="text-xl font-mono font-bold tracking-tight bg-secondary/50 px-2 py-1.5 rounded-md whitespace-nowrap text-center"
-  >
-    {part}
-  </div>
-))
-                                     )}
-                                 </div>
-                             </div>
+                                {/* Score */}
+                                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0">
+                                    <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
+                                    <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center whitespace-nowrap">
+                                        {scoreText}
+                                    </div>
+                                </div>
+
+                                {/* Team B */}
+                                <div className="text-left space-y-0.5 min-w-0">
+                                    <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
+                                    <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                                        <p className="truncate flex items-center gap-1">
+                                            {pb1.name}
+                                            {pb1.isGuest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1 rounded shrink-0">Inv.</span>}
+                                        </p>
+                                        <p className="truncate flex items-center gap-1">
+                                            {pb2.name}
+                                            {pb2.isGuest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1 rounded shrink-0">Inv.</span>}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )
                 })}

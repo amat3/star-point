@@ -16,6 +16,7 @@ export interface MixingEvent {
     user_id: string
     full_name: string | null
     avatar_url?: string
+    is_guest?: boolean
   }[]
 }
 

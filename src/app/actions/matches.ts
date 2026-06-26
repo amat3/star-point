@@ -62,10 +62,6 @@ export async function confirmMatch(matchId: string) {
      return { success: false, error: 'No tienes permisos para confirmar este partido' }
   }
 
-  const isMixing = match.match_type === 'mixing'
-  if (isMixing) {
-    console.log('🔄 Procesando partido tipo MIXING (Factor 0.25)')
-  }
 
   // 2. Obtener los perfiles actuales de los 4 jugadores
   const playerIds = [match.player_a1, match.player_a2, match.player_b1, match.player_b2]
@@ -115,12 +111,7 @@ export async function confirmMatch(matchId: string) {
   // 4. Preparar datos de juego (Juegos y Ganador)
   const { gamesA, gamesB } = parseGames(match.score_details || "")
   
-  let teamAWon = false
-  if (isMixing) {
-    teamAWon = gamesA > gamesB
-  } else {
-    teamAWon = match.sets_a > match.sets_b
-  }
+  const teamAWon = gamesA > gamesB
 
   console.log(`📊 Análisis: Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
 
@@ -131,24 +122,24 @@ export async function confirmMatch(matchId: string) {
   const resultA1 = calculateNewRating(
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA1, isMixing
+    gamesA, gamesB, teamAWon, matchesA1
   )
   const resultA2 = calculateNewRating(
     profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA2, isMixing
+    gamesA, gamesB, teamAWon, matchesA2
   )
 
   // TEAM B
   const resultB1 = calculateNewRating(
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB1, isMixing
+    gamesB, gamesA, !teamAWon, matchesB1
   )
   const resultB2 = calculateNewRating(
     profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB2, isMixing
+    gamesB, gamesA, !teamAWon, matchesB2
   )
 
   // 6. Preparar actualizaciones de BD
@@ -313,10 +304,10 @@ export async function getUserMatches(userId: string, limit: number, page: number
     .select(`
       *,
       event:events(title),
-      player_a1:profiles!player_a1(full_name),
-      player_a2:profiles!player_a2(full_name),
-      player_b1:profiles!player_b1(full_name),
-      player_b2:profiles!player_b2(full_name)
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest)
     `, { count: 'exact' })
     .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
     .eq('status', 'confirmed') // Only finished/confirmed matches

@@ -24,7 +24,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   if (userIds.length > 0) {
       const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, rating, full_name, gender, court_position, preferred_hand')
+          .select('id, rating, full_name, gender, court_position, preferred_hand, is_guest')
           .in('id', userIds)
       
       profiles?.forEach((p: any) => {
@@ -111,7 +111,8 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           gender: profile.gender || 'otro',
           court_position: profile.court_position || 'ambos',
           past_partners: Array.from(historyMap.get(p.user_id) || []),
-          past_opponents: Array.from(opponentsMap.get(p.user_id) || [])
+          past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
+          is_guest: profile.is_guest ?? false
       }
   })
 
@@ -122,7 +123,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   }
 }
 
-export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1) {
+export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1, courtNames: Record<number, string> = {}) {
     const supabase = await createClient()
 
     // Verify Admin
@@ -145,6 +146,7 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
         score_details: '0-0',
         event_id: eventId,
         court_number: m.courtNumber,
+        court_name: courtNames[m.courtNumber] || null,
         round_number: roundNumber
     }))
 
