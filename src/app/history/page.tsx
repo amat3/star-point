@@ -55,20 +55,20 @@ export default async function HistoryPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
+            <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
               <Activity className="h-4 w-4 text-gray-500" />
+              <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-center pb-4">
               <div className="text-2xl font-bold">{matchesPlayed}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
+            <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
               <Trophy className="h-4 w-4 text-lime-500" />
+              <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-center pb-4">
               <div className="text-2xl font-bold">{winRatio}</div>
             </CardContent>
           </Card>

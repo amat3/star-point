@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function deleteMatch(matchId: string) {
@@ -39,22 +39,7 @@ export async function deleteMatch(matchId: string) {
   // Intentar borrado como Admin (Service Role) si es Admin (independientemente de si es creador)
   // Esto asegura que el admin siempre pueda borrar bypassing RLS
   if (isAdmin) {
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ Falta SUPABASE_SERVICE_ROLE_KEY para borrar como admin')
-      return { success: false, error: 'Configuración incompleta: Falta la clave de servicio (Service Role Key). Pídela al desarrollador.' }
-    }
-
-    console.log('⚡️ Usando Service Role para eliminación de Admin')
-    const adminSupabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    const adminSupabase = getAdminClient()
     
     // Usamos count para verificar si realmente se borró
     const { error, count } = await adminSupabase.from('matches').delete({ count: 'exact' }).eq('id', matchId)

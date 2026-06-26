@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { updateEvent } from '@/app/actions/events'
 import { MixingEvent } from '@/types/events'
 
@@ -50,7 +51,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       title: event.title,
       date: datePart,
       time: timePart ? timePart.substring(0, 5) : '12:00',
-      courts: Math.round((event.max_spots || 4) / 4),
+      courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90
     }
@@ -85,7 +86,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
         title: event.title,
         date: d,
         time: t ? t.substring(0, 5) : '12:00',
-        courts: Math.round((event.max_spots || 4) / 4),
+        courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
         rounds: event.rounds || 1,
         duration_minutes: event.duration_minutes || 90
       })
@@ -99,7 +100,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       await updateEvent(event.id, {
         title: values.title,
         start_time: dateTime.toISOString(),
-        max_spots: values.courts * 4,
+        max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes
       })
@@ -116,7 +117,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
         </DialogHeader>

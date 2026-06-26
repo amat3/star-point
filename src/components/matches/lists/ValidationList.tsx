@@ -10,6 +10,7 @@ import { deleteMatch } from '@/app/actions/admin-matches'
 import { toast } from 'sonner'
 import { Trash2, Pencil } from 'lucide-react'
 import { Match } from '@/types'
+import { formatPlayerName } from '@/lib/utils'
 import { EditMatchDialog } from '../dialogs/EditMatchDialog'
 
 interface ValidationListProps {
@@ -59,42 +60,45 @@ function MatchCard({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           {/* Team A */}
-          <div className="text-right space-y-0.5 min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-              <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
-                {match.p_a1?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
-                {match.p_a1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
-              </p>
-              <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
-                {match.p_a2?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
-                {match.p_a2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
-              </p>
-            </div>
-          </div>
+          {(() => {
+            const pa1 = formatPlayerName(match.p_a1)
+            const pa2 = formatPlayerName(match.p_a2)
+            const pb1 = formatPlayerName(match.p_b1)
+            const pb2 = formatPlayerName(match.p_b2)
+            const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+            return <>
+              <div className="text-right space-y-0.5 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
+                    {pa1.isGuest && guestBadge}{pa1.name}
+                  </p>
+                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
+                    {pa2.isGuest && guestBadge}{pa2.name}
+                  </p>
+                </div>
+              </div>
 
-          {/* VS & Score */}
-          <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
-            <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
-            <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
-              {match.score_details}
-            </div>
-          </div>
+              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
+                <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
+                <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
+                  {match.score_details}
+                </div>
+              </div>
 
-          {/* Team B */}
-          <div className="text-left space-y-0.5 min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-              <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
-                {match.p_b1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
-                {match.p_b1?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
-              </p>
-              <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
-                {match.p_b2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
-                {match.p_b2?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
-              </p>
-            </div>
-          </div>
+              <div className="text-left space-y-0.5 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+                  <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
+                    {pb1.name}{pb1.isGuest && guestBadge}
+                  </p>
+                  <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
+                    {pb2.name}{pb2.isGuest && guestBadge}
+                  </p>
+                </div>
+              </div>
+            </>
+          })()}
         </div>
 
         <div className="flex w-full sm:w-auto items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 dark:border-gray-700">

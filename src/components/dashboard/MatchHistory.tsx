@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight, Calendar, History } from 'lucide-react'
+import { formatPlayerName } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -94,15 +95,10 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                     const borderColor = userWon ? 'border-l-green-500' : 'border-l-red-500'
                     const scoreText = isMixing ? `${gamesA} - ${gamesB}` : match.score_details
 
-                    const fmtName = (p: any) => {
-                        const parts = (p?.full_name ?? '?').split(' ').slice(0, 2)
-                        const name = parts.map((n: string, i: number) => i === 1 && isNaN(Number(n)) ? n.charAt(0) + '.' : n).join(' ')
-                        return { name, isGuest: p?.is_guest ?? false }
-                    }
-                    const pa1 = fmtName(match.p_a1)
-                    const pa2 = fmtName(match.p_a2)
-                    const pb1 = fmtName(match.p_b1)
-                    const pb2 = fmtName(match.p_b2)
+                    const pa1 = formatPlayerName(match.p_a1)
+                    const pa2 = formatPlayerName(match.p_a2)
+                    const pb1 = formatPlayerName(match.p_b1)
+                    const pb2 = formatPlayerName(match.p_b2)
 
                     return (
                         <div key={match.id} className={`flex flex-col bg-card hover:bg-accent/5 transition-colors rounded-r-lg border-y border-r border-l-4 ${borderColor} p-3 sm:p-4 shadow-sm`}>
