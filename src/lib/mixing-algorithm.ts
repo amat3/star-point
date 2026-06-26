@@ -4,11 +4,10 @@ export interface MixingParticipant {
   rating: number
   gender: 'masculino' | 'femenino' | 'otro'
   court_position: 'reves' | 'drive' | 'ambos'
-  // URLs for avatar if needed involved in UI, but logic only needs ID/Rating/Pos
   full_name: string
-  // Map of user_ids they have played with in this event
   past_partners: string[]
   past_opponents: string[]
+  is_guest?: boolean
 }
 
 export interface MixingConfig {

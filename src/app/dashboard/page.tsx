@@ -49,6 +49,7 @@ export default async function DashboardPage(props: DashboardProps) {
   const userRole = (realRole === 'admin' && isViewPlayer) ? 'player' : realRole
 
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
+  const userGender = profile?.gender ?? 'otro'
   const matchesPlayed = profile?.matches_played ?? 0
   const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%' // Assuming win_ratio is decimal
   const ranking = profile?.ranking ?? '-' // Assuming ranking column
@@ -60,10 +61,10 @@ export default async function DashboardPage(props: DashboardProps) {
     .from('matches')
     .select(`
       *,
-      p_a1:profiles!player_a1(full_name),
-      p_a2:profiles!player_a2(full_name),
-      p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name),
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest),
       last_updated_by,
       court_number,
       event:events(title, start_time, duration_minutes, rounds),
@@ -86,10 +87,10 @@ export default async function DashboardPage(props: DashboardProps) {
     .from('matches')
     .select(`
       *,
-      p_a1:profiles!player_a1(full_name),
-      p_a2:profiles!player_a2(full_name),
-      p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name),
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest),
       court_number,
       event:events(title, start_time, duration_minutes, rounds)
     `)
@@ -122,7 +123,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
-        <MotivationalCard userName={userName} />
+        <MotivationalCard userName={userName} gender={userGender} />
 
         {/* Next Mixings Section */}
         <section className="space-y-4">

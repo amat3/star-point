@@ -66,12 +66,6 @@ export default async function ProfilePage() {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {userName}
                 </h2>
-                <div className="mt-2 flex items-center justify-center sm:justify-start space-x-2">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Nivel Actual:</span>
-                  <Badge className="bg-lime-500 hover:bg-lime-600 text-white text-lg px-3 py-1">
-                    {userLevel}
-                  </Badge>
-                </div>
               </div>
             </div>
           </CardContent>
