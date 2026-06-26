@@ -16,6 +16,7 @@ import { CalendarDays, ClipboardCheck, History, ChevronRight } from 'lucide-reac
 import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
+import { PlayerRankingPanel } from '@/components/dashboard/PlayerRankingPanel'
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -161,6 +162,13 @@ export default async function DashboardPage(props: DashboardProps) {
 
           {/* Mis Partidos Registrados — oculto en ambos roles, lógica preservada */}
         </section>
+
+        {/* Player Ranking — solo admin */}
+        {realRole === 'admin' && (
+          <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
+            <PlayerRankingPanel />
+          </section>
+        )}
 
         {/* Match History Link */}
         <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
