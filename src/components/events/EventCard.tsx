@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, Trophy, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle } from 'lucide-react'
+import { Calendar, Clock, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle } from 'lucide-react'
 import { MixingEvent, EventParticipant } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
@@ -41,8 +41,6 @@ function getInitials(name: string | null | undefined) {
 
 export function EventCard({ event, userId, userRole }: EventCardProps) {
   const [isPending, startTransition] = useTransition()
-  // const [participants, setParticipants] = useState<EventParticipant[]>([]) // Not needed anymore as passed in event
-  const [showParticipants, setShowParticipants] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
 
   const participantsCount = event.participants_count || 0
@@ -146,20 +144,22 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
             <div className="space-y-1 pl-1 mb-4">
                 {Array.from({ length: event.max_spots }).map((_, index) => {
                     const participant = event.participants?.[index]
-                    
                     return (
                         <div key={`main-${index}`} className="flex items-center justify-between text-sm h-6 group">
-                            <div className="flex items-center overflow-hidden">
-                                <span className="mr-2 text-base shrink-0">🎾</span>
+                            <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                                <span className="text-base shrink-0">🎾</span>
                                 <span className={`truncate ${participant ? "text-gray-700 dark:text-gray-200 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                     {participant?.full_name || "Libre"}
                                 </span>
+                                {participant?.is_guest && (
+                                    <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+                                )}
                             </div>
                             {participant && userRole === 'admin' && (
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                                     onClick={() => handleRemoveParticipant(participant.user_id)}
                                     title="Eliminar jugador"
                                 >
@@ -169,6 +169,7 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
                         </div>
                     )
                 })}
+
             </div>
 
             {/* Reservas */}

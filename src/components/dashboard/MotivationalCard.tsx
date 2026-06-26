@@ -6,7 +6,7 @@ import {
   Glasses, Headphones, Drama
 } from "lucide-react"
 
-const MESSAGES = [
+const MESSAGES_MASC = [
   "A ver si hoy te mueves más que el último día, paquete.",
   "El pádel es deporte de equipo. Intenta no ser el problema, inútil.",
   "Hoy es tu día, campeón. O el de los rivales. Probablemente el de los rivales.",
@@ -40,6 +40,40 @@ const MESSAGES = [
   "El día que te pongas serio nos vas a barrer a todos, máquina. Hoy no es ese día.",
 ]
 
+const MESSAGES_FEM = [
+  "A ver si hoy te mueves más que el último día, paquete.",
+  "El pádel es deporte de equipo. Intenta no ser el problema, inútil.",
+  "Hoy es tu día, campeona. O el de las rivales. Probablemente el de las rivales.",
+  "La pala no se mueve sola, torpe... aunque a veces lo parece.",
+  "Dicen que el talento no se entrena. Tú lo demuestras cada partido, crack.",
+  "¿Preparada, máquina? El cristal no va a romperse solo.",
+  "Recuerda, fenómena: si pierdes, la culpa es siempre de la compañera.",
+  "¡El grupo te necesita! Que tiemblen las rivales... o no, da igual, eres un paquete.",
+  "Hoy sal a dar el 100%, leyenda. El 50% ya lo das durmiendo.",
+  "Gran día para jugar, campeona. O para quedarte en el bar, tú decides.",
+  "La que no arriesga no gana. La que arriesga mucho, tampoco. Piénsatelo, torpe.",
+  "Pensábamos que ibas a llegar tarde como siempre. Menos mal.",
+  "El objetivo de hoy es pasarlo bien, máquina. Ganar sería un premio.",
+  "Se dice que la práctica hace a la maestra. Lleva tiempo, ¿eh, paquete?",
+  "Si juegas bien te lo apuntamos, crack. Si juegas mal, fueron las luces de la pista.",
+  "El pádel no es fácil, campeona. Tampoco lo es verte jugar.",
+  "Hoy la pelota sí va a entrar, fenómena. Lo notamos en el ambiente.",
+  "Recordatorio, torpe: la pelota tiene que pasar la red.",
+  "Los buenos días terminan con una buena bandeja, leyenda.",
+  "Que no se diga que no lo intentaste, inútil. Aunque luego no salga.",
+  "Todas confiamos en ti, máquina. Más o menos.",
+  "En el pádel lo importante es participar, paquete. Pero ganar de vez en cuando también mola.",
+  "¿A ver si hoy la víbora sale bien, crack? Tu pareja lo está esperando.",
+  "Hoy jugarás como nunca y perderás como siempre.",
+  "Nuevo día, nueva oportunidad de revancha, fenómena.",
+  "Hoy la red está a tu favor, leyenda.",
+  "Jugar con el corazón está bien, campeona. Jugar con la cabeza, mejor.",
+  "Dicen que eres de las mejores del grupo, paquete. Lo dicen pocos, pero lo dicen.",
+  "Hoy no es día de excusas, inútil. Mañana tampoco.",
+  "Ya estás aquí, leyenda. Eso ya es mérito.",
+  "El día que te pongas seria nos vas a barrer a todas, máquina. Hoy no es ese día.",
+]
+
 const ICONS = [
   Zap, Flame, Star, Trophy, Heart, Rocket, Target,
   Shield, Crown, Dumbbell, Wind, Smile, Sun, Sparkles,
@@ -49,12 +83,14 @@ const ICONS = [
 
 interface MotivationalCardProps {
   userName: string
+  gender: string
 }
 
-export function MotivationalCard({ userName }: MotivationalCardProps) {
+export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
   const firstName = userName.split(' ')[0]
   const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-  const message = MESSAGES[dayIndex % MESSAGES.length]
+  const messages = gender === 'femenino' ? MESSAGES_FEM : MESSAGES_MASC
+  const message = messages[dayIndex % messages.length]
   const Icon = ICONS[dayIndex % ICONS.length]
 
   return (

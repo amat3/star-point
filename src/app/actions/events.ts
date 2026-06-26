@@ -55,7 +55,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     if (userIds.length > 0) {
         const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, avatar_url')
+            .select('id, full_name, avatar_url, is_guest')
             .in('id', userIds)
             
         profiles?.forEach((p: any) => {
@@ -69,7 +69,8 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     const formattedParticipants = rawParticipants?.map((p: any) => ({
         user_id: p.user_id,
         full_name: profilesMap[p.user_id]?.full_name || 'Jugador',
-        avatar_url: profilesMap[p.user_id]?.avatar_url
+        avatar_url: profilesMap[p.user_id]?.avatar_url,
+        is_guest: profilesMap[p.user_id]?.is_guest ?? false
     })) || []
 
     return {
@@ -267,13 +268,19 @@ export async function removeParticipant(eventId: string, userId: string) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    // Use Service Role for Admin actions to bypass RLS
     const { createClient: createAdminClient } = require('@supabase/supabase-js')
     const adminSupabase = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { persistSession: false } }
     )
+
+    // Check if the participant is a guest — if so, delete their profile too
+    const { data: targetProfile } = await adminSupabase
+      .from('profiles')
+      .select('is_guest')
+      .eq('id', userId)
+      .single()
 
     const { error } = await adminSupabase
       .from('event_participants')
@@ -282,6 +289,149 @@ export async function removeParticipant(eventId: string, userId: string) {
       .eq('user_id', userId)
 
     if (error) throw new Error(error.message)
+
+    if (targetProfile?.is_guest) {
+      await adminSupabase.from('profiles').delete().eq('id', userId)
+      await adminSupabase.auth.admin.deleteUser(userId)
+    }
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error: any) {
+    throw new Error(error.message)
+  }
+}
+
+export async function closeEventWithGuests(eventId: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: event } = await supabase.from('events').select('status, max_spots').eq('id', eventId).single()
+    if (!event || event.status !== 'open') throw new Error("El evento no está disponible")
+
+    const { count: currentCount } = await supabase
+      .from('event_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+
+    const missing = event.max_spots - (currentCount || 0)
+
+    if (missing <= 0) throw new Error("El evento ya está completo")
+    if (missing > 3) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta 3 invitados`)
+
+    const { createClient: createAdminClient } = require('@supabase/supabase-js')
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false } }
+    )
+
+    for (let i = 1; i <= missing; i++) {
+      const guestEmail = `invitado-${crypto.randomUUID()}@guest.local`
+
+      // Create real auth user (guest can never log in — random password)
+      const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+        email: guestEmail,
+        password: crypto.randomUUID(),
+        email_confirm: true
+      })
+
+      if (authError || !authData.user) throw new Error(authError?.message || 'Error creando auth invitado')
+
+      const guestId = authData.user.id
+
+      // The trigger on_auth_user_created already created the profile row.
+      // We just update it with guest-specific fields.
+      const { error: profileError } = await adminSupabase
+        .from('profiles')
+        .update({ full_name: `Invitado ${i}`, rating: 3.5, role: 'player', is_guest: true, matches_played: 0, matches_won: 0, win_ratio: 0 })
+        .eq('id', guestId)
+
+      if (profileError) {
+        await adminSupabase.auth.admin.deleteUser(guestId)
+        throw new Error(profileError.message)
+      }
+
+      const { error: participantError } = await adminSupabase
+        .from('event_participants')
+        .insert({ event_id: eventId, user_id: guestId })
+
+      if (participantError) {
+        await adminSupabase.from('profiles').delete().eq('id', guestId)
+        await adminSupabase.auth.admin.deleteUser(guestId)
+        throw new Error(participantError.message)
+      }
+    }
+
+    revalidatePath('/dashboard')
+    return { success: true, added: missing }
+  } catch (error: any) {
+    throw new Error(error.message)
+  }
+}
+
+export async function addEventGuest(eventId: string, guestName: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: event } = await supabase.from('events').select('status, max_spots').eq('id', eventId).single()
+    if (!event || event.status !== 'open') throw new Error("El evento no está disponible")
+
+    const { createClient: createAdminClient } = require('@supabase/supabase-js')
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false } }
+    )
+
+    // Count existing guests in this event
+    const { data: guestParticipants } = await adminSupabase
+      .from('event_participants')
+      .select('user_id, profiles!inner(is_guest)')
+      .eq('event_id', eventId)
+      .eq('profiles.is_guest', true)
+
+    if ((guestParticipants?.length || 0) >= 3) {
+      throw new Error("Máximo 3 invitados por evento")
+    }
+
+    // Create guest profile
+    const { data: newGuest, error: profileError } = await adminSupabase
+      .from('profiles')
+      .insert({
+        full_name: guestName.trim(),
+        rating: 3.5,
+        role: 'player',
+        is_guest: true,
+        matches_played: 0,
+        matches_won: 0,
+        win_ratio: 0
+      })
+      .select('id')
+      .single()
+
+    if (profileError || !newGuest) throw new Error(profileError?.message || 'Error creando invitado')
+
+    // Add to event participants
+    const { error: participantError } = await adminSupabase
+      .from('event_participants')
+      .insert({ event_id: eventId, user_id: newGuest.id })
+
+    if (participantError) {
+      // Cleanup orphan profile if participant insert fails
+      await adminSupabase.from('profiles').delete().eq('id', newGuest.id)
+      throw new Error(participantError.message)
+    }
 
     revalidatePath('/dashboard')
     return { success: true }

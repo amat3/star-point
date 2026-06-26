@@ -60,24 +60,22 @@ function MatchCard({
         <div className="w-full sm:w-auto grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           {/* Team A */}
           <div className="text-right space-y-0.5 min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-primary font-bold">Pareja A</div>
+            <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-              <p className="truncate" title={match.p_a1?.full_name}>
-                {match.p_a1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+              <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
+                {match.p_a1?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
+                {match.p_a1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
               </p>
-              <p className="truncate" title={match.p_a2?.full_name}>
-                {match.p_a2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+              <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
+                {match.p_a2?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
+                {match.p_a2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
               </p>
             </div>
           </div>
 
           {/* VS & Score */}
           <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
-            {match.match_type === 'mixing' ? (
-              <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-primary/10 text-primary hover:bg-primary/20">Mixing</Badge>
-            ) : (
-              <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
-            )}
+            <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
             <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
               {match.score_details}
             </div>
@@ -85,13 +83,15 @@ function MatchCard({
 
           {/* Team B */}
           <div className="text-left space-y-0.5 min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-secondary font-bold">Pareja B</div>
+            <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-              <p className="truncate" title={match.p_b1?.full_name}>
-                {match.p_b1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+              <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
+                {match.p_b1?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
+                {match.p_b1?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
               </p>
-              <p className="truncate" title={match.p_b2?.full_name}>
-                {match.p_b2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+              <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
+                {match.p_b2?.full_name?.split(' ').slice(0, 2).map((n, i) => i === 1 ? isNaN(Number(n)) ? n.charAt(0) + '.' : n : n).join(' ')}
+                {match.p_b2?.is_guest && <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>}
               </p>
             </div>
           </div>
@@ -264,20 +264,11 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
       {/* Grouped by round */}
       {sortedRounds.map(round => {
         const roundMatchList = roundGroups[round].sort((a, b) => (a.court_number ?? 0) - (b.court_number ?? 0))
-        const eventTitle = roundMatchList[0]?.event?.title
 
         return (
           <div key={round} className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900 dark:text-white">Ronda {round}</span>
-                <Badge variant="secondary" className="text-[10px] px-2">
-                  {roundMatchList.length} {roundMatchList.length === 1 ? 'pista' : 'pistas'}
-                </Badge>
-              </div>
-              {eventTitle && (
-                <span className="text-xs text-muted-foreground truncate">{eventTitle}</span>
-              )}
+              <span className="text-sm font-bold text-gray-900 dark:text-white">Ronda {round}</span>
             </div>
 
             <div className="pl-3 border-l-2 border-primary/20 space-y-2">

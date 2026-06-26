@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveRoundMatches } from '@/app/actions/mixing-generator'
+import { closeEventWithGuests } from '@/app/actions/events'
 import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,19 +89,27 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
     }
   }
 
-  function handleGenerate() {
-    console.log("HANDLE GENERATE CLICKED")
+  async function handleGenerate() {
     try {
         if (participants.length < 4) {
-          console.log("Not enough participants")
           toast.error('Necesitas al menos 4 jugadores para generar una ronda')
           return
         }
-        
-        console.log("Checking maxSpots", participants.length, maxSpots)
+
         if (participants.length < maxSpots) {
-            toast.error(`La lista no está completa (${participants.length}/${maxSpots}). Faltan jugadores.`)
-            return
+            const missing = maxSpots - participants.length
+            if (missing > 3) {
+                toast.error(`Faltan ${missing} jugadores. Solo se pueden completar hasta 3 huecos con invitados.`)
+                return
+            }
+            try {
+                const result = await closeEventWithGuests(id)
+                toast.info(`${result.added} invitado${result.added > 1 ? 's' : ''} añadido${result.added > 1 ? 's' : ''} automáticamente.`)
+                await loadData()
+            } catch (e: any) {
+                toast.error(e.message)
+                return
+            }
         }
 
         const newProposals: RoundProposal[] = []

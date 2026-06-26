@@ -313,10 +313,10 @@ export async function getUserMatches(userId: string, limit: number, page: number
     .select(`
       *,
       event:events(title),
-      p_a1:profiles!player_a1(full_name),
-      p_a2:profiles!player_a2(full_name),
-      p_b1:profiles!player_b1(full_name),
-      p_b2:profiles!player_b2(full_name)
+      p_a1:profiles!player_a1(full_name, is_guest),
+      p_a2:profiles!player_a2(full_name, is_guest),
+      p_b1:profiles!player_b1(full_name, is_guest),
+      p_b2:profiles!player_b2(full_name, is_guest)
     `, { count: 'exact' })
     .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
     .eq('status', 'confirmed') // Only finished/confirmed matches

@@ -24,7 +24,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   if (userIds.length > 0) {
       const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, rating, full_name, gender, court_position, preferred_hand')
+          .select('id, rating, full_name, gender, court_position, preferred_hand, is_guest')
           .in('id', userIds)
       
       profiles?.forEach((p: any) => {
@@ -111,7 +111,8 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           gender: profile.gender || 'otro',
           court_position: profile.court_position || 'ambos',
           past_partners: Array.from(historyMap.get(p.user_id) || []),
-          past_opponents: Array.from(opponentsMap.get(p.user_id) || [])
+          past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
+          is_guest: profile.is_guest ?? false
       }
   })
 
