@@ -188,9 +188,6 @@ function getPositionScore(a: MixingParticipant, b: MixingParticipant): number {
     // Or: ONE side + ONE ambos
     // Or: TWO ambos
     
-    const hasDrive = (posA === 'drive' || posA === 'ambos') || (posB === 'drive' || posB === 'ambos')
-    const hasReves = (posA === 'reves' || posA === 'ambos') || (posB === 'reves' || posB === 'ambos')
-    
     // Perfect coverage
     if (posA === 'drive' && posB === 'reves') return 20
     if (posA === 'reves' && posB === 'drive') return 20

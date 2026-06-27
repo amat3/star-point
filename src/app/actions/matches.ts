@@ -44,10 +44,6 @@ export async function confirmMatch(matchId: string) {
     return { success: false, error: 'Partido no encontrado' }
   }
 
-  if (match.status === 'confirmed') {
-    return { success: false, error: 'Este partido ya fue validado anteriormente' }
-  }
-
   // Check Auth and Permissions
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Acceso denegado' }
@@ -86,23 +82,11 @@ export async function confirmMatch(matchId: string) {
     }
   ]))
 
-  // 3. Obtener Experiencia Previa (CRÍTICO PARA ELO DINÁMICO)
-  // Consultamos cuántos registros hay en rating_history para saber el K-Factor a aplicar
-  const getMatchCount = async (playerId: string) => {
-    const { count } = await supabase
-      .from('rating_history')
-      .select('*', { count: 'exact', head: true })
-      .eq('player_id', playerId)
-    return count || 0
-  }
-
-  // Ejecutamos las 4 consultas en paralelo
-  const [matchesA1, matchesA2, matchesB1, matchesB2] = await Promise.all([
-    getMatchCount(match.player_a1),
-    getMatchCount(match.player_a2),
-    getMatchCount(match.player_b1),
-    getMatchCount(match.player_b2)
-  ])
+  // 3. Experiencia previa para K-Factor — usamos matches_played del perfil (fuente canónica)
+  const matchesA1 = profileMap[match.player_a1].matches_played
+  const matchesA2 = profileMap[match.player_a2].matches_played
+  const matchesB1 = profileMap[match.player_b1].matches_played
+  const matchesB2 = profileMap[match.player_b2].matches_played
 
   console.log('📊 Experiencia (Partidos previos jugados):', {
     A1: matchesA1, A2: matchesA2, B1: matchesB1, B2: matchesB2
@@ -110,10 +94,18 @@ export async function confirmMatch(matchId: string) {
 
   // 4. Preparar datos de juego (Juegos y Ganador)
   const { gamesA, gamesB } = parseGames(match.score_details || "")
-  
+
+  if (gamesA === 0 && gamesB === 0) {
+    return { success: false, error: 'El partido no tiene marcador registrado. Añade el resultado antes de confirmar.' }
+  }
+
+  if (gamesA === gamesB) {
+    return { success: false, error: 'El marcador está empatado. No se puede determinar un ganador.' }
+  }
+
   const teamAWon = gamesA > gamesB
 
-  console.log(`📊 Análisis: Team A (${gamesA}) vs Team B (${gamesB}). Ganador: ${teamAWon ? 'A' : 'B'}`)
+  console.log(`📊 Análisis: Juegos A=${gamesA} B=${gamesB}. Ganador: ${teamAWon ? 'A' : 'B'}`)
 
   // 5. Calcular nuevos ratings
   // Pasamos 'matchesXX' (experiencia) a la función de cálculo
@@ -151,50 +143,34 @@ export async function confirmMatch(matchId: string) {
   ]
 
   try {
-    // A. Actualizar perfiles (Rating + Estadísticas)
-    for (const pu of playerUpdates) {
+    // A+B+C en una sola transacción atómica vía RPC
+    const rpcPayload = playerUpdates.map(pu => {
       const pm = profileMap[pu.id]
       const newPlayed = (pm.matches_played || 0) + 1
       const newWon = (pm.matches_won || 0) + (pu.teamWon ? 1 : 0)
       const newRatio = newPlayed > 0 ? newWon / newPlayed : 0
-
-      // Intentamos actualizar todo (stats + rating)
-      const { error: pError } = await supabase.from('profiles').update({ 
-        rating: pu.result.newRating,
-        matches_played: newPlayed,
-        matches_won: newWon,
-        win_ratio: newRatio
-      }).eq('id', pu.id)
-
-      if (pError) {
-        console.error(`❌ Error actualizando stats perfil ${pu.id}:`, pError)
-        // Fallback: Si fallan las stats, actualizamos solo el rating
-        const { error: pErrorMin } = await supabase.from('profiles').update({ 
-          rating: pu.result.newRating
-        }).eq('id', pu.id)
-        
-        if (pErrorMin) throw new Error(`Error crítico al actualizar perfil: ${pErrorMin.message}`)
+      return {
+        player_id: pu.id,
+        new_rating: pu.result.newRating,
+        new_matches_played: newPlayed,
+        new_matches_won: newWon,
+        new_win_ratio: newRatio,
+        rating_before: pm.rating,
       }
+    })
+
+    const { error: rpcError } = await supabase.rpc('confirm_match_atomic', {
+      p_match_id: matchId,
+      p_rating_change: resultA1.change,
+      p_player_updates: rpcPayload,
+    })
+
+    if (rpcError) {
+      if (rpcError.message?.includes('ALREADY_CONFIRMED')) {
+        return { success: false, error: 'Este partido ya fue validado anteriormente' }
+      }
+      throw new Error(`Error confirmando partido: ${rpcError.message}`)
     }
-
-    // B. Insertar historial de cambios
-    const historyEntries = playerUpdates.map(pu => ({
-      player_id: pu.id,
-      match_id: match.id,
-      rating_before: profileMap[pu.id].rating,
-      rating_after: pu.result.newRating
-    }))
-
-    const { error: hError } = await supabase.from('rating_history').insert(historyEntries)
-    if (hError) console.warn('⚠️ Error guardando historial:', hError.message)
-
-    // C. Marcar partido como confirmado
-    const { error: mError } = await supabase.from('matches').update({ 
-      status: 'confirmed',
-      rating_change: resultA1.change // Guardamos referencia del cambio de A1
-    }).eq('id', matchId)
-
-    if (mError) throw new Error(`Error al confirmar partido: ${mError.message}`)
 
     console.log('✅ Partido confirmado y procesado con éxito.')
 
@@ -202,6 +178,10 @@ export async function confirmMatch(matchId: string) {
     revalidatePath('/dashboard')
     revalidatePath('/ranking')
     revalidatePath('/profile')
+    if (match.event_id) {
+      revalidatePath(`/events/${match.event_id}`)
+      revalidatePath(`/admin/events/${match.event_id}/generate`)
+    }
 
     return { success: true }
 
@@ -212,12 +192,8 @@ export async function confirmMatch(matchId: string) {
 }
 
 export async function updateMatchScore(
-  matchId: string, 
-  data: { 
-    sets_a?: number
-    sets_b?: number
-    games_a?: number // For Mixing
-    games_b?: number // For Mixing
+  matchId: string,
+  data: {
     score_details: string
   }
 ) {
@@ -229,7 +205,7 @@ export async function updateMatchScore(
   // 1. Get Match to verify permission
   const { data: match, error: fetchError } = await supabase
     .from('matches')
-    .select('creator_id, status, match_type, player_a1, player_a2, player_b1, player_b2')
+    .select('creator_id, status, player_a1, player_a2, player_b1, player_b2')
     .eq('id', matchId)
     .single()
 
@@ -237,19 +213,12 @@ export async function updateMatchScore(
 
   // 2. Permission check (Creator, Admin, or Participant)
   const isCreator = match.creator_id === user.id
-  
+
   if (!isCreator) {
-    // Check if participant
     const isParticipant = [match.player_a1, match.player_a2, match.player_b1, match.player_b2].includes(user.id)
-    
-    if (isParticipant) {
-        // Participants can only edit if status is pending/disputed (checked below)
-    } else {
-        // Check if admin
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        if (profile?.role !== 'admin') {
-          throw new Error('No tienes permiso para editar este partido')
-        }
+    if (!isParticipant) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (profile?.role !== 'admin') throw new Error('No tienes permiso para editar este partido')
     }
   }
 
@@ -258,25 +227,12 @@ export async function updateMatchScore(
     throw new Error('Solo se pueden editar partidos pendientes o disputados')
   }
 
-  // 4. Update logic
-  const updateData: any = {
+  const updateData = {
     score_details: data.score_details,
-    // Reset disputes if edited
+    sets_a: 0,
+    sets_b: 0,
     status: 'pending',
-    last_updated_by: user.id 
-  }
-
-  if (match.match_type === 'mixing') {
-    updateData.sets_a = 0
-    updateData.sets_b = 0
-    // We rely on score_details for the games
-  } else {
-    // Standard match
-    if (data.sets_a === undefined || data.sets_b === undefined) {
-      throw new Error('Faltan datos de sets para partido estándar')
-    }
-    updateData.sets_a = data.sets_a
-    updateData.sets_b = data.sets_b
+    last_updated_by: user.id,
   }
 
   const { error } = await supabase
@@ -286,8 +242,6 @@ export async function updateMatchScore(
 
   if (error) throw new Error(error.message)
 
-  revalidatePath('/dashboard')
-  return { success: true }
   revalidatePath('/dashboard')
   return { success: true }
 }

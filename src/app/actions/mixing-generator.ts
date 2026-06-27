@@ -58,7 +58,8 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
     .from('matches')
     .select('player_a1, player_a2, player_b1, player_b2')
     .eq('event_id', eventId)
-    .eq('match_type', 'mixing') 
+    .eq('match_type', 'mixing')
+    .in('status', ['pending', 'confirmed'])
   
   const historyMap = new Map<string, Set<string>>()
   const opponentsMap = new Map<string, Set<string>>()
@@ -123,12 +124,56 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   }
 }
 
+export async function saveAllRounds(
+  eventId: string,
+  rounds: { matches: MatchProposal[], roundNumber: number }[],
+  courtNames: Record<number, string> = {}
+) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No auth')
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
+
+  const inserts = rounds.flatMap(({ matches, roundNumber }) =>
+    matches.map(m => ({
+      created_at: new Date().toISOString(),
+      creator_id: user.id,
+      match_type: 'mixing',
+      status: 'pending',
+      player_a1: m.pairA[0].id,
+      player_a2: m.pairA[1].id,
+      player_b1: m.pairB[0].id,
+      player_b2: m.pairB[1].id,
+      sets_a: 0,
+      sets_b: 0,
+      score_details: '0-0',
+      event_id: eventId,
+      court_number: m.courtNumber,
+      court_name: courtNames[m.courtNumber] || null,
+      round_number: roundNumber
+    }))
+  )
+
+  const { error } = await supabase.from('matches').insert(inserts)
+  if (error) throw new Error(error.message)
+
+  await supabase.from('events').update({ status: 'in_progress' }).eq('id', eventId)
+
+  revalidatePath(`/admin/events/${eventId}`)
+  return { success: true }
+}
+
 export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1, courtNames: Record<number, string> = {}) {
     const supabase = await createClient()
 
-    // Verify Admin
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('No auth')
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
     
     // Insert matches
     // We map MatchProposal to DB schema

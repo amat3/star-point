@@ -5,6 +5,8 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent, EventParticipant } from '@/types/events'
 
+const MAX_RESERVES = 3
+
 export async function getOpenEvents(): Promise<MixingEvent[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -105,8 +107,6 @@ export async function joinEvent(eventId: string) {
       .select('*', { count: 'exact', head: true })
       .eq('event_id', eventId)
   
-  const MAX_RESERVES = 4
-  
   if ((count || 0) >= (event.max_spots + MAX_RESERVES)) {
     throw new Error("Evento completo (incluso reservas)")
   }
@@ -126,6 +126,11 @@ export async function leaveEvent(eventId: string) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) throw new Error("Unauthorized")
+
+  const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+  if (!event || event.status !== 'open') {
+    throw new Error('No puedes abandonar un evento que ya ha comenzado')
+  }
 
   const { error } = await supabase
     .from('event_participants')
@@ -189,9 +194,18 @@ export async function updateEvent(eventId: string, data: { title: string, start_
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("Unauthorized")
 
-    // Check Admin
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    // No permitir reducir max_spots por debajo de los participantes actuales
+    const { count: currentCount } = await supabase
+      .from('event_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+
+    if (data.max_spots < (currentCount || 0)) {
+      throw new Error(`No puedes reducir el aforo a ${data.max_spots}: hay ${currentCount} jugadores inscritos`)
+    }
 
     const { error } = await supabase
       .from('events')
@@ -219,18 +233,25 @@ export async function deleteEvent(eventId: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("Unauthorized")
 
-    // Check Admin
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    // Delete event
-    await supabase.from('event_participants').delete().eq('event_id', eventId)
-    
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId)
+    // Bloquear si hay partidos con ELO ya aplicado
+    const { count: confirmedCount } = await supabase
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('status', 'confirmed')
 
+    if ((confirmedCount || 0) > 0) {
+      throw new Error('No se puede eliminar un evento con partidos ya confirmados')
+    }
+
+    // Borrar partidos pendientes, luego participantes, luego el evento
+    await supabase.from('matches').delete().eq('event_id', eventId)
+    await supabase.from('event_participants').delete().eq('event_id', eventId)
+
+    const { error } = await supabase.from('events').delete().eq('id', eventId)
     if (error) throw new Error(error.message)
 
     revalidatePath('/dashboard')
@@ -268,7 +289,6 @@ export async function removeParticipant(eventId: string, userId: string) {
     if (error) throw new Error(error.message)
 
     if (targetProfile?.is_guest) {
-      await adminSupabase.from('profiles').delete().eq('id', userId)
       await adminSupabase.auth.admin.deleteUser(userId)
     }
 
@@ -299,7 +319,7 @@ export async function closeEventWithGuests(eventId: string) {
     const missing = event.max_spots - (currentCount || 0)
 
     if (missing <= 0) throw new Error("El evento ya está completo")
-    if (missing > 3) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta 3 invitados`)
+    if (missing > MAX_RESERVES) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta ${MAX_RESERVES} invitados`)
 
     const adminSupabase = getAdminClient()
 
@@ -334,7 +354,6 @@ export async function closeEventWithGuests(eventId: string) {
         .insert({ event_id: eventId, user_id: guestId })
 
       if (participantError) {
-        await adminSupabase.from('profiles').delete().eq('id', guestId)
         await adminSupabase.auth.admin.deleteUser(guestId)
         throw new Error(participantError.message)
       }
