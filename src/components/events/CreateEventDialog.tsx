@@ -84,7 +84,7 @@ export function CreateEventDialog() {
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
           <CalendarPlus className="w-4 h-4" />
-          <span className="hidden sm:inline">Nueva Convocatoria</span>
+          <span className="hidden sm:inline">Nuevo Mixing</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-106.25">
