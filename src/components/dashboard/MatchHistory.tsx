@@ -85,15 +85,14 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                 {matches.map(match => {
                     // Determine User Team and Result
                     const isTeamA = match.player_a1 === userId || match.player_a2 === userId
-                    const isMixing = match.match_type === 'mixing'
-                    const { gamesA, gamesB, setsA, setsB } = getScoreDetails(match)
-                    
-                    const teamAWon = isMixing ? (gamesA > gamesB) : (setsA > setsB)
+                    const { gamesA, gamesB } = getScoreDetails(match)
+
+                    const teamAWon = gamesA > gamesB
                     const userWon = isTeamA ? teamAWon : !teamAWon
-                    
+
                     const resultLabel = userWon ? 'Victoria' : 'Derrota'
                     const borderColor = userWon ? 'border-l-green-500' : 'border-l-red-500'
-                    const scoreText = isMixing ? `${gamesA} - ${gamesB}` : match.score_details
+                    const scoreText = `${gamesA} - ${gamesB}`
 
                     const pa1 = formatPlayerName(match.p_a1)
                     const pa2 = formatPlayerName(match.p_a2)
@@ -194,29 +193,9 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
 }
 
 function getScoreDetails(match: any) {
-    // Helper to extract numeric scores safely
-    let gamesA = 0, gamesB = 0
-    // Try calculate from sets or mixing games if available in raw text?
-    // Actually match object might not have computed games if not mixing.
-    // But for mixing we saved games only in score_details as "X-Y"? No, we saved sets=0.
-    
-    // The server action returns raw fields.
-    // For standard, we have sets_a, sets_b.
-    // For mixing, we rely on score parsing or assume logic.
-    
-    // Let's parse score_details "6-4 6-2" -> Sets win?
-    // Simple logic: trust sets_a/sets_b for standard.
-    
-    if (match.match_type === 'mixing') {
-        const parts = (match.score_details || "0-0").split('-')
-        gamesA = parseInt(parts[0] || '0')
-        gamesB = parseInt(parts[1] || '0')
-    }
-    
+    const parts = (match.score_details || '0-0').split('-')
     return {
-        setsA: match.sets_a || 0,
-        setsB: match.sets_b || 0,
-        gamesA,
-        gamesB
+        gamesA: parseInt(parts[0] || '0'),
+        gamesB: parseInt(parts[1] || '0'),
     }
 }

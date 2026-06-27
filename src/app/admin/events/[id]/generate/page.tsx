@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getEventMixingData, saveRoundMatches } from '@/app/actions/mixing-generator'
+import { getEventMixingData, saveAllRounds } from '@/app/actions/mixing-generator'
 import { closeEventWithGuests } from '@/app/actions/events'
 import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import { Loader2, ArrowLeft, RefreshCw, Save, ArrowLeftRight } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+const MAX_GUEST_FILL = 3
 
 const COURT_NAMES = [
   'CLITECSA',
@@ -98,8 +100,8 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
 
         if (participants.length < maxSpots) {
             const missing = maxSpots - participants.length
-            if (missing > 3) {
-                toast.error(`Faltan ${missing} jugadores. Solo se pueden completar hasta 3 huecos con invitados.`)
+            if (missing > MAX_GUEST_FILL) {
+                toast.error(`Faltan ${missing} jugadores. Solo se pueden completar hasta ${MAX_GUEST_FILL} huecos con invitados.`)
                 return
             }
             try {
@@ -183,33 +185,23 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
     const c2 = findCoords(targetPlayerId)
 
     if (c1 && c2) {
-        const match1 = newMatches[c1.mIdx]
-        const match2 = newMatches[c2.mIdx]
-        
-        const getP = (m: any, idx: number) => {
-             if (idx === 0) return m.player1
-             if (idx === 1) return m.player2
-             if (idx === 2) return m.player3
-             return m.player4
-        }
-        const setP = (m: any, idx: number, val: any) => {
-             if (idx === 0) m.player1 = val
-             if (idx === 1) m.player2 = val
-             if (idx === 2) m.player3 = val
-             if (idx === 3) m.player4 = val
-        }
+        // Clonar los objetos match para no mutar el estado de React directamente
+        const m1 = { ...newMatches[c1.mIdx] }
+        newMatches[c1.mIdx] = m1
+        const m2 = c1.mIdx === c2.mIdx ? m1 : { ...newMatches[c2.mIdx] }
+        if (c1.mIdx !== c2.mIdx) newMatches[c2.mIdx] = m2
 
-        const p1Val = getP(match1, c1.pIdx)
-        const p2Val = getP(match2, c2.pIdx)
+        const playerKeys = ['player1', 'player2', 'player3', 'player4'] as const
+        const p1Val = (m1 as any)[playerKeys[c1.pIdx]]
+        const p2Val = (m2 as any)[playerKeys[c2.pIdx]];
 
-        setP(match1, c1.pIdx, p2Val)
-        setP(match2, c2.pIdx, p1Val)
+        (m1 as any)[playerKeys[c1.pIdx]] = p2Val;
+        (m2 as any)[playerKeys[c2.pIdx]] = p1Val
 
-        // Re-construct pairs roughly
-        match1.pairA = [match1.player1, match1.player2]
-        match1.pairB = [match1.player3, match1.player4]
-        match2.pairA = [match2.player1, match2.player2]
-        match2.pairB = [match2.player3, match2.player4]
+        m1.pairA = [m1.player1, m1.player2]
+        m1.pairB = [m1.player3, m1.player4]
+        m2.pairA = [m2.player1, m2.player2]
+        m2.pairB = [m2.player3, m2.player4]
 
         const updatedProposals = [...proposals]
         updatedProposals[roundIndex] = { ...proposal, matches: newMatches }
@@ -224,20 +216,20 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
 
   function handleSave() {
     if (proposals.length === 0) return
-    
+
     startTransition(async () => {
-        try {
-            // Flatten all matches from all rounds
-            const allMatches = proposals.flatMap(p => p.matches)
-            for (const [index, proposal] of proposals.entries()) {
-                await saveRoundMatches(id, proposal.matches, index + 1, courtNames)
-            }
-            toast.success('Rondas publicadas exitosamente')
-            router.push(`/dashboard`)
-        } catch (e) {
-            toast.error('Error guardando las rondas')
-            console.error(e)
-        }
+      try {
+        const rounds = proposals.map((proposal, index) => ({
+          matches: proposal.matches,
+          roundNumber: index + 1
+        }))
+        await saveAllRounds(id, rounds, courtNames)
+        toast.success('Rondas publicadas exitosamente')
+        router.push(`/dashboard`)
+      } catch (e) {
+        toast.error('Error guardando las rondas')
+        console.error(e)
+      }
     })
   }
 

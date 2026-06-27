@@ -238,7 +238,7 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
                     const isPlayer = currentUserProfile?.role === 'player'
                     const isSelfIncluded = currentUserProfile && selectedIds.includes(currentUserProfile.id)
                     
-                    return isSubmitting || (isPlayer && !isSelfIncluded)
+                    return isSubmitting || (isPlayer && selectedIds.length === 4 && !isSelfIncluded)
                 })()}
             >
               {isSubmitting ? "Guardando..." : "Guardar Mixing"}
