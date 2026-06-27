@@ -176,10 +176,10 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
             <div className="border-t pt-2 mt-2">
                 <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Reservas {Math.max(0, participantsCount - event.max_spots)}/4
+                    Reservas {Math.max(0, participantsCount - event.max_spots)}/3
                 </h4>
                 <div className="space-y-1 pl-1">
-                    {Array.from({ length: 4 }).map((_, index) => {
+                    {Array.from({ length: 3 }).map((_, index) => {
                         const reserveIndex = event.max_spots + index
                         const participant = event.participants?.[reserveIndex]
                         

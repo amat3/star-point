@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
 
 interface HomeClientProps {
   destination: string
@@ -15,22 +14,26 @@ export default function HomeClient({ destination }: HomeClientProps) {
     const timer = setTimeout(() => {
       router.push(destination)
     }, 2000)
-
     return () => clearTimeout(timer)
   }, [destination, router])
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 p-8 animate-in fade-in duration-1000">
-      <div className="text-center space-y-6 max-w-2xl transform transition-all duration-700 hover:scale-105">
-        <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-          Star<span className="text-lime-500">Point</span>
+    <div className="flex flex-col items-center justify-center flex-1 select-none animate-in fade-in duration-700">
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-secondary text-5xl leading-none animate-in zoom-in-50 duration-500">
+          ★
+        </span>
+        <h1 className="font-display text-[clamp(4rem,18vw,8rem)] leading-none text-primary dark:text-primary animate-in slide-in-from-bottom-3 duration-500 delay-150">
+          STARPOINT
         </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-xl sm:text-2xl">
-          La app de Padel & Risas
+        <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground animate-in fade-in duration-700 delay-300">
+          Liga Pádel
         </p>
-        <div className="pt-8 flex justify-center">
-          <Loader2 className="h-12 w-12 text-primary animate-spin" />
-        </div>
+      </div>
+      <div className="mt-16 flex items-center gap-3 animate-in fade-in duration-700 delay-500">
+        <div className="h-px w-8 bg-primary/20" />
+        <div className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" />
+        <div className="h-px w-8 bg-primary/20" />
       </div>
     </div>
   )

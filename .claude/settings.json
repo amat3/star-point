@@ -1,12 +1,3 @@
 {
-  "enableAllProjectMcpServers": true,
-  "mcpServers": {
-    "supabase": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=idnovsdkodfxaumkbosy",
-      "headers": {
-        "Authorization": "Bearer sbp_45922376a3efb7558a8a54f53d18532582a49a96"
-      }
-    }
-  }
+  "enableAllProjectMcpServers": true
 }

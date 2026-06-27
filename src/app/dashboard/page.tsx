@@ -124,10 +124,13 @@ export default async function DashboardPage(props: DashboardProps) {
         {/* Next Mixings Section */}
         <section className="space-y-4">
            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                 <CalendarDays className="h-5 w-5 text-primary" />
-                 Próximos Mixings
-              </h2>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Convocatorias</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  Próximos Mixings
+                </h2>
+              </div>
               {userRole === 'admin' && <CreateEventDialog />}
            </div>
            
@@ -148,10 +151,13 @@ export default async function DashboardPage(props: DashboardProps) {
         <section className="space-y-8">
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Pendientes</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-primary" />
                   Partidos por Validar
-              </h2>
+                </h2>
+              </div>
               {/* Badge already handled in logic above? No, logic above just showed number. Let's keep it consistent pattern. */}
               {pendingMatches && pendingMatches.length > 0 && (
                   <Badge variant="destructive">{pendingMatches.length}</Badge>
@@ -172,20 +178,19 @@ export default async function DashboardPage(props: DashboardProps) {
 
         {/* Match History Link */}
         <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
-          <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <History className="h-5 w-5 text-primary" />
-                  Historial de Partidos
-              </h2>
+          <div className="mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Resultados</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Historial de Partidos
+            </h2>
           </div>
           <Link href="/history" className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
              <div className="flex items-center gap-3">
-
-                <div>
-                    <p className="text-muted-foreground text-sm">Consulta y filtra todos tus resultados anteriores</p>
-                </div>
+                <History className="h-5 w-5 text-muted-foreground shrink-0" />
+                <p className="text-muted-foreground text-sm">Consulta y filtra todos tus resultados anteriores</p>
              </div>
-             <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors" />
+             <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors shrink-0" />
           </Link>
         </section>
 
