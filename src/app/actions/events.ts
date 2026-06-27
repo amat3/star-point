@@ -197,16 +197,6 @@ export async function updateEvent(eventId: string, data: { title: string, start_
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    // No permitir reducir max_spots por debajo de los participantes actuales
-    const { count: currentCount } = await supabase
-      .from('event_participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', eventId)
-
-    if (data.max_spots < (currentCount || 0)) {
-      throw new Error(`No puedes reducir el aforo a ${data.max_spots}: hay ${currentCount} jugadores inscritos`)
-    }
-
     const { error } = await supabase
       .from('events')
       .update({
