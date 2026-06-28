@@ -53,13 +53,18 @@ export function EventCard({ event, userRole }: EventCardProps) {
   }
 
   const handleLeave = () => {
-    startTransition(async () => {
-      try {
-        await leaveEvent(event.id)
-        toast.success("Te has dado de baja del evento")
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : String(error))
-      }
+    setPending({
+      title: 'Desapuntarme del evento',
+      description: '¿Seguro que quieres salir? Perderás tu plaza y tendrás que volver a apuntarte si cambia de opinión.',
+      confirmLabel: 'Sí, desapuntarme',
+      action: () => startTransition(async () => {
+        try {
+          await leaveEvent(event.id)
+          toast.success("Te has dado de baja del evento")
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : String(error))
+        }
+      }),
     })
   }
 
