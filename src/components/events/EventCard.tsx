@@ -183,7 +183,6 @@ export function EventCard({ event, userRole }: EventCardProps) {
             {(() => {
                 const MAX_RESERVES = 3
                 const filledReserves = Math.max(0, participantsCount - event.max_spots)
-                if (filledReserves === 0) return null
                 const slotsToShow = Math.min(filledReserves + 1, MAX_RESERVES)
                 return (
             <div className="border-t pt-2 mt-2">
