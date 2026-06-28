@@ -2,12 +2,6 @@
 
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Zap, Flame, Star, Trophy, Heart, Rocket, Target,
-  Shield, Crown, Dumbbell, Wind, Smile, Sun, Sparkles,
-  ThumbsUp, Coffee, Music, Laugh, Ghost, Banana, Bomb,
-  Glasses, Headphones, Drama
-} from "lucide-react"
 
 const MESSAGES_MASC = [
   "🐢 A ver si hoy te mueves más que el último día, paquete.",
@@ -77,13 +71,6 @@ const MESSAGES_FEM = [
   "🗓️ El día que te pongas seria nos vas a barrer a todas, máquina. Hoy no es ese día.",
 ]
 
-const ICONS = [
-  Zap, Flame, Star, Trophy, Heart, Rocket, Target,
-  Shield, Crown, Dumbbell, Wind, Smile, Sun, Sparkles,
-  ThumbsUp, Coffee, Music, Laugh, Ghost, Banana, Bomb,
-  Glasses, Headphones, Drama,
-]
-
 interface MotivationalCardProps {
   userName: string
   gender: string
@@ -93,8 +80,9 @@ export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
   const firstName = userName.split(' ')[0]
   const [dayIndex] = useState(() => Math.floor(Date.now() / (1000 * 60 * 60 * 24)))
   const messages = gender === 'femenino' ? MESSAGES_FEM : MESSAGES_MASC
-  const message = messages[dayIndex % messages.length]
-  const Icon = ICONS[dayIndex % ICONS.length]
+  const fullMessage = messages[dayIndex % messages.length]
+  const [emoji, ...rest] = fullMessage.split(' ')
+  const text = rest.join(' ')
 
   return (
     <Card className="overflow-hidden relative border-none shadow-xl transform transition-all duration-300 hover:scale-[1.01] group">
@@ -103,15 +91,15 @@ export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
       <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-secondary/20 blur-2xl z-0" />
 
       <CardContent className="relative z-10 p-5 sm:p-6 flex items-start gap-4 text-white">
-        <div className="shrink-0 p-3 rounded-2xl bg-white/20 backdrop-blur-md mt-0.5">
-          <Icon className="h-6 w-6 text-secondary" />
+        <div className="shrink-0 p-3 rounded-2xl bg-white/20 backdrop-blur-md mt-0.5 text-2xl leading-none">
+          {emoji}
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
             ¡Hola, {firstName}!
           </span>
           <p className="text-sm sm:text-base font-medium text-white leading-snug">
-            {message}
+            {text}
           </p>
         </div>
       </CardContent>
