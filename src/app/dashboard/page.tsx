@@ -14,6 +14,7 @@ import { getOpenEvents } from '@/app/actions/events'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventDialog } from '@/components/events/CreateEventDialog'
 import { PlayerRankingPanel } from '@/components/dashboard/PlayerRankingPanel'
+import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -79,6 +80,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
   return (
     <div className="animate-in fade-in duration-500">
+      <RealtimeRefresher />
       {/* Header Section */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-800/80 sticky top-0 z-50 transition-all border-b border-gray-100 dark:border-gray-700">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
