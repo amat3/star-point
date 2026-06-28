@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { confirmMatch } from '@/app/actions/matches'
@@ -19,6 +20,8 @@ interface ValidationListProps {
   userRole: string
 }
 
+type PendingConfirm = { title: string; description: string; confirmLabel: string; variant?: 'destructive' | 'outline'; action: () => void }
+
 function MatchCard({
   match,
   userId,
@@ -34,7 +37,19 @@ function MatchCard({
   onAction: (id: string, action: 'confirm' | 'delete' | 'dispute') => void
   onEdit: (match: Match) => void
 }) {
+  const [pending, setPending] = useState<PendingConfirm | null>(null)
+
   return (
+    <>
+    <ConfirmDialog
+      open={pending !== null}
+      onOpenChange={(open) => { if (!open) setPending(null) }}
+      title={pending?.title ?? ''}
+      description={pending?.description ?? ''}
+      confirmLabel={pending?.confirmLabel}
+      variant={pending?.variant}
+      onConfirm={() => pending?.action()}
+    />
     <div className="flex flex-col rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
       {/* Court title header */}
       {match.court_number && (
@@ -119,11 +134,13 @@ function MatchCard({
               variant="destructive"
               size="sm"
               className="flex-1 sm:flex-none h-9 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50 border border-red-100 dark:border-red-900"
-              onClick={() => {
-                if (window.confirm("¿Estás seguro de que quieres eliminar este partido? Esta acción no se puede deshacer.")) {
-                  onAction(match.id, 'delete')
-                }
-              }}
+              onClick={() => setPending({
+                title: 'Eliminar partido',
+                description: '¿Estás seguro de que quieres eliminar este partido? Esta acción no se puede deshacer.',
+                confirmLabel: 'Eliminar',
+                variant: 'destructive',
+                action: () => onAction(match.id, 'delete'),
+              })}
               disabled={loadingIds.has(match.id)}
             >
               <Trash2 className="w-4 h-4 mr-1" />
@@ -136,11 +153,13 @@ function MatchCard({
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none text-amber-500 hover:text-amber-600 hover:bg-amber-50 border-amber-100 h-9"
-              onClick={() => {
-                if (window.confirm("¿El resultado es incorrecto? Al impugnar, el partido quedará bloqueado hasta que el creador o un admin lo revise.")) {
-                  onAction(match.id, 'dispute')
-                }
-              }}
+              onClick={() => setPending({
+                title: 'Impugnar partido',
+                description: '¿El resultado es incorrecto? Al impugnar, el partido quedará bloqueado hasta que el creador o un admin lo revise.',
+                confirmLabel: 'Impugnar',
+                variant: 'outline',
+                action: () => onAction(match.id, 'dispute'),
+              })}
               disabled={loadingIds.has(match.id)}
             >
               Impugnar
@@ -182,6 +201,7 @@ function MatchCard({
       </div>
       </div>
     </div>
+    </>
   )
 }
 
