@@ -7,6 +7,7 @@ import { Calendar, Clock, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle
 import { MixingEvent } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -25,9 +26,17 @@ function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
+type PendingConfirm = {
+  title: string
+  description: string
+  confirmLabel: string
+  action: () => void
+}
+
 export function EventCard({ event, userRole }: EventCardProps) {
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
+  const [pending, setPending] = useState<PendingConfirm | null>(null)
 
   const participantsCount = event.participants_count || 0
   const isJoined = event.is_joined
@@ -55,35 +64,48 @@ export function EventCard({ event, userRole }: EventCardProps) {
   }
 
   const handleRemoveParticipant = (targetUserId: string) => {
-    if (!confirm("¿Estás seguro de eliminar a este jugador?")) return
-    startTransition(async () => {
+    setPending({
+      title: 'Eliminar jugador',
+      description: '¿Estás seguro de eliminar a este jugador del evento?',
+      confirmLabel: 'Eliminar',
+      action: () => startTransition(async () => {
         try {
-            await removeParticipant(event.id, targetUserId)
-            toast.success("Jugador eliminado")
+          await removeParticipant(event.id, targetUserId)
+          toast.success("Jugador eliminado")
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error))
+          toast.error(error instanceof Error ? error.message : String(error))
         }
+      }),
     })
   }
 
   const handleDeleteEvent = () => {
-      if (!confirm("¿Estás seguro de anular este evento? Se borrarán todos los participantes.")) return
-      startTransition(async () => {
-          try {
-              await deleteEvent(event.id)
-              toast.success("Evento anulado")
-          } catch (error) {
-              toast.error(error instanceof Error ? error.message : String(error))
-          }
-      })
+    setPending({
+      title: 'Anular evento',
+      description: '¿Estás seguro de anular este evento? Se borrarán todos los participantes.',
+      confirmLabel: 'Anular evento',
+      action: () => startTransition(async () => {
+        try {
+          await deleteEvent(event.id)
+          toast.success("Evento anulado")
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : String(error))
+        }
+      }),
+    })
   }
-
-
-
 
   return (
     <Card className="w-full relative overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-all px-0">
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
+      <ConfirmDialog
+        open={pending !== null}
+        onOpenChange={(open) => { if (!open) setPending(null) }}
+        title={pending?.title ?? ''}
+        description={pending?.description ?? ''}
+        confirmLabel={pending?.confirmLabel}
+        onConfirm={() => pending?.action()}
+      />
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
             <Link href={`/events/${event.id}`} className="hover:underline">
@@ -212,7 +234,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
           </Button>
         ) : (
           <Button 
-            className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-white border-none shadow-md" 
+            className="w-full bg-linear-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-white border-none shadow-md" 
             onClick={handleJoin} 
             disabled={isPending || participantsCount >= (event.max_spots + 4)}
           >
