@@ -15,6 +15,9 @@ export function RealtimeRefresher() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'event_participants' }, () => {
         router.refresh()
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+        router.refresh()
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, () => {
         router.refresh()
       })
