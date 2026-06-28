@@ -189,7 +189,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
             <div className="border-t pt-2 mt-2">
                 <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Reservas {filledReserves}/{MAX_RESERVES}
+                    Reservas
                 </h4>
                 <div className="space-y-1 pl-1">
                     {Array.from({ length: slotsToShow }).map((_, index) => {
