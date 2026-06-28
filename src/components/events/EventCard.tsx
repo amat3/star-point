@@ -180,13 +180,18 @@ export function EventCard({ event, userRole }: EventCardProps) {
             </div>
 
             {/* Reservas */}
+            {(() => {
+                const MAX_RESERVES = 3
+                const filledReserves = Math.max(0, participantsCount - event.max_spots)
+                const slotsToShow = Math.min(filledReserves + 1, MAX_RESERVES)
+                return (
             <div className="border-t pt-2 mt-2">
                 <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Reservas {Math.max(0, participantsCount - event.max_spots)}/3
+                    Reservas {filledReserves}/{MAX_RESERVES}
                 </h4>
                 <div className="space-y-1 pl-1">
-                    {Array.from({ length: 3 }).map((_, index) => {
+                    {Array.from({ length: slotsToShow }).map((_, index) => {
                         const reserveIndex = event.max_spots + index
                         const participant = event.participants?.[reserveIndex]
                         
@@ -214,6 +219,8 @@ export function EventCard({ event, userRole }: EventCardProps) {
                     })}
                 </div>
             </div>
+                )
+            })()}
         </div>
 
       </CardContent>
