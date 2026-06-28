@@ -4,10 +4,7 @@ import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ValidationList } from '@/components/matches/lists/ValidationList'
 import { UserMenu } from '@/components/dashboard/UserMenu'
 import { MotivationalCard } from '@/components/dashboard/MotivationalCard'
@@ -77,28 +74,6 @@ export default async function DashboardPage(props: DashboardProps) {
   }
 
   const { data: pendingMatches } = await pendingQuery
-
-  // Fetch Created Matches (User IS creator and pending)
-  let createdQuery = supabase
-    .from('matches')
-    .select(`
-      *,
-      p_a1:profiles!player_a1(full_name, is_guest),
-      p_a2:profiles!player_a2(full_name, is_guest),
-      p_b1:profiles!player_b1(full_name, is_guest),
-      p_b2:profiles!player_b2(full_name, is_guest),
-      court_number,
-      event:events(title, start_time, duration_minutes, rounds)
-    `)
-    .in('status', ['pending', 'disputed'])
-    .eq('creator_id', user.id)
-    .neq('match_type', 'mixing')
-
-  if (userRole !== 'admin') {
-      createdQuery = createdQuery.or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
-  }
-
-  const { data: createdMatches } = await createdQuery
 
   const openEvents = await getOpenEvents()
 

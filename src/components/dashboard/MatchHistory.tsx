@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight, Calendar, History } from 'lucide-react'
 import { formatPlayerName } from '@/lib/utils'
+import type { Match } from '@/types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -18,7 +19,7 @@ interface MatchHistoryProps {
 export function MatchHistory({ userId }: MatchHistoryProps) {
   const [filter, setFilter] = useState<'3' | '6' | 'all'>('3')
   const [page, setPage] = useState(1)
-  const [matches, setMatches] = useState<any[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -54,8 +55,8 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
             <History className="h-5 w-5 text-primary" />
             Historial de Partidos
         </h2>
-        <div className="w-[140px]">
-             <Select value={filter} onValueChange={(val: any) => setFilter(val)}>
+        <div className="w-35">
+             <Select value={filter} onValueChange={(val: '3' | '6' | 'all') => setFilter(val)}>
                 <SelectTrigger>
                     <SelectValue placeholder="Filtrar" />
                 </SelectTrigger>
@@ -192,7 +193,7 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
   )
 }
 
-function getScoreDetails(match: any) {
+function getScoreDetails(match: Match) {
     const parts = (match.score_details || '0-0').split('-')
     return {
         gamesA: parseInt(parts[0] || '0'),

@@ -15,11 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Form,
-  FormField,
-  FormMessage,
-} from '@/components/ui/form'
+import { Form } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { PlayerSelect } from '../shared/player-select'
@@ -89,9 +85,11 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
       if (data) setPlayers(data)
     }
     fetchData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const form = useForm<z.infer<typeof formSchema>>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       games_a: 0,
@@ -131,9 +129,9 @@ export function NewMixingForm({ open: controlledOpen, onOpenChange: setControlle
       setOpen(false)
       form.reset()
       router.refresh()
-    } catch (error: any) {
+    } catch (error) {
       console.error(error)
-      toast.error(error.message || "Error al guardar")
+      toast.error(error instanceof Error ? error.message : "Error al guardar")
     } finally {
       setIsSubmitting(false)
     }

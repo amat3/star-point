@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { MixingEvent, EventParticipant } from '@/types/events'
+import { MixingEvent } from '@/types/events'
 
 const MAX_RESERVES = 3
 
@@ -52,16 +52,17 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
       .order('joined_at', { ascending: true })
       
     // Fetch profiles for these participants
-    const userIds = rawParticipants?.map((p: any) => p.user_id) || []
-    let profilesMap: Record<string, any> = {}
-    
+    type ParticipantProfile = { id: string; full_name?: string | null; avatar_url?: string | null; is_guest?: boolean }
+    const userIds = rawParticipants?.map((p) => p.user_id) || []
+    const profilesMap: Record<string, ParticipantProfile> = {}
+
     if (userIds.length > 0) {
         const { data: profiles } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url, is_guest')
             .in('id', userIds)
-            
-        profiles?.forEach((p: any) => {
+
+        profiles?.forEach((p) => {
             profilesMap[p.id] = p
         })
     }
@@ -69,7 +70,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     // Check if user joined
     const isJoined = userIds.includes(user.id)
 
-    const formattedParticipants = rawParticipants?.map((p: any) => ({
+    const formattedParticipants = rawParticipants?.map((p) => ({
         user_id: p.user_id,
         full_name: profilesMap[p.user_id]?.full_name || 'Jugador',
         avatar_url: profilesMap[p.user_id]?.avatar_url,
@@ -115,7 +116,7 @@ export async function joinEvent(eventId: string) {
     .from('event_participants')
     .insert({ event_id: eventId, user_id: user.id })
 
-  if (error) throw new Error(error.message)
+  if (error) throw error instanceof Error ? error : new Error(String(error))
 
   revalidatePath('/dashboard')
   return { success: true }
@@ -138,7 +139,7 @@ export async function leaveEvent(eventId: string) {
     .eq('event_id', eventId)
     .eq('user_id', user.id)
 
-  if (error) throw new Error(error.message)
+  if (error) throw error instanceof Error ? error : new Error(String(error))
 
   revalidatePath('/dashboard')
   return { success: true }
@@ -182,8 +183,8 @@ export async function createEvent(data: { title: string, start_time: string, max
 
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
-    throw new Error(error.message || "Error interno del servidor")
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Error interno del servidor")
   }
 }
 
@@ -208,12 +209,12 @@ export async function updateEvent(eventId: string, data: { title: string, start_
       })
       .eq('id', eventId)
 
-    if (error) throw new Error(error.message)
+    if (error) throw error instanceof Error ? error : new Error(String(error))
 
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
-    throw new Error(error.message)
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }
 
@@ -242,12 +243,12 @@ export async function deleteEvent(eventId: string) {
     await supabase.from('event_participants').delete().eq('event_id', eventId)
 
     const { error } = await supabase.from('events').delete().eq('id', eventId)
-    if (error) throw new Error(error.message)
+    if (error) throw error instanceof Error ? error : new Error(String(error))
 
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
-    throw new Error(error.message)
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }
 
@@ -276,7 +277,7 @@ export async function removeParticipant(eventId: string, userId: string) {
       .eq('event_id', eventId)
       .eq('user_id', userId)
 
-    if (error) throw new Error(error.message)
+    if (error) throw error instanceof Error ? error : new Error(String(error))
 
     if (targetProfile?.is_guest) {
       await adminSupabase.auth.admin.deleteUser(userId)
@@ -284,8 +285,8 @@ export async function removeParticipant(eventId: string, userId: string) {
 
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
-    throw new Error(error.message)
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }
 
@@ -351,8 +352,8 @@ export async function closeEventWithGuests(eventId: string) {
 
     revalidatePath('/dashboard')
     return { success: true, added: missing }
-  } catch (error: any) {
-    throw new Error(error.message)
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }
 

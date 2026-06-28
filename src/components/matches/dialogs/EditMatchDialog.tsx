@@ -13,14 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form'
+import { Form } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { Match } from '@/types'
 import { ScoreInput } from '../shared/score-input'
@@ -52,6 +45,7 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
   }
 
   const form = useForm<z.infer<typeof formSchema>>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: parseScore(match.score_details || ''),
   })
@@ -68,8 +62,8 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
       })
       toast.success('Resultado actualizado')
       onOpenChange(false)
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al actualizar')
     } finally {
       setIsSubmitting(false)
     }

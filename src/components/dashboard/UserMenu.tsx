@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 
 interface UserMenuProps {
-  profile: any
+  profile?: { avatar_url?: string | null } | null
   userName: string
 }
 
@@ -15,7 +15,7 @@ export function UserMenu({ profile, userName }: UserMenuProps) {
     <Link href="/profile" className="flex items-center space-x-3 group outline-none hover:opacity-90 transition-opacity text-inherit no-underline">
       <div className="relative">
         <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-lime-500 transition-transform group-hover:scale-105 group-active:scale-95 shadow-lg shadow-lime-500/20">
-          <AvatarImage src={profile?.avatar_url} />
+          <AvatarImage src={profile?.avatar_url ?? undefined} />
           <AvatarFallback className="bg-lime-100 text-lime-800 font-bold">
             {userName.charAt(0).toUpperCase()}
           </AvatarFallback>

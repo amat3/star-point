@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyForm = import('react-hook-form').UseFormReturn<any>
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -26,15 +28,15 @@ import {
 } from '@/components/ui/form'
 import { PlayerOption } from '@/types'
 
-export function PlayerSelect({ 
-  name, 
-  label, 
-  form, 
-  players 
-}: { 
-  name: string, 
-  label: string, 
-  form: any,
+export function PlayerSelect({
+  name,
+  label,
+  form,
+  players
+}: {
+  name: string
+  label: string
+  form: AnyForm
   players: PlayerOption[]
 }) {
   const [open, setOpen] = useState(false)

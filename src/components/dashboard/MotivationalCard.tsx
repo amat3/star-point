@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Zap, Flame, Star, Trophy, Heart, Rocket, Target,
@@ -88,7 +91,7 @@ interface MotivationalCardProps {
 
 export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
   const firstName = userName.split(' ')[0]
-  const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
+  const [dayIndex] = useState(() => Math.floor(Date.now() / (1000 * 60 * 60 * 24)))
   const messages = gender === 'femenino' ? MESSAGES_FEM : MESSAGES_MASC
   const message = messages[dayIndex % messages.length]
   const Icon = ICONS[dayIndex % ICONS.length]

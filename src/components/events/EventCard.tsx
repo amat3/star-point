@@ -4,20 +4,11 @@ import { useState, useTransition } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, Clock, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle } from 'lucide-react'
-import { MixingEvent, EventParticipant } from '@/types/events'
+import { MixingEvent } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 
 interface EventCardProps {
   event: MixingEvent
@@ -34,17 +25,11 @@ function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
-function getInitials(name: string | null | undefined) {
-  if (!name) return 'JU'
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-}
-
-export function EventCard({ event, userId, userRole }: EventCardProps) {
+export function EventCard({ event, userRole }: EventCardProps) {
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
 
   const participantsCount = event.participants_count || 0
-  const isFull = participantsCount >= event.max_spots
   const isJoined = event.is_joined
 
   const handleJoin = () => {
@@ -52,8 +37,8 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
       try {
         await joinEvent(event.id)
         toast.success("Te has apuntado al evento")
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error))
       }
     })
   }
@@ -63,8 +48,8 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
       try {
         await leaveEvent(event.id)
         toast.success("Te has dado de baja del evento")
-      } catch (error: any) {
-        toast.error(error.message)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error))
       }
     })
   }
@@ -75,8 +60,8 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
         try {
             await removeParticipant(event.id, targetUserId)
             toast.success("Jugador eliminado")
-        } catch(error: any) {
-            toast.error(error.message)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : String(error))
         }
     })
   }
@@ -87,8 +72,8 @@ export function EventCard({ event, userId, userRole }: EventCardProps) {
           try {
               await deleteEvent(event.id)
               toast.success("Evento anulado")
-          } catch(error: any) {
-              toast.error(error.message)
+          } catch (error) {
+              toast.error(error instanceof Error ? error.message : String(error))
           }
       })
   }

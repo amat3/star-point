@@ -11,10 +11,9 @@ import {
   DialogDescription
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
-import { Plus, CalendarPlus } from 'lucide-react'
+import { CalendarPlus } from 'lucide-react'
 import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -44,6 +43,7 @@ export function CreateEventDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<FormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: "Mixing",
@@ -72,8 +72,8 @@ export function CreateEventDialog() {
       toast.success("Evento creado correctamente")
       setOpen(false)
       form.reset()
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error))
     } finally {
       setIsSubmitting(false)
     }

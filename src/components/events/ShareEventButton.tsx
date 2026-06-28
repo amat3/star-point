@@ -11,9 +11,6 @@ interface ShareEventButtonProps {
 export function ShareEventButton({ event }: ShareEventButtonProps) {
   const handleShare = async () => {
     // 1. Constantes
-    const textBold = '*'
-    const newLine = '%0A'
-    
     // 2. Formatear datos
     const date = new Date(event.start_time).toLocaleDateString('es-ES', { 
         weekday: 'long', 
