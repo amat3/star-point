@@ -55,6 +55,9 @@ export async function updateProfile(data: z.infer<typeof profileSchema>) {
     .eq('id', user.id)
 
   if (error) {
+    if (error.message.includes('profiles_full_name_unique')) {
+      throw new Error('Ese nombre ya está en uso. Elige otro.')
+    }
     throw new Error(error.message)
   }
 

@@ -181,7 +181,7 @@ export function ProfileForm({ currentName, profile }: ProfileFormProps) {
             name="full_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nombre Completo</FormLabel>
+                <FormLabel>Nombre</FormLabel>
                 <FormControl>
                   <Input placeholder="Tu nombre" {...field} />
                 </FormControl>
