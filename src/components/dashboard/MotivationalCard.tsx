@@ -94,22 +94,19 @@ export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
   const Icon = ICONS[dayIndex % ICONS.length]
 
   return (
-    <Card className="overflow-hidden relative border-none shadow-xl">
+    <Card className="overflow-hidden relative border-none shadow-xl transform transition-all duration-300 hover:scale-[1.01] group">
       <div className="absolute inset-0 bg-linear-to-br from-primary via-primary/90 to-blue-600 dark:from-primary/80 dark:to-blue-900 z-0" />
-      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white/10 blur-2xl z-0" />
-      <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-40 h-40 rounded-full bg-secondary/15 blur-3xl z-0" />
+      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 rounded-full bg-white/10 blur-xl z-0" />
+      <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-secondary/20 blur-2xl z-0" />
 
-      <CardContent className="relative z-10 p-5 sm:p-6 flex items-center gap-0 text-white">
-        {/* Mensaje */}
-        <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="shrink-0 p-2 rounded-xl bg-white/20 backdrop-blur-md">
-              <Icon className="h-4 w-4 text-secondary" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">
-              ¡Hola, {firstName}!
-            </span>
-          </div>
+      <CardContent className="relative z-10 p-5 sm:p-6 flex items-start gap-4 text-white">
+        <div className="shrink-0 p-3 rounded-2xl bg-white/20 backdrop-blur-md mt-0.5">
+          <Icon className="h-6 w-6 text-secondary" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
+            ¡Hola, {firstName}!
+          </span>
           <p className="text-sm sm:text-base font-medium text-white leading-snug">
             {message}
           </p>
