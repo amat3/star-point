@@ -37,23 +37,24 @@ export default async function EventPage(props: EventPageProps) {
        .order('joined_at', { ascending: true })
 
   // 3. Fetch Profiles for Participants
-  const userIds = rawParticipants?.map((p: any) => p.user_id) || []
-  let profilesMap: Record<string, any> = {}
-    
+  type EventProfile = { id: string; full_name?: string | null; avatar_url?: string | null }
+  const userIds = rawParticipants?.map((p) => p.user_id) || []
+  const profilesMap: Record<string, EventProfile> = {}
+
   if (userIds.length > 0) {
         const { data: profiles } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url')
             .in('id', userIds)
-            
-        profiles?.forEach((p: any) => {
+
+        profiles?.forEach((p) => {
             profilesMap[p.id] = p
         })
   }
 
   const isJoined = userIds.includes(user.id)
 
-  const formattedParticipants = rawParticipants?.map((p: any) => ({
+  const formattedParticipants = rawParticipants?.map((p) => ({
         user_id: p.user_id,
         full_name: profilesMap[p.user_id]?.full_name || 'Jugador',
         avatar_url: profilesMap[p.user_id]?.avatar_url

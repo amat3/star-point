@@ -185,9 +185,9 @@ export async function confirmMatch(matchId: string) {
 
     return { success: true }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error en transacción:', error)
-    return { success: false, error: error.message || 'Error desconocido al confirmar' }
+    return { success: false, error: error instanceof Error ? error.message : 'Error desconocido al confirmar' }
   }
 }
 

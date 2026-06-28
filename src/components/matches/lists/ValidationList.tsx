@@ -204,7 +204,7 @@ export function ValidationList({ matches, userId, userRole }: ValidationListProp
 
     toast.promise(promise, {
       loading: loadingText,
-      success: (result: any) => {
+      success: (result: { success: boolean; error?: string }) => {
         if (!result.success) throw new Error(result.error)
         router.refresh()
         return successText

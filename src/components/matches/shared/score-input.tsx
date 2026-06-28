@@ -3,18 +3,20 @@
 import { Plus, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FormMessage } from '@/components/ui/form'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyForm = import('react-hook-form').UseFormReturn<any>
 
 interface ScoreInputProps {
   name: string
-  form: any
+  form: AnyForm
   labelColor: string
   min?: number
   max?: number
 }
 
-export function ScoreInput({ 
-  name, 
-  form, 
+export function ScoreInput({
+  name,
+  form,
   labelColor,
   min = 0,
   max = 7

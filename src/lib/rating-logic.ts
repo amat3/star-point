@@ -56,7 +56,7 @@ export function calculateNewRating(
   const expectedScore = 1 / (1 + Math.pow(10, (opponentsRating - teamRating) / SCALE_DIVISOR));
   const actualScore = didWin ? 1 : 0;
 
-  let change = currentK * (actualScore - expectedScore) * intensityMultiplier * MATCH_WEIGHT * disparityWeight;
+  const change = currentK * (actualScore - expectedScore) * intensityMultiplier * MATCH_WEIGHT * disparityWeight;
   const clampedRating = Number(Math.max(MIN_RATING, Math.min(MAX_RATING, playerRating + change)).toFixed(3));
 
   return {

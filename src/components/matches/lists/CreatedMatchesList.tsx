@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Pencil } from 'lucide-react'
 import { Match } from '@/types'
@@ -44,7 +43,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
             {match.event && match.event.start_time && (
                 <div className="w-full text-center bg-gray-50 dark:bg-gray-900/50 py-1 rounded-t border-b border-gray-100 dark:border-gray-800 text-[10px] sm:text-xs text-muted-foreground font-medium truncate px-2 mb-2">
                     {(() => {
-                        const startDate = new Date(match.event?.start_time!);
+                        const startDate = new Date(match.event?.start_time ?? '');
                         const totalDuration = match.event?.duration_minutes || 90;
                         const rounds = match.event?.rounds || 1;
                         const durationPerRound = totalDuration / rounds;
@@ -84,7 +83,7 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                 </div>
 
                 {/* VS & Score */}
-                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-[70px] relative shrink-0">
+                <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 relative shrink-0">
                   {match.match_type === 'mixing' ? (
                      <Badge variant="secondary" className="mb-1 text-[10px] px-1 h-4 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Mixing</Badge>
                   ) : (

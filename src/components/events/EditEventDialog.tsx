@@ -46,6 +46,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
   const [datePart, timePart] = event.start_time.split('T')
   
   const form = useForm<FormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: event.title,
@@ -107,8 +108,8 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
       
       toast.success("Evento actualizado")
       onOpenChange(false)
-    } catch (error: any) {
-      toast.error(error.message || "Error al actualizar evento")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al actualizar evento")
       console.error(error)
     } finally {
       setIsLoading(false)

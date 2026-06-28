@@ -180,7 +180,6 @@ export function generateMixingRound(
 }
 
 function getPositionScore(a: MixingParticipant, b: MixingParticipant): number {
-    let score = 0
     const posA = a.court_position
     const posB = b.court_position
     

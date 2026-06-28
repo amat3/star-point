@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, RefreshCw, Save, ArrowLeftRight } from 'lucide-react'
+import { Loader2, ArrowLeft, RefreshCw, Save } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -26,13 +26,8 @@ const COURT_NAMES = [
   'ESTRELLA DAMM (exterior)',
 ]
 
-interface PageProps {
-  params: any
-}
-
-export default function GenerateMixPage({ params: propParams }: PageProps) {
+export default function GenerateMixPage() {
   const router = useRouter()
-  // Safer way to get params in client component
   const params = useParams()
   const id = params?.id as string
   
@@ -71,6 +66,7 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
     } else {
         console.error("No ID found in params")
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   async function loadData() {
@@ -83,8 +79,8 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
       setParticipants(data)
       setMaxSpots(max_spots)
       setRoundsCount(rounds)
-    } catch (error: any) {
-      toast.error(`Error cargando: ${error.message}`)
+    } catch (error) {
+      toast.error(`Error cargando: ${error instanceof Error ? error.message : String(error)}`)
       console.error("LoadData Error:", error)
     } finally {
       setLoadingData(false)
@@ -108,8 +104,8 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
                 const result = await closeEventWithGuests(id)
                 toast.info(`${result.added} invitado${result.added > 1 ? 's' : ''} añadido${result.added > 1 ? 's' : ''} automáticamente.`)
                 await loadData()
-            } catch (e: any) {
-                toast.error(e.message)
+            } catch (e) {
+                toast.error(e instanceof Error ? e.message : String(e))
                 return
             }
         }
@@ -118,7 +114,7 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
         
         console.log("Cloning participants...")
         // Deep clone to avoid mutating state directly and to reset for calculation
-        let currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
+        const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
 
         console.log("Starting loop", roundsCount)
         for (let i = 0; i < roundsCount; i++) {
@@ -156,9 +152,9 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
         setSelectedPlayerId(null)
         setActiveTab("round-1")
         toast.success(`${roundsCount} rondas generadas`)
-    } catch (e: any) {
+    } catch (e) {
         console.error("CRITICAL ERROR IN GENERATE:", e)
-        toast.error(`Error crítico: ${e.message}`)
+        toast.error(`Error crítico: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
@@ -191,12 +187,13 @@ export default function GenerateMixPage({ params: propParams }: PageProps) {
         const m2 = c1.mIdx === c2.mIdx ? m1 : { ...newMatches[c2.mIdx] }
         if (c1.mIdx !== c2.mIdx) newMatches[c2.mIdx] = m2
 
-        const playerKeys = ['player1', 'player2', 'player3', 'player4'] as const
-        const p1Val = (m1 as any)[playerKeys[c1.pIdx]]
-        const p2Val = (m2 as any)[playerKeys[c2.pIdx]];
+        type PlayerKey = 'player1' | 'player2' | 'player3' | 'player4'
+        const playerKeys: PlayerKey[] = ['player1', 'player2', 'player3', 'player4']
+        const p1Val = m1[playerKeys[c1.pIdx]]
+        const p2Val = m2[playerKeys[c2.pIdx]]
 
-        (m1 as any)[playerKeys[c1.pIdx]] = p2Val;
-        (m2 as any)[playerKeys[c2.pIdx]] = p1Val
+        m1[playerKeys[c1.pIdx]] = p2Val
+        m2[playerKeys[c2.pIdx]] = p1Val
 
         m1.pairA = [m1.player1, m1.player2]
         m1.pairB = [m1.player3, m1.player4]

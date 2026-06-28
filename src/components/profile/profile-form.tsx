@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { LogOut, Eye, EyeOff } from 'lucide-react'
 import { updateProfile } from '@/app/actions/users'
+import type { Profile } from '@/types'
 
 // Change Password Component
 function ChangePasswordForm() {
@@ -65,9 +66,9 @@ function ChangePasswordForm() {
       toast.success('Contraseña actualizada correctamente')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error changing password:', error)
-      toast.error(error.message || 'Error al cambiar la contraseña')
+      toast.error(error instanceof Error ? error.message : 'Error al cambiar la contraseña')
     } finally {
       setIsLoading(false)
     }
@@ -126,12 +127,12 @@ const formSchema = z.object({
 })
 
 interface ProfileFormProps {
-  userId: string
+  userId?: string
   currentName: string
-  profile?: any // Pass full profile to pre-fill
+  profile?: Partial<Profile>
 }
 
-export function ProfileForm({ userId, currentName, profile }: ProfileFormProps) {
+export function ProfileForm({ currentName, profile }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -153,9 +154,9 @@ export function ProfileForm({ userId, currentName, profile }: ProfileFormProps) 
 
       toast.success('Perfil actualizado correctamente')
       router.refresh()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating profile:', error)
-      toast.error(error.message || 'Error al actualizar el perfil')
+      toast.error(error instanceof Error ? error.message : 'Error al actualizar el perfil')
     } finally {
       setIsLoading(false)
     }

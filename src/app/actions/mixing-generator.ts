@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { MixingParticipant, RoundProposal, MatchProposal } from '@/lib/mixing-algorithm'
+import { MixingParticipant, MatchProposal } from '@/lib/mixing-algorithm'
 
 // Helper to get raw data for the algorithm
 export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number }> {
@@ -18,22 +18,23 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   if (pError) throw new Error(pError.message)
 
   // 1b. Fetch profiles for these users manually
-  const userIds = participants.map((p: any) => p.user_id)
-  let profilesMap: Record<string, any> = {}
+  type MixingProfile = { id: string; rating?: number; full_name?: string; gender?: string; court_position?: string; preferred_hand?: string; is_guest?: boolean }
+  const userIds = participants.map((p) => p.user_id)
+  const profilesMap: Record<string, MixingProfile> = {}
 
   if (userIds.length > 0) {
       const { data: profiles } = await supabase
           .from('profiles')
           .select('id, rating, full_name, gender, court_position, preferred_hand, is_guest')
           .in('id', userIds)
-      
-      profiles?.forEach((p: any) => {
+
+      profiles?.forEach((p) => {
           profilesMap[p.id] = p
       })
   }
 
   // Combine data
-  const combinedParticipants = participants.map((p: any) => ({
+  const combinedParticipants = participants.map((p) => ({
       user_id: p.user_id,
       profiles: profilesMap[p.user_id] || {}
   }))
@@ -54,7 +55,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
 
   // 2. Fetch all matches of this event to build history
   // Now we can filter strictly by event_id to see previous rounds of THIS event
-  const { data: matches, error: mError } = await supabase
+  const { data: matches } = await supabase
     .from('matches')
     .select('player_a1, player_a2, player_b1, player_b2')
     .eq('event_id', eventId)
@@ -64,14 +65,14 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   const historyMap = new Map<string, Set<string>>()
   const opponentsMap = new Map<string, Set<string>>()
   
-  titulares.forEach((p: any) => {
+  titulares.forEach((p) => {
       historyMap.set(p.user_id, new Set())
       opponentsMap.set(p.user_id, new Set())
   })
 
   // Build history (who played with whom as PARTNER and OPPONENT)
   if (matches) {
-      matches.forEach((m: any) => {
+      matches.forEach((m) => {
           const a1 = m.player_a1
           const a2 = m.player_a2
           const b1 = m.player_b1
@@ -103,7 +104,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   }
 
   // Transform to serializable object (Set -> Array)
-  const mappedParticipants = titulares.map((p: any) => {
+  const mappedParticipants = titulares.map((p) => {
       const profile = p.profiles
       return {
           id: p.user_id,
@@ -118,7 +119,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   })
 
   return { 
-      participants: mappedParticipants as any, // Cast to any to avoid type mismatch with Set vs Array
+      participants: mappedParticipants as MixingParticipant[],
       max_spots: maxSpots,
       rounds: eventData.rounds || 1
   }
