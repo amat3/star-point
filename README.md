@@ -14,6 +14,7 @@
 - Lista de espera automática (titulares vs. reservas por orden de inscripción)
 - Guardado atómico de todas las rondas en una sola operación de BD
 - Los jugadores ven los cambios en tiempo real sin recargar la página
+- **Cron automático**: cada miércoles a las 22:00 (hora España) se crea la convocatoria de la semana siguiente vía Vercel Cron, con manejo correcto de cambio de hora verano/invierno
 
 ### 🏆 Ranking ELO adaptado a pádel dobles
 - **K-factor dinámico**: `K=0.40` para nuevos jugadores (< 10 partidos), `K=0.15` para veteranos
