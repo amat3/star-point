@@ -8,44 +8,31 @@ import { Eye, Shield } from 'lucide-react'
 export function ViewToggle() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
-  const isPlayerView = searchParams.get('view') === 'player'
+
+  const isAdminView = searchParams.get('view') === 'admin'
 
   const toggleView = (checked: boolean) => {
-    // If checked (Admin View), remove param. If unchecked (Player View), add param.
-    // Wait, let's make the switch represent "Admin Mode".
-    // ON = Admin Mode (default), OFF = Player Mode
-    
-    // So if isPlayerView is true, the switch is OFF.
-    // If we turn it ON, we remove the param.
-    
-    // UI: "Vista Admin" [Switch]
-    
     const newParams = new URLSearchParams(searchParams.toString())
-    
     if (checked) {
-        // Switch turned ON -> Admin Mode
-        newParams.delete('view')
+      newParams.set('view', 'admin')
     } else {
-        // Switch turned OFF -> Player Mode
-        newParams.set('view', 'player')
+      newParams.delete('view')
     }
-    
     router.push(`?${newParams.toString()}`)
   }
 
   return (
     <div className="flex items-center space-x-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
-      {isPlayerView ? <Eye className="h-4 w-4 text-gray-500" /> : <Shield className="h-4 w-4 text-primary" />}
+      {isAdminView ? <Shield className="h-4 w-4 text-primary" /> : <Eye className="h-4 w-4 text-gray-500" />}
       <div className="flex items-center space-x-2">
-        <Switch 
-            id="view-mode" 
-            checked={!isPlayerView} 
-            onCheckedChange={toggleView}
-            className="scale-75 data-[state=checked]:bg-primary"
+        <Switch
+          id="view-mode"
+          checked={isAdminView}
+          onCheckedChange={toggleView}
+          className="scale-75 data-[state=checked]:bg-primary"
         />
-        <Label htmlFor="view-mode" className="text-xs font-medium cursor-pointer min-w-[60px]">
-            {isPlayerView ? 'Vista Player' : 'Vista Admin'}
+        <Label htmlFor="view-mode" className="text-xs font-medium cursor-pointer min-w-15">
+          {isAdminView ? 'Vista Admin' : 'Vista Player'}
         </Label>
       </div>
     </div>
