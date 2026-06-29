@@ -240,7 +240,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
             {isPending ? "Procesando..." : (
                 <>
                     <UserMinus className="w-4 h-4 mr-2" />
-                    Desapuntarme
+                    Me Borro
                 </>
             )}
           </Button>
