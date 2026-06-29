@@ -146,6 +146,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ currentName, profile }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -165,6 +166,8 @@ export function ProfileForm({ currentName, profile }: ProfileFormProps) {
       await updateProfile(values)
 
       toast.success('Perfil actualizado correctamente')
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 4000)
       router.refresh()
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -275,9 +278,18 @@ export function ProfileForm({ currentName, profile }: ProfileFormProps) {
             </div>
           </div>
 
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading || success}>
             {isLoading ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
+
+          {success && (
+            <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-green-700 dark:text-green-400 text-sm font-medium animate-in fade-in duration-300">
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Perfil actualizado correctamente
+            </div>
+          )}
         </form>
       </Form>
 
