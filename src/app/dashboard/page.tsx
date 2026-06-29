@@ -41,9 +41,9 @@ export default async function DashboardPage(props: DashboardProps) {
 
   // Fallback defaults if profile doesn't exist yet (or handle error)
   const realRole = profile?.role ?? 'player'
-  // If user is admin AND ?view=player is present, downgrade effective role to player
-  const isViewPlayer = searchParams?.view === 'player'
-  const userRole = (realRole === 'admin' && isViewPlayer) ? 'player' : realRole
+  // Admins see player view by default; ?view=admin activates admin features
+  const isViewAdmin = searchParams?.view === 'admin'
+  const userRole = (realRole === 'admin' && isViewAdmin) ? 'admin' : (realRole === 'admin' ? 'player' : realRole)
 
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
   const userGender = profile?.gender ?? 'otro'
