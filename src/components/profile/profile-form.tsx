@@ -27,6 +27,7 @@ function ChangePasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const supabase = createClient()
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -66,6 +67,8 @@ function ChangePasswordForm() {
       toast.success('Contraseña actualizada correctamente')
       setNewPassword('')
       setConfirmPassword('')
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 4000)
     } catch (error) {
       console.error('❌ Error changing password:', error)
       toast.error(error instanceof Error ? error.message : 'Error al cambiar la contraseña')
@@ -112,9 +115,18 @@ function ChangePasswordForm() {
           minLength={6}
         />
       </div>
-      <Button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading || success}>
         {isLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
       </Button>
+
+      {success && (
+        <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-green-700 dark:text-green-400 text-sm font-medium animate-in fade-in duration-300">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+          Contraseña actualizada correctamente
+        </div>
+      )}
     </form>
   )
 }
