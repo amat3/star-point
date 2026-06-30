@@ -5,7 +5,7 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 
-const MAX_RESERVES = 3
+const MAX_RESERVES = 6
 
 export async function getOpenEvents(): Promise<MixingEvent[]> {
   const supabase = await createClient()
