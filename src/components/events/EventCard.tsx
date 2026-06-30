@@ -186,7 +186,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
 
             {/* Reservas — solo si hay alguien en lista de espera */}
             {(() => {
-                const MAX_RESERVES = 3
+                const MAX_RESERVES = 6
                 const filledReserves = Math.max(0, participantsCount - event.max_spots)
                 const slotsToShow = Math.min(filledReserves + 1, MAX_RESERVES)
                 return (
