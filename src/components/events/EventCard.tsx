@@ -170,7 +170,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                                     onClick={() => handleRemoveParticipant(participant.user_id)}
                                     title="Eliminar jugador"
                                 >
@@ -211,7 +211,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                         onClick={() => handleRemoveParticipant(participant.user_id)}
                                         title="Eliminar jugador"
                                     >
