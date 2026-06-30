@@ -7,8 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export const PLAYERS_PER_COURT = 4
 
+export function toTitleCase(name: string | null | undefined) {
+  return (name ?? '').toLowerCase().split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean } | null | undefined) {
-  const parts = (p?.full_name ?? '?').split(' ').slice(0, 2)
+  const parts = toTitleCase(p?.full_name ?? '?').split(' ').slice(0, 2)
   const name = parts.map((n, i) => i === 1 && isNaN(Number(n)) ? n.charAt(0) + '.' : n).join(' ')
   return { name, isGuest: p?.is_guest ?? false }
 }

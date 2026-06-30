@@ -8,6 +8,7 @@ import { ProfileForm } from '@/components/profile/profile-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft } from 'lucide-react'
+import { toTitleCase } from '@/lib/utils'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -60,7 +61,7 @@ export default async function ProfilePage() {
               </Avatar>
               <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {userName}
+                  {toTitleCase(userName)}
                 </h2>
               </div>
             </div>

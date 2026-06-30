@@ -17,6 +17,7 @@ import { Form } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { Match } from '@/types'
 import { ScoreInput } from '../shared/score-input'
+import { toTitleCase } from '@/lib/utils'
 
 const formSchema = z.object({
   games_a: z.coerce.number().min(0),
@@ -81,13 +82,13 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex justify-between items-center text-sm px-4">
               <div className="text-center w-1/3">
-                <div className="font-bold text-primary truncate">{match.p_a1?.full_name?.split(' ')[0]}</div>
-                <div className="font-bold text-primary truncate">{match.p_a2?.full_name?.split(' ')[0]}</div>
+                <div className="font-bold text-primary truncate">{toTitleCase(match.p_a1?.full_name).split(' ')[0]}</div>
+                <div className="font-bold text-primary truncate">{toTitleCase(match.p_a2?.full_name).split(' ')[0]}</div>
               </div>
               <div className="font-black text-muted-foreground">VS</div>
               <div className="text-center w-1/3">
-                <div className="font-bold text-secondary-foreground truncate">{match.p_b1?.full_name?.split(' ')[0]}</div>
-                <div className="font-bold text-secondary-foreground truncate">{match.p_b2?.full_name?.split(' ')[0]}</div>
+                <div className="font-bold text-secondary-foreground truncate">{toTitleCase(match.p_b1?.full_name).split(' ')[0]}</div>
+                <div className="font-bold text-secondary-foreground truncate">{toTitleCase(match.p_b2?.full_name).split(' ')[0]}</div>
               </div>
             </div>
 

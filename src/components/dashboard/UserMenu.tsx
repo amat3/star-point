@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
+import { toTitleCase } from '@/lib/utils'
 
 interface UserMenuProps {
   profile?: { avatar_url?: string | null } | null
@@ -26,7 +27,7 @@ export function UserMenu({ profile, userName }: UserMenuProps) {
       </div>
       <div className="text-left py-1">
         <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white line-clamp-1 leading-tight">
-          {userName}
+          {toTitleCase(userName)}
         </p>
       </div>
     </Link>
