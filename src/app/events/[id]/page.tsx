@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { EventCard } from '@/components/events/EventCard'
 import { ShareEventButton } from '@/components/events/ShareEventButton'
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
+import { NotificationListener } from '@/components/dashboard/NotificationListener'
 import { MixingEvent } from '@/types/events'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -83,6 +84,7 @@ export default async function EventPage(props: EventPageProps) {
   return (
     <div className="container mx-auto max-w-md py-8 px-4 space-y-8 animate-in fade-in duration-500">
       <RealtimeRefresher />
+      <NotificationListener userId={user.id} />
         <div className="flex items-center gap-4 mb-6">
             <Link href="/dashboard">
                 <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">

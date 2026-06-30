@@ -76,7 +76,6 @@ export function EventCard({ event, userRole }: EventCardProps) {
       action: () => startTransition(async () => {
         try {
           await removeParticipant(event.id, targetUserId)
-          toast.success("Jugador eliminado")
         } catch (error) {
           toast.error(error instanceof Error ? error.message : String(error))
         }

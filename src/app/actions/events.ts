@@ -133,11 +133,10 @@ export async function leaveEvent(eventId: string) {
     throw new Error('No puedes abandonar un evento que ya ha comenzado')
   }
 
-  const { error } = await supabase
-    .from('event_participants')
-    .delete()
-    .eq('event_id', eventId)
-    .eq('user_id', user.id)
+  const { error } = await supabase.rpc('leave_event_atomic', {
+    p_event_id: eventId,
+    p_user_id: user.id,
+  })
 
   if (error) throw error instanceof Error ? error : new Error(String(error))
 
@@ -271,11 +270,10 @@ export async function removeParticipant(eventId: string, userId: string) {
       .eq('id', userId)
       .single()
 
-    const { error } = await adminSupabase
-      .from('event_participants')
-      .delete()
-      .eq('event_id', eventId)
-      .eq('user_id', userId)
+    const { error } = await supabase.rpc('leave_event_atomic', {
+      p_event_id: eventId,
+      p_user_id: userId,
+    })
 
     if (error) throw error instanceof Error ? error : new Error(String(error))
 
