@@ -4,7 +4,7 @@ import { useState } from 'react'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyForm = import('react-hook-form').UseFormReturn<any>
 import { Check, ChevronsUpDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, toTitleCase } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -60,7 +60,7 @@ export function PlayerSelect({
                   )}
                 >
                   {field.value
-                    ? players.find((player) => player.id === field.value)?.full_name
+                    ? toTitleCase(players.find((player) => player.id === field.value)?.full_name)
                     : "Seleccionar jugador"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -89,7 +89,7 @@ export function PlayerSelect({
                               : "opacity-0"
                           )}
                         />
-                        {player.full_name}
+                        {toTitleCase(player.full_name)}
                       </CommandItem>
                     ))}
                   </CommandGroup>

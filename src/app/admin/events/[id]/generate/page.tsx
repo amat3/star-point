@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { Loader2, ArrowLeft, RefreshCw, Save } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toTitleCase } from '@/lib/utils'
 
 const MAX_GUEST_FILL = 3
 
@@ -426,7 +427,7 @@ export default function GenerateMixPage() {
                                 <h3 className="font-bold text-yellow-800 dark:text-yellow-200">Jugadores sin asignar:</h3>
                                 <ul>
                                     {proposal.leftovers.map(l => (
-                                        <li key={l.id}>{l.full_name} ({l.rating})</li>
+                                        <li key={l.id}>{toTitleCase(l.full_name)} ({l.rating})</li>
                                     ))}
                                 </ul>
                             </div>
@@ -452,7 +453,7 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
             `}
         >
             <div className="font-bold text-xs sm:text-sm truncate w-full text-center min-w-0" title={player.full_name}>
-                {player.full_name}
+                {toTitleCase(player.full_name)}
             </div>
             <div className="flex gap-1 text-[10px] text-muted-foreground">
                 <span>{player.rating.toFixed(1)}</span>

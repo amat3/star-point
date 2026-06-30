@@ -5,6 +5,7 @@ import { getPlayersRanking } from '@/app/actions/users'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { toTitleCase } from '@/lib/utils'
 
 type Player = {
   id: string
@@ -78,7 +79,7 @@ export function PlayerRankingPanel() {
                 key={p.id}
                 className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
-                <span className="font-medium text-gray-900 dark:text-white truncate">{p.full_name ?? '—'}</span>
+                <span className="font-medium text-gray-900 dark:text-white truncate">{p.full_name ? toTitleCase(p.full_name) : '—'}</span>
                 <span className="text-[10px] text-center text-muted-foreground">
                   {positionLabel[p.court_position ?? ''] ?? '—'}
                 </span>

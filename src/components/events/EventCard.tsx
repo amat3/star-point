@@ -10,6 +10,7 @@ import { EditEventDialog } from './EditEventDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { toTitleCase } from '@/lib/utils'
 
 interface EventCardProps {
   event: MixingEvent
@@ -160,7 +161,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                             <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
                                 <span className="text-base shrink-0">🎾</span>
                                 <span className={`truncate ${participant ? "text-gray-700 dark:text-gray-200 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
-                                    {participant?.full_name || "Libre"}
+                                    {participant ? toTitleCase(participant.full_name) : "Libre"}
                                 </span>
                                 {participant?.is_guest && (
                                     <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
@@ -204,7 +205,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                 <div className="flex items-center overflow-hidden">
                                     <span className="mr-2 text-base text-amber-500 shrink-0">🎾</span>
                                     <span className={`truncate ${participant ? "text-amber-700 dark:text-amber-400 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
-                                        {participant?.full_name || "Hueco reserva"}
+                                        {participant ? toTitleCase(participant.full_name) : "Hueco reserva"}
                                     </span>
                                 </div>
                                 {participant && userRole === 'admin' && (
