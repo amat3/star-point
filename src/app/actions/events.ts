@@ -355,3 +355,34 @@ export async function closeEventWithGuests(eventId: string) {
   }
 }
 
+export async function addParticipant(eventId: string, userId: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (!event || event.status !== 'open') throw new Error("El evento no está abierto")
+
+    const { count } = await supabase
+      .from('event_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+    if ((count ?? 0) > 0) throw new Error("El jugador ya está apuntado")
+
+    const { error } = await supabase
+      .from('event_participants')
+      .insert({ event_id: eventId, user_id: userId })
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+}
