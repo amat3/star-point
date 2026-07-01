@@ -7,6 +7,7 @@ import { Calendar, Clock, Users, UserMinus, UserPlus, Pencil, Trash2, X, Shuffle
 import { MixingEvent } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
+import { AddParticipantDialog } from './AddParticipantDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -118,6 +119,12 @@ export function EventCard({ event, userRole }: EventCardProps) {
             </Link>
             {userRole === 'admin' && (
                 <div className="flex gap-1">
+                    {event.status === 'open' && (
+                        <AddParticipantDialog
+                            eventId={event.id}
+                            alreadyJoined={(event.participants || []).map(p => p.user_id)}
+                        />
+                    )}
                     <Link href={`/admin/events/${event.id}/generate`}>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
                             <Shuffle className="h-4 w-4" />
