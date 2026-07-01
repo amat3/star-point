@@ -34,6 +34,99 @@ export interface RoundProposal {
   leftovers: MixingParticipant[]
 }
 
+function getPairGroupings(indices: number[], groupCount: number): [number, number][][] {
+  if (groupCount === 0) return [[]]
+  const [first, ...rest] = indices
+  const result: [number, number][][] = []
+  for (let i = 0; i < rest.length; i++) {
+    const second = rest[i]
+    const remaining = rest.filter((_, j) => j !== i)
+    for (const sub of getPairGroupings(remaining, groupCount - 1)) {
+      result.push([[first, second], ...sub])
+    }
+  }
+  return result
+}
+
+function generateSnakeRound(
+  participants: MixingParticipant[],
+  config: MixingConfig
+): RoundProposal {
+  const sorted = [...participants].sort((a, b) => {
+    if (config.avoidRepetition) {
+      const noise = 0.5
+      const rA = a.rating + (Math.random() - 0.5) * noise
+      const rB = b.rating + (Math.random() - 0.5) * noise
+      return rB - rA
+    }
+    return b.rating - a.rating
+  })
+
+  const courtCount = Math.floor(sorted.length / 4)
+  const usableCount = courtCount * 4
+  const leftovers = sorted.slice(usableCount)
+  const usable = sorted.slice(0, usableCount)
+  const halfN = usableCount / 2
+
+  // Snake pairs: P[0]+P[n-1], P[1]+P[n-2], ...
+  const pairs: [MixingParticipant, MixingParticipant][] = []
+  for (let i = 0; i < halfN; i++) {
+    pairs.push([usable[i], usable[usableCount - 1 - i]])
+  }
+
+  const buildMatch = (pairA: [MixingParticipant, MixingParticipant], pairB: [MixingParticipant, MixingParticipant], courtNumber: number): MatchProposal => ({
+    courtNumber,
+    player1: pairA[0], player2: pairA[1],
+    player3: pairB[0], player4: pairB[1],
+    pairA, pairB
+  })
+
+  const scoreGrouping = (grouping: [number, number][]): number => {
+    let score = 0
+    for (const [aIdx, bIdx] of grouping) {
+      const pA = pairs[aIdx]
+      const pB = pairs[bIdx]
+      const [a1, a2, b1, b2] = [pA[0], pA[1], pB[0], pB[1]]
+      if (a1.past_partners.includes(a2.id)) score -= 2000
+      if (b1.past_partners.includes(b2.id)) score -= 2000
+      if (a1.past_opponents.includes(b1.id)) score -= 500
+      if (a1.past_opponents.includes(b2.id)) score -= 500
+      if (a2.past_opponents.includes(b1.id)) score -= 500
+      if (a2.past_opponents.includes(b2.id)) score -= 500
+      if (a1.past_partners.includes(b1.id)) score -= 200
+      if (a1.past_partners.includes(b2.id)) score -= 200
+      if (a2.past_partners.includes(b1.id)) score -= 200
+      if (a2.past_partners.includes(b2.id)) score -= 200
+      const diff = Math.abs((a1.rating + a2.rating) - (b1.rating + b2.rating))
+      score -= diff * 10
+    }
+    return score
+  }
+
+  const matches: MatchProposal[] = []
+
+  if (config.avoidRepetition) {
+    const pairIndices = Array.from({ length: halfN }, (_, i) => i)
+    const groupings = getPairGroupings(pairIndices, courtCount)
+    let bestScore = -Infinity
+    let bestGrouping = groupings[0]
+    for (const g of groupings) {
+      const s = scoreGrouping(g)
+      if (s > bestScore) { bestScore = s; bestGrouping = g }
+    }
+    bestGrouping.forEach(([aIdx, bIdx], courtIdx) => {
+      matches.push(buildMatch(pairs[aIdx], pairs[bIdx], courtIdx + 1))
+    })
+  } else {
+    // Mirror assignment: court i = pairs[i] vs pairs[halfN-1-i]
+    for (let i = 0; i < courtCount; i++) {
+      matches.push(buildMatch(pairs[i], pairs[halfN - 1 - i], i + 1))
+    }
+  }
+
+  return { matches, leftovers }
+}
+
 /**
  * Main function to generate a round of matches
  */
@@ -41,6 +134,8 @@ export function generateMixingRound(
   participants: MixingParticipant[],
   config: MixingConfig
 ): RoundProposal {
+  if (config.balanceStrategy === 'pro_am') return generateSnakeRound(participants, config)
+
   // 1. Sort by Rating (High to Low)
   // If 'avoidRepetition' is ON, we add a small "jitter" to the rating to allow
   // players on the border of a court group (e.g. #4 and #5) to swap places.

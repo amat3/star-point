@@ -272,18 +272,18 @@ export default function GenerateMixPage() {
                     >
                         Niveles Similares
                     </Button>
-                    <Button 
+                    <Button
                         variant={config.balanceStrategy === 'pro_am' ? 'default' : 'outline'}
                         onClick={() => setConfig({...config, balanceStrategy: 'pro_am'})}
                         size="sm"
                     >
-                        Pro-Am
+                        Serpentín
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    {config.balanceStrategy === 'similar_levels' 
-                        ? 'Equilibra la media de las parejas (A vs B) para partidos reñidos.' 
-                        : 'Junta al mejor de la pista con el de menor nivel (1º+4º vs 2º+3º).'
+                    {config.balanceStrategy === 'similar_levels'
+                        ? 'Agrupa por nivel: los mejores en la misma pista, los peores en la misma pista.'
+                        : 'El mejor se empareja con el peor, el 2º con el 11º, etc. Mezcla todos los niveles en todas las pistas.'
                     }
                 </p>
             </div>
