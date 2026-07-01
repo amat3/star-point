@@ -374,7 +374,8 @@ export async function addParticipant(eventId: string, userId: string) {
       .eq('user_id', userId)
     if ((count ?? 0) > 0) throw new Error("El jugador ya está apuntado")
 
-    const { error } = await supabase
+    const adminSupabase = getAdminClient()
+    const { error } = await adminSupabase
       .from('event_participants')
       .insert({ event_id: eventId, user_id: userId })
 
