@@ -11,6 +11,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { CalendarPlus } from 'lucide-react'
@@ -33,7 +34,8 @@ const formSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
   courts: z.number().min(1, "Mínimo 1 pista").max(9, "Máximo 9 pistas"),
   rounds: z.number().min(1).max(6).default(3),
-  duration_minutes: z.number().min(30).default(90)
+  duration_minutes: z.number().min(30).default(90),
+  is_test: z.boolean().default(false),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -51,7 +53,8 @@ export function CreateEventDialog() {
       date: new Date().toISOString().split('T')[0],
       time: "20:00",
       rounds: 3,
-      duration_minutes: 90
+      duration_minutes: 90,
+      is_test: false,
     }
   })
 
@@ -66,7 +69,8 @@ export function CreateEventDialog() {
         start_time: dateTime.toISOString(),
         max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
-        duration_minutes: values.duration_minutes
+        duration_minutes: values.duration_minutes,
+        is_test: values.is_test,
       })
 
       toast.success("Evento creado correctamente")
@@ -191,6 +195,25 @@ export function CreateEventDialog() {
                     </div>
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="is_test"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3">
+                  <div>
+                    <FormLabel className="text-sm font-medium text-amber-800 dark:text-amber-300">Evento de prueba</FormLabel>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">Los resultados no afectan al ranking ni estadísticas</p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

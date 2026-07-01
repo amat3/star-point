@@ -17,14 +17,15 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
   const { data: events, error } = await supabase
     .from('events')
     .select(`
-        id, 
-        title, 
-        start_time, 
+        id,
+        title,
+        start_time,
         max_spots,
         rounds,
         duration_minutes,
         status,
-        created_by
+        created_by,
+        is_test
     `)
     .eq('status', 'open')
     .order('start_time', { ascending: true })
@@ -81,6 +82,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
       ...event,
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90,
+      is_test: event.is_test ?? false,
       participants_count: rawParticipants?.length || 0,
       participants: formattedParticipants,
       is_joined: isJoined
@@ -144,7 +146,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean }) {
   try {
     const supabase = await createClient()
     
@@ -173,7 +175,8 @@ export async function createEvent(data: { title: string, start_time: string, max
         rounds: data.rounds,
         duration_minutes: data.duration_minutes,
         created_by: user.id,
-        status: 'open'
+        status: 'open',
+        is_test: data.is_test ?? false,
       })
 
     if (error) {

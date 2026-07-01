@@ -114,9 +114,16 @@ export function EventCard({ event, userRole }: EventCardProps) {
       />
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-            <Link href={`/events/${event.id}`} className="hover:underline">
-                <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
-            </Link>
+            <div className="flex flex-col gap-1">
+                <Link href={`/events/${event.id}`} className="hover:underline">
+                    <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
+                </Link>
+                {event.is_test && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full w-fit">
+                        🧪 Prueba · No computa en ranking
+                    </span>
+                )}
+            </div>
             {userRole === 'admin' && (
                 <div className="flex gap-1">
                     {event.status === 'open' && (
