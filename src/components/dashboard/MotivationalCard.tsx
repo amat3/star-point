@@ -77,7 +77,6 @@ interface MotivationalCardProps {
 }
 
 export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
-  const firstName = userName.split(' ')[0]
   const [dayIndex] = useState(() => Math.floor(Date.now() / (1000 * 60 * 60 * 24)))
   const messages = gender === 'femenino' ? MESSAGES_FEM : MESSAGES_MASC
   const fullMessage = messages[dayIndex % messages.length]
@@ -96,7 +95,7 @@ export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
-            ¡Hola, {firstName}!
+            ¡Hola, {userName}!
           </span>
           <p className="text-sm sm:text-base font-medium text-white leading-snug">
             {text}
