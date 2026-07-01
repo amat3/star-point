@@ -12,7 +12,5 @@ export function toTitleCase(name: string | null | undefined) {
 }
 
 export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean } | null | undefined) {
-  const parts = toTitleCase(p?.full_name ?? '?').split(' ').slice(0, 2)
-  const name = parts.map((n, i) => i === 1 && isNaN(Number(n)) ? n.charAt(0) + '.' : n).join(' ')
-  return { name, isGuest: p?.is_guest ?? false }
+  return { name: toTitleCase(p?.full_name ?? '?'), isGuest: p?.is_guest ?? false }
 }
