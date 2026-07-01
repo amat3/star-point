@@ -75,10 +75,10 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                   <div className="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Pareja A</div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                     <p className="truncate" title={match.p_a1?.full_name}>
-                        {toTitleCase(match.p_a1?.full_name).split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                        {toTitleCase(match.p_a1?.full_name)}
                     </p>
                     <p className="truncate" title={match.p_a2?.full_name}>
-                        {toTitleCase(match.p_a2?.full_name).split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                        {toTitleCase(match.p_a2?.full_name)}
                     </p>
                   </div>
                 </div>
@@ -100,10 +100,10 @@ export function CreatedMatchesList({ matches }: CreatedMatchesListProps) {
                   <div className="text-[10px] uppercase tracking-wider text-lime-600 font-bold">Pareja B</div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                     <p className="truncate" title={match.p_b1?.full_name}>
-                        {toTitleCase(match.p_b1?.full_name).split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                        {toTitleCase(match.p_b1?.full_name)}
                     </p>
                     <p className="truncate" title={match.p_b2?.full_name}>
-                        {toTitleCase(match.p_b2?.full_name).split(' ').slice(0, 2).map((n, i) => i === 1 ? n.charAt(0) + '.' : n).join(' ')}
+                        {toTitleCase(match.p_b2?.full_name)}
                     </p>
                   </div>
                 </div>
