@@ -58,7 +58,6 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   const { data: matches } = await supabase
     .from('matches')
     .select('player_a1, player_a2, player_b1, player_b2')
-    .eq('event_id', eventId)
     .eq('match_type', 'mixing')
     .in('status', ['pending', 'confirmed'])
   
