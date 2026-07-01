@@ -8,7 +8,8 @@ export interface MixingEvent {
   duration_minutes: number
   status: 'open' | 'closed' | 'finished'
   created_by: string
-  
+  is_test: boolean
+
   // Virtual properties (joined columns or computed)
   participants_count?: number
   is_joined?: boolean

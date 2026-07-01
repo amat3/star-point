@@ -35,7 +35,7 @@ export async function confirmMatch(matchId: string) {
   // 1. Obtener los detalles del partido
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select('*')
+    .select('*, events(is_test)')
     .eq('id', matchId)
     .single()
 
@@ -97,6 +97,20 @@ export async function confirmMatch(matchId: string) {
 
   if (gamesA === 0 && gamesB === 0) {
     return { success: false, error: 'El partido no tiene marcador registrado. Añade el resultado antes de confirmar.' }
+  }
+
+  // Evento de prueba: confirmar sin actualizar ratings ni estadísticas
+  const isTestEvent = (match.events as { is_test: boolean } | null)?.is_test ?? false
+  if (isTestEvent) {
+    const { getAdminClient } = await import('@/utils/supabase/admin')
+    const adminSupabase = getAdminClient()
+    const { error: testError } = await adminSupabase
+      .from('matches')
+      .update({ status: 'confirmed' })
+      .eq('id', matchId)
+    if (testError) return { success: false, error: testError.message }
+    revalidatePath('/dashboard')
+    return { success: true }
   }
 
   const isDraw = gamesA === gamesB
