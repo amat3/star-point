@@ -9,7 +9,7 @@ export function calculateNewRating(
   opp2Rating: number,
   gamesWon: number,
   gamesLost: number,
-  didWin: boolean,
+  result: 'win' | 'draw' | 'loss',
   playerTotalMatches: number
 ): RatingResult {
   const {
@@ -54,7 +54,7 @@ export function calculateNewRating(
 
   // 4. Cálculo Elo Estándar
   const expectedScore = 1 / (1 + Math.pow(10, (opponentsRating - teamRating) / SCALE_DIVISOR));
-  const actualScore = didWin ? 1 : 0;
+  const actualScore = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0;
 
   const change = currentK * (actualScore - expectedScore) * intensityMultiplier * MATCH_WEIGHT * disparityWeight;
   const clampedRating = Number(Math.max(MIN_RATING, Math.min(MAX_RATING, playerRating + change)).toFixed(3));

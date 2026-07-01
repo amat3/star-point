@@ -40,11 +40,11 @@ const formSchema = z.object({
     })
   }
 
-  // 2. Empate no permitido en Mixing (para simplificar ranking)
-  if (data.games_a === data.games_b) {
+  // 2. Marcador 0-0 no válido
+  if (data.games_a === 0 && data.games_b === 0) {
     ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "El empate no está permitido en Mixing",
+        message: "El marcador no puede ser 0-0",
         path: ["games_b"],
       })
   }

@@ -26,9 +26,6 @@ const formSchema = z.object({
   if (data.games_a === 0 && data.games_b === 0) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El marcador no puede ser 0-0', path: ['games_a'] })
   }
-  if (data.games_a !== 0 && data.games_a === data.games_b) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'No se permite empate', path: ['games_b'] })
-  }
 })
 
 interface EditMatchDialogProps {
