@@ -17,14 +17,15 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
   const { data: events, error } = await supabase
     .from('events')
     .select(`
-        id, 
-        title, 
-        start_time, 
+        id,
+        title,
+        start_time,
         max_spots,
         rounds,
         duration_minutes,
         status,
-        created_by
+        created_by,
+        is_test
     `)
     .eq('status', 'open')
     .order('start_time', { ascending: true })
@@ -81,6 +82,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
       ...event,
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90,
+      is_test: event.is_test ?? false,
       participants_count: rawParticipants?.length || 0,
       participants: formattedParticipants,
       is_joined: isJoined
@@ -144,7 +146,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean }) {
   try {
     const supabase = await createClient()
     
@@ -173,7 +175,8 @@ export async function createEvent(data: { title: string, start_time: string, max
         rounds: data.rounds,
         duration_minutes: data.duration_minutes,
         created_by: user.id,
-        status: 'open'
+        status: 'open',
+        is_test: data.is_test ?? false,
       })
 
     if (error) {
@@ -355,3 +358,35 @@ export async function closeEventWithGuests(eventId: string) {
   }
 }
 
+export async function addParticipant(eventId: string, userId: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (!event || event.status !== 'open') throw new Error("El evento no está abierto")
+
+    const { count } = await supabase
+      .from('event_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+    if ((count ?? 0) > 0) throw new Error("El jugador ya está apuntado")
+
+    const adminSupabase = getAdminClient()
+    const { error } = await adminSupabase
+      .from('event_participants')
+      .insert({ event_id: eventId, user_id: userId })
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+}

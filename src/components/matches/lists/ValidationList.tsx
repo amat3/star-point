@@ -3,16 +3,19 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { confirmMatch } from '@/app/actions/matches'
 import { disputeMatch } from '@/app/actions/dispute'
-import { deleteMatch } from '@/app/actions/admin-matches'
+import { deleteMatch, updateCourtName } from '@/app/actions/admin-matches'
 import { toast } from 'sonner'
 import { Trash2, Pencil } from 'lucide-react'
 import { Match } from '@/types'
 import { formatPlayerName } from '@/lib/utils'
 import { EditMatchDialog } from '../dialogs/EditMatchDialog'
+import { COURT_NAMES } from '@/lib/constants'
 
 interface ValidationListProps {
   matches: Match[]
@@ -21,6 +24,51 @@ interface ValidationListProps {
 }
 
 type PendingConfirm = { title: string; description: string; confirmLabel: string; variant?: 'destructive' | 'outline'; action: () => void }
+
+function CourtNameEditor({ eventId, courtNumber, currentName }: { eventId: string; courtNumber: number; currentName?: string | null }) {
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const handleSelect = async (name: string) => {
+    setSaving(true)
+    try {
+      const result = await updateCourtName(eventId, courtNumber, name)
+      if (!result.success) throw new Error(result.error)
+      toast.success('Nombre de pista actualizado')
+      setOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al actualizar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="p-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors"
+          title="Cambiar nombre de pista"
+          disabled={saving}
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="end">
+        <Select onValueChange={handleSelect} defaultValue={currentName ?? undefined}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Selecciona pista..." />
+          </SelectTrigger>
+          <SelectContent>
+            {COURT_NAMES.map(name => (
+              <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 function MatchCard({
   match,
@@ -53,10 +101,17 @@ function MatchCard({
     <div className="flex flex-col rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
       {/* Court title header */}
       {match.court_number && (
-        <div className="px-4 py-2 bg-primary/5 dark:bg-primary/10 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-2 bg-primary/5 dark:bg-primary/10 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">
             Pista {match.court_number}{match.court_name ? ` · ${match.court_name}` : ''}
           </span>
+          {userRole === 'admin' && match.event_id && (
+            <CourtNameEditor
+              eventId={match.event_id}
+              courtNumber={match.court_number}
+              currentName={match.court_name}
+            />
+          )}
         </div>
       )}
       <div className="flex flex-col space-y-3 p-4">
