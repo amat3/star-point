@@ -13,19 +13,9 @@ import { Loader2, ArrowLeft, RefreshCw, Save } from 'lucide-react'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toTitleCase } from '@/lib/utils'
+import { COURT_NAMES } from '@/lib/constants'
 
 const MAX_GUEST_FILL = 3
-
-const COURT_NAMES = [
-  'CLITECSA',
-  'JAFRISUR',
-  'DENTAL CLINIC',
-  'JOYERIA POSITO',
-  'BLANCA IMPRESORES',
-  'HACIENDA LA LAGUNA',
-  'SERVIMAIN',
-  'ESTRELLA DAMM (exterior)',
-]
 
 export default function GenerateMixPage() {
   const router = useRouter()

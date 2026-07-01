@@ -72,3 +72,24 @@ export async function deleteMatch(matchId: string) {
   revalidatePath('/dashboard')
   return { success: true }
 }
+
+export async function updateCourtName(eventId: string, courtNumber: number, courtName: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'No autenticado' }
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return { success: false, error: 'Requiere admin' }
+
+  const adminSupabase = getAdminClient()
+  const { error } = await adminSupabase
+    .from('matches')
+    .update({ court_name: courtName })
+    .eq('event_id', eventId)
+    .eq('court_number', courtNumber)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard')
+  return { success: true }
+}
