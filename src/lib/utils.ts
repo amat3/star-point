@@ -11,6 +11,11 @@ export function toTitleCase(name: string | null | undefined) {
   return (name ?? '').toLowerCase().split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+export function truncateName(name: string | null | undefined, max = 12) {
+  const s = toTitleCase(name)
+  return s.length > max ? s.slice(0, max) + '...' : s
+}
+
 export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean } | null | undefined) {
-  return { name: toTitleCase(p?.full_name ?? '?'), isGuest: p?.is_guest ?? false }
+  return { name: truncateName(p?.full_name), isGuest: p?.is_guest ?? false }
 }
