@@ -88,11 +88,12 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                     const isTeamA = match.player_a1 === userId || match.player_a2 === userId
                     const { gamesA, gamesB } = getScoreDetails(match)
 
+                    const isDraw = gamesA === gamesB
                     const teamAWon = gamesA > gamesB
-                    const userWon = isTeamA ? teamAWon : !teamAWon
+                    const userWon = !isDraw && (isTeamA ? teamAWon : !teamAWon)
 
-                    const resultLabel = userWon ? 'Victoria' : 'Derrota'
-                    const borderColor = userWon ? 'border-l-green-500' : 'border-l-red-500'
+                    const resultLabel = isDraw ? 'Empate' : userWon ? 'Victoria' : 'Derrota'
+                    const borderColor = isDraw ? 'border-l-yellow-500' : userWon ? 'border-l-green-500' : 'border-l-red-500'
                     const scoreText = `${gamesA} - ${gamesB}`
 
                     const pa1 = formatPlayerName(match.p_a1)
@@ -111,7 +112,7 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {match.event?.title && <span className="font-medium text-foreground">{match.event.title}</span>}
-                                    <Badge variant="outline" className={`text-[10px] px-1.5 h-5 border-0 ${userWon ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
+                                    <Badge variant="outline" className={`text-[10px] px-1.5 h-5 border-0 ${isDraw ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400' : userWon ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
                                         {resultLabel}
                                     </Badge>
                                 </div>

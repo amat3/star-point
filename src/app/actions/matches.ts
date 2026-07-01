@@ -99,47 +99,47 @@ export async function confirmMatch(matchId: string) {
     return { success: false, error: 'El partido no tiene marcador registrado. Añade el resultado antes de confirmar.' }
   }
 
-  if (gamesA === gamesB) {
-    return { success: false, error: 'El marcador está empatado. No se puede determinar un ganador.' }
-  }
-
+  const isDraw = gamesA === gamesB
   const teamAWon = gamesA > gamesB
+  const teamBWon = gamesB > gamesA
 
-  console.log(`📊 Análisis: Juegos A=${gamesA} B=${gamesB}. Ganador: ${teamAWon ? 'A' : 'B'}`)
+  const resultTypeA: 'win' | 'draw' | 'loss' = isDraw ? 'draw' : teamAWon ? 'win' : 'loss'
+  const resultTypeB: 'win' | 'draw' | 'loss' = isDraw ? 'draw' : teamBWon ? 'win' : 'loss'
+
+  console.log(`📊 Análisis: Juegos A=${gamesA} B=${gamesB}. Resultado: ${isDraw ? 'Empate' : teamAWon ? 'Gana A' : 'Gana B'}`)
 
   // 5. Calcular nuevos ratings
-  // Pasamos 'matchesXX' (experiencia) a la función de cálculo
-  
+
   // TEAM A
   const resultA1 = calculateNewRating(
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA1
+    gamesA, gamesB, resultTypeA, matchesA1
   )
   const resultA2 = calculateNewRating(
     profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, teamAWon, matchesA2
+    gamesA, gamesB, resultTypeA, matchesA2
   )
 
   // TEAM B
   const resultB1 = calculateNewRating(
     profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB1
+    gamesB, gamesA, resultTypeB, matchesB1
   )
   const resultB2 = calculateNewRating(
     profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
     profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, !teamAWon, matchesB2
+    gamesB, gamesA, resultTypeB, matchesB2
   )
 
   // 6. Preparar actualizaciones de BD
   const playerUpdates = [
     { id: match.player_a1, result: resultA1, teamWon: teamAWon },
     { id: match.player_a2, result: resultA2, teamWon: teamAWon },
-    { id: match.player_b1, result: resultB1, teamWon: !teamAWon },
-    { id: match.player_b2, result: resultB2, teamWon: !teamAWon },
+    { id: match.player_b1, result: resultB1, teamWon: teamBWon },
+    { id: match.player_b2, result: resultB2, teamWon: teamBWon },
   ]
 
   try {
