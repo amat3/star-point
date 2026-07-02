@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveAllRounds } from '@/app/actions/mixing-generator'
 import { closeEventWithGuests } from '@/app/actions/events'
-import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig } from '@/lib/mixing-algorithm'
+import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig, ExclusionRule } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -41,6 +41,8 @@ export default function GenerateMixPage() {
     forcePosition: true
   })
 
+  const [exclusions, setExclusions] = useState<ExclusionRule[]>([])
+
   // Optional court names (shared across rounds)
   const [courtNames, setCourtNames] = useState<Record<number, string>>({})
 
@@ -63,13 +65,13 @@ export default function GenerateMixPage() {
   async function loadData() {
     try {
       console.log("Calling getEventMixingData...")
-      const { participants: data, max_spots, rounds } = await getEventMixingData(id)
+      const { participants: data, max_spots, rounds, exclusions: excl } = await getEventMixingData(id)
       console.log("Data received:", { count: data.length, max_spots, rounds })
-      
-      // Use Arrays directly as per new interface
+
       setParticipants(data)
       setMaxSpots(max_spots)
       setRoundsCount(rounds)
+      setExclusions(excl)
     } catch (error) {
       toast.error(`Error cargando: ${error instanceof Error ? error.message : String(error)}`)
       console.error("LoadData Error:", error)
@@ -110,7 +112,7 @@ export default function GenerateMixPage() {
         console.log("Starting loop", roundsCount)
         for (let i = 0; i < roundsCount; i++) {
             console.log("Generating round", i + 1)
-            const result = generateMixingRound(currentParticipants, config)
+            const result = generateMixingRound(currentParticipants, { ...config, exclusions })
             console.log("Round result", result)
             newProposals.push(result)
             
@@ -349,10 +351,15 @@ export default function GenerateMixPage() {
                     <TabsContent key={rIdx} value={`round-${rIdx + 1}`} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             {proposal.matches.map((match, mIdx) => (
-                                <Card key={mIdx} className="border-2 border-primary/10">
+                                <Card key={mIdx} className={`border-2 ${match.warning ? 'border-red-400 dark:border-red-700' : 'border-primary/10'}`}>
                                     <CardHeader className="pb-2 bg-muted/30">
                                         <CardTitle className="text-sm font-bold text-center flex flex-col items-center gap-2">
                                             <span>Pista {match.courtNumber}</span>
+                                            {match.warning && (
+                                                <span className="text-[10px] font-semibold text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800 rounded px-2 py-0.5 normal-case">
+                                                    ⚠️ {match.warning}
+                                                </span>
+                                            )}
                                             <Select
                                                 value={courtNames[match.courtNumber] ?? ''}
                                                 onValueChange={(val) => setCourtNames(prev => ({ ...prev, [match.courtNumber]: val }))}

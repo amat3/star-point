@@ -2,10 +2,10 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { MixingParticipant, MatchProposal } from '@/lib/mixing-algorithm'
+import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
 
 // Helper to get raw data for the algorithm
-export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number }> {
+export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number, exclusions: ExclusionRule[] }> {
   const supabase = await createClient()
 
   // 1. Fetch participants (just IDs and join time)
@@ -117,10 +117,21 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
       }
   })
 
-  return { 
+  const { data: exclusionsData } = await supabase
+    .from('mixing_exclusions')
+    .select('player_a, player_b, type')
+
+  const exclusions: ExclusionRule[] = (exclusionsData ?? []).map((row: { player_a: string; player_b: string; type: 'no_partner' | 'no_opponent' | 'no_contact' }) => ({
+    playerA: row.player_a,
+    playerB: row.player_b,
+    type: row.type,
+  }))
+
+  return {
       participants: mappedParticipants as MixingParticipant[],
       max_spots: maxSpots,
-      rounds: eventData.rounds || 1
+      rounds: eventData.rounds || 1,
+      exclusions,
   }
 }
 
