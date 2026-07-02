@@ -42,16 +42,23 @@ interface EditEventDialogProps {
   event: MixingEvent
 }
 
+function toLocalDateAndTime(isoString: string) {
+  const dt = new Date(isoString)
+  const date = dt.toLocaleDateString('sv') // 'sv' locale → YYYY-MM-DD en hora local
+  const time = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+  return { date, time }
+}
+
 export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogProps) {
-  const [datePart, timePart] = event.start_time.split('T')
-  
+  const { date: datePart, time: timePart } = toLocalDateAndTime(event.start_time)
+
   const form = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: event.title,
       date: datePart,
-      time: timePart ? timePart.substring(0, 5) : '12:00',
+      time: timePart,
       courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90
@@ -82,11 +89,11 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
   // Reset form when event changes or dialog opens
   useEffect(() => {
     if (open) {
-      const [d, t] = event.start_time.split('T')
+      const { date, time } = toLocalDateAndTime(event.start_time)
       form.reset({
         title: event.title,
-        date: d,
-        time: t ? t.substring(0, 5) : '12:00',
+        date,
+        time,
         courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
         rounds: event.rounds || 1,
         duration_minutes: event.duration_minutes || 90
