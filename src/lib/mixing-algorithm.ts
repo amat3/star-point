@@ -10,11 +10,18 @@ export interface MixingParticipant {
   is_guest?: boolean
 }
 
+export interface ExclusionRule {
+  playerA: string
+  playerB: string
+  type: 'no_partner' | 'no_opponent' | 'no_contact'
+}
+
 export interface MixingConfig {
   genderMode: 'open' | 'mixed' | 'separated'
   balanceStrategy: 'similar_levels' | 'pro_am'
   avoidRepetition: boolean
   forcePosition: boolean
+  exclusions?: ExclusionRule[]
 }
 
 export interface MatchProposal {
@@ -34,6 +41,39 @@ export interface RoundProposal {
   leftovers: MixingParticipant[]
 }
 
+const EXCLUSION_PENALTY = -100000
+
+function exclusionPenalty(
+  a: string, b: string,
+  asPartners: boolean,
+  exclusions: ExclusionRule[]
+): number {
+  for (const ex of exclusions) {
+    const match = (ex.playerA === a && ex.playerB === b) || (ex.playerA === b && ex.playerB === a)
+    if (!match) continue
+    if (ex.type === 'no_contact') return EXCLUSION_PENALTY
+    if (ex.type === 'no_partner' && asPartners) return EXCLUSION_PENALTY
+    if (ex.type === 'no_opponent' && !asPartners) return EXCLUSION_PENALTY
+  }
+  return 0
+}
+
+function checkExclusionViolation(
+  pairA: [MixingParticipant, MixingParticipant],
+  pairB: [MixingParticipant, MixingParticipant],
+  exclusions: ExclusionRule[]
+): boolean {
+  const [a1, a2] = pairA
+  const [b1, b2] = pairB
+  const check = (x: string, y: string, asPartners: boolean) =>
+    exclusionPenalty(x, y, asPartners, exclusions) < 0
+  return (
+    check(a1.id, a2.id, true) || check(b1.id, b2.id, true) ||
+    check(a1.id, b1.id, false) || check(a1.id, b2.id, false) ||
+    check(a2.id, b1.id, false) || check(a2.id, b2.id, false)
+  )
+}
+
 function getPairGroupings(indices: number[], groupCount: number): [number, number][][] {
   if (groupCount === 0) return [[]]
   const [first, ...rest] = indices
@@ -50,7 +90,8 @@ function getPairGroupings(indices: number[], groupCount: number): [number, numbe
 
 function generateSnakeRound(
   participants: MixingParticipant[],
-  config: MixingConfig
+  config: MixingConfig,
+  exclusions: ExclusionRule[] = []
 ): RoundProposal {
   const sorted = [...participants].sort((a, b) => {
     if (config.avoidRepetition) {
@@ -87,6 +128,14 @@ function generateSnakeRound(
       const pA = pairs[aIdx]
       const pB = pairs[bIdx]
       const [a1, a2, b1, b2] = [pA[0], pA[1], pB[0], pB[1]]
+      // Hard exclusions (overriding priority)
+      score += exclusionPenalty(a1.id, a2.id, true, exclusions)
+      score += exclusionPenalty(b1.id, b2.id, true, exclusions)
+      score += exclusionPenalty(a1.id, b1.id, false, exclusions)
+      score += exclusionPenalty(a1.id, b2.id, false, exclusions)
+      score += exclusionPenalty(a2.id, b1.id, false, exclusions)
+      score += exclusionPenalty(a2.id, b2.id, false, exclusions)
+      // Soft history
       if (a1.past_partners.includes(a2.id)) score -= 2000
       if (b1.past_partners.includes(b2.id)) score -= 2000
       if (a1.past_opponents.includes(b1.id)) score -= 500
@@ -115,12 +164,23 @@ function generateSnakeRound(
       if (s > bestScore) { bestScore = s; bestGrouping = g }
     }
     bestGrouping.forEach(([aIdx, bIdx], courtIdx) => {
-      matches.push(buildMatch(pairs[aIdx], pairs[bIdx], courtIdx + 1))
+      const pA = pairs[aIdx]
+      const pB = pairs[bIdx]
+      const violated = exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)
+      matches.push({
+        ...buildMatch(pA, pB, courtIdx + 1),
+        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
+      })
     })
   } else {
-    // Mirror assignment: court i = pairs[i] vs pairs[halfN-1-i]
     for (let i = 0; i < courtCount; i++) {
-      matches.push(buildMatch(pairs[i], pairs[halfN - 1 - i], i + 1))
+      const pA = pairs[i]
+      const pB = pairs[halfN - 1 - i]
+      const violated = exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)
+      matches.push({
+        ...buildMatch(pA, pB, i + 1),
+        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
+      })
     }
   }
 
@@ -134,7 +194,8 @@ export function generateMixingRound(
   participants: MixingParticipant[],
   config: MixingConfig
 ): RoundProposal {
-  if (config.balanceStrategy === 'pro_am') return generateSnakeRound(participants, config)
+  const exclusions = config.exclusions ?? []
+  if (config.balanceStrategy === 'pro_am') return generateSnakeRound(participants, config, exclusions)
 
   // 1. Sort by Rating (High to Low)
   // If 'avoidRepetition' is ON, we add a small "jitter" to the rating to allow
@@ -214,7 +275,19 @@ export function generateMixingRound(
             })
         }
         
-        // C. Repetition Score
+        // C. Hard exclusions
+        if (exclusions.length > 0) {
+            const [ea1, ea2] = pairA
+            const [eb1, eb2] = pairB
+            score += exclusionPenalty(ea1.id, ea2.id, true, exclusions)
+            score += exclusionPenalty(eb1.id, eb2.id, true, exclusions)
+            score += exclusionPenalty(ea1.id, eb1.id, false, exclusions)
+            score += exclusionPenalty(ea1.id, eb2.id, false, exclusions)
+            score += exclusionPenalty(ea2.id, eb1.id, false, exclusions)
+            score += exclusionPenalty(ea2.id, eb2.id, false, exclusions)
+        }
+
+        // D. Repetition Score
         if (config.avoidRepetition) {
             // 1. Avoid repeating Partners (Critical) - Check Pair Internal
             pairs.forEach(pair => {
@@ -253,7 +326,8 @@ export function generateMixingRound(
     }
     
     const finalPairs = bestPermutation.pairs as [MixingParticipant, MixingParticipant][]
-    
+    const violated = exclusions.length > 0 && checkExclusionViolation(finalPairs[0], finalPairs[1], exclusions)
+
     matches.push({
         courtNumber,
         player1: finalPairs[0][0],
@@ -261,7 +335,8 @@ export function generateMixingRound(
         player3: finalPairs[1][0],
         player4: finalPairs[1][1],
         pairA: finalPairs[0],
-        pairB: finalPairs[1]
+        pairB: finalPairs[1],
+        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
     })
   }
 
