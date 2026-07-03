@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     title: "StarPoint",
   },
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icon-512.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 
