@@ -5,13 +5,13 @@ import { Card, CardContent } from "@/components/ui/card"
 
 const MESSAGES_MASC = [
   "🐢 A ver si hoy te mueves más que el último día, paquete.",
-  "🤦 El pádel es deporte de equipo. Intenta no ser el problema, inútil.",
+  "🤦 El pádel es deporte de equipo. Intenta que tu compañero no tenga que pedir la baja psicológica hoy.",
   "🎲 Hoy es tu día, campeón. O el de los rivales. Probablemente el de los rivales.",
   "🪄 La pala no se mueve sola, torpe... aunque a veces lo parece.",
   "🧬 Dicen que el talento no se entrena. Tú lo demuestras cada partido, crack.",
   "💥 ¿Preparado, máquina? El cristal no va a romperse solo.",
   "🫵 Recuerda, fenómeno: si pierdes, la culpa es siempre del compañero.",
-  "😬 ¡El grupo te necesita! Que tiemblen los rivales... o no, da igual, eres un paquete.",
+  "😬 ¡El grupo te necesita! Para que hagas de relleno y pagar las pistas, pero te necesita.",
   "🛋️ Hoy sal a dar el 100%, leyenda. El 50% ya lo das durmiendo.",
   "🍺 Gran día para jugar, campeón. O para quedarte en el bar, tú decides.",
   "🤔 El que no arriesga no gana. El que arriesga mucho, tampoco. Piénsatelo, torpe.",
@@ -30,9 +30,9 @@ const MESSAGES_MASC = [
   "📉 Hoy jugarás como nunca y perderás como siempre.",
   "⚔️ Nuevo día, nueva oportunidad de revancha, fenómeno.",
   "🥅 Hoy la red está a tu favor, leyenda.",
-  "🧠 Jugar con el corazón está bien, campeón. Jugar con la cabeza, mejor.",
+  "🧠 Jugar con el corazón está bien, campeón. Pero si usas las piernas para llegar a la bola, mejor.",
   "🤫 Dicen que eres de los mejores del grupo, paquete. Lo dicen pocos, pero lo dicen.",
-  "🚫 Hoy no es día de excusas, inútil. Mañana tampoco.",
+  "🚫 Hoy no valen las excusas de 'es que juego en el revés', inútil. En la derecha juegas igual de mal.",
   "🚪 Ya estás aquí, leyenda. Eso ya es mérito.",
   "📆 El día que te pongas serio nos vas a barrer a todos, máquina. Hoy no es ese día.",
 ]
