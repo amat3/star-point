@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -17,6 +17,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "StarPoint",
   description: "La app de Padel & Risas",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "StarPoint",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F0EEE9",
 };
 
 export default function RootLayout({
