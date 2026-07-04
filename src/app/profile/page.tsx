@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { ProfileForm } from '@/components/profile/profile-form'
+import { ThemeToggle } from '@/components/profile/ThemeToggle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft } from 'lucide-react'
@@ -77,6 +78,16 @@ export default async function ProfilePage() {
           </CardHeader>
           <CardContent>
             <ProfileForm userId={user.id} currentName={userName} profile={profile} />
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Apariencia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ThemeToggle />
           </CardContent>
         </Card>
       </main>
