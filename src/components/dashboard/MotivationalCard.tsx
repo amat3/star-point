@@ -35,6 +35,7 @@ const MESSAGES_MASC = [
   "🚫 Hoy no valen las excusas de 'es que juego en el revés', inútil. En la derecha juegas igual de mal.",
   "🚪 Ya estás aquí, leyenda. Eso ya es mérito.",
   "📆 El día que te pongas serio nos vas a barrer a todos, máquina. Hoy no es ese día.",
+  "🙃 No te quejes... problemas tenemos todos.",
 ]
 
 const MESSAGES_FEM = [
@@ -69,6 +70,7 @@ const MESSAGES_FEM = [
   "🚷 Hoy no es día de excusas, inútil. Mañana tampoco.",
   "🚀 Ya estás aquí, leyenda. Eso ya es mérito.",
   "🗓️ El día que te pongas seria nos vas a barrer a todas, máquina. Hoy no es ese día.",
+  "🙃 No te quejes... problemas tenemos todos.",
 ]
 
 interface MotivationalCardProps {
