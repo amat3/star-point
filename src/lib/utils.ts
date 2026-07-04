@@ -28,3 +28,7 @@ export function isStandaloneMode() {
 export function isIOSDevice() {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
 }
+
+export function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches
+}
