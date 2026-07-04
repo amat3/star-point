@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
+import { sendPushToUser } from '@/lib/push'
 
 const MAX_RESERVES = 6
 
@@ -135,12 +136,20 @@ export async function leaveEvent(eventId: string) {
     throw new Error('No puedes abandonar un evento que ya ha comenzado')
   }
 
-  const { error } = await supabase.rpc('leave_event_atomic', {
+  const { data: promotion, error } = await supabase.rpc('leave_event_atomic', {
     p_event_id: eventId,
     p_user_id: user.id,
   })
 
   if (error) throw error instanceof Error ? error : new Error(String(error))
+
+  if (promotion?.promoted_user_id) {
+    sendPushToUser(promotion.promoted_user_id, {
+      title: '¡Pasas a titular!',
+      body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
+      url: `/events/${promotion.promoted_event_id}`,
+    }).catch(console.error)
+  }
 
   revalidatePath('/dashboard')
   return { success: true }
@@ -273,12 +282,20 @@ export async function removeParticipant(eventId: string, userId: string) {
       .eq('id', userId)
       .single()
 
-    const { error } = await supabase.rpc('leave_event_atomic', {
+    const { data: promotion, error } = await supabase.rpc('leave_event_atomic', {
       p_event_id: eventId,
       p_user_id: userId,
     })
 
     if (error) throw error instanceof Error ? error : new Error(String(error))
+
+    if (promotion?.promoted_user_id) {
+      sendPushToUser(promotion.promoted_user_id, {
+        title: '¡Pasas a titular!',
+        body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
+        url: `/events/${promotion.promoted_event_id}`,
+      }).catch(console.error)
+    }
 
     if (targetProfile?.is_guest) {
       await adminSupabase.auth.admin.deleteUser(userId)

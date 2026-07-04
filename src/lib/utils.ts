@@ -19,3 +19,12 @@ export function truncateName(name: string | null | undefined, max = 12) {
 export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean } | null | undefined) {
   return { name: truncateName(p?.full_name), isGuest: p?.is_guest ?? false }
 }
+
+export function isStandaloneMode() {
+  const nav = window.navigator as Navigator & { standalone?: boolean }
+  return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true
+}
+
+export function isIOSDevice() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
+}
