@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
-import { sendPushToUser, sendPushToUsers } from '@/lib/push'
+import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 
 const MAX_RESERVES = 6
 
@@ -131,7 +131,7 @@ export async function leaveEvent(eventId: string) {
 
   if (!user) throw new Error("Unauthorized")
 
-  const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+  const { data: event } = await supabase.from('events').select('status, is_test').eq('id', eventId).single()
   if (!event || event.status !== 'open') {
     throw new Error('No puedes abandonar un evento que ya ha comenzado')
   }
@@ -144,7 +144,8 @@ export async function leaveEvent(eventId: string) {
   if (error) throw error instanceof Error ? error : new Error(String(error))
 
   if (promotion?.promoted_user_id) {
-    sendPushToUser(promotion.promoted_user_id, {
+    const recipients = event.is_test ? TEST_PUSH_AUDIENCE : [promotion.promoted_user_id]
+    sendPushToUsers(recipients, {
       title: '¡Pasas a titular!',
       body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
       url: `/events/${promotion.promoted_event_id}`,
@@ -194,28 +195,31 @@ export async function createEvent(data: { title: string, start_time: string, max
         throw new Error(`Error al crear evento: ${error.message}`)
     }
 
-    if (!data.is_test) {
+    let playerIds: string[]
+    if (data.is_test) {
+      playerIds = TEST_PUSH_AUDIENCE
+    } else {
       const adminSupabase = getAdminClient()
       const { data: players } = await adminSupabase
         .from('profiles')
         .select('id')
         .eq('is_guest', false)
-
-      const playerIds = (players ?? []).map((p) => p.id)
-      const formattedDate = new Intl.DateTimeFormat('es-ES', {
-        timeZone: 'Europe/Madrid',
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(new Date(newEvent.start_time))
-
-      sendPushToUsers(playerIds, {
-        title: 'Nuevo evento disponible',
-        body: `"${newEvent.title}" el ${formattedDate} — ¡apúntate!`,
-        url: '/dashboard',
-      }).catch(console.error)
+      playerIds = (players ?? []).map((p) => p.id)
     }
+
+    const formattedDate = new Intl.DateTimeFormat('es-ES', {
+      timeZone: 'Europe/Madrid',
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(newEvent.start_time))
+
+    sendPushToUsers(playerIds, {
+      title: 'Nuevo evento disponible',
+      body: `"${newEvent.title}" el ${formattedDate} — ¡apúntate!`,
+      url: '/dashboard',
+    }).catch(console.error)
 
     revalidatePath('/dashboard')
     return { success: true }
@@ -315,7 +319,9 @@ export async function removeParticipant(eventId: string, userId: string) {
     if (error) throw error instanceof Error ? error : new Error(String(error))
 
     if (promotion?.promoted_user_id) {
-      sendPushToUser(promotion.promoted_user_id, {
+      const { data: eventInfo } = await supabase.from('events').select('is_test').eq('id', eventId).single()
+      const recipients = eventInfo?.is_test ? TEST_PUSH_AUDIENCE : [promotion.promoted_user_id]
+      sendPushToUsers(recipients, {
         title: '¡Pasas a titular!',
         body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
         url: `/events/${promotion.promoted_event_id}`,
