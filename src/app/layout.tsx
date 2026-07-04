@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import { Footer } from "@/components/layout/Footer";
 import { InstallBanner } from "@/components/layout/InstallBanner";
+import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,6 +55,7 @@ export default function RootLayout({
           </div>
           <Footer />
           <InstallBanner />
+          <ServiceWorkerRegister />
           <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>

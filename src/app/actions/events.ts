@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
+import { sendPushToUser, sendPushToUsers } from '@/lib/push'
 
 const MAX_RESERVES = 6
 
@@ -135,12 +136,20 @@ export async function leaveEvent(eventId: string) {
     throw new Error('No puedes abandonar un evento que ya ha comenzado')
   }
 
-  const { error } = await supabase.rpc('leave_event_atomic', {
+  const { data: promotion, error } = await supabase.rpc('leave_event_atomic', {
     p_event_id: eventId,
     p_user_id: user.id,
   })
 
   if (error) throw error instanceof Error ? error : new Error(String(error))
+
+  if (promotion?.promoted_user_id) {
+    sendPushToUser(promotion.promoted_user_id, {
+      title: '¡Pasas a titular!',
+      body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
+      url: `/events/${promotion.promoted_event_id}`,
+    }).catch(console.error)
+  }
 
   revalidatePath('/dashboard')
   return { success: true }
@@ -166,7 +175,7 @@ export async function createEvent(data: { title: string, start_time: string, max
         throw new Error("Permisos insuficientes: Requiere rol de admin")
     }
 
-    const { error } = await supabase
+    const { data: newEvent, error } = await supabase
       .from('events')
       .insert({
         title: data.title,
@@ -178,9 +187,34 @@ export async function createEvent(data: { title: string, start_time: string, max
         status: 'open',
         is_test: data.is_test ?? false,
       })
+      .select('id, title, start_time')
+      .single()
 
     if (error) {
         throw new Error(`Error al crear evento: ${error.message}`)
+    }
+
+    if (!data.is_test) {
+      const adminSupabase = getAdminClient()
+      const { data: players } = await adminSupabase
+        .from('profiles')
+        .select('id')
+        .eq('is_guest', false)
+
+      const playerIds = (players ?? []).map((p) => p.id)
+      const formattedDate = new Intl.DateTimeFormat('es-ES', {
+        timeZone: 'Europe/Madrid',
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(newEvent.start_time))
+
+      sendPushToUsers(playerIds, {
+        title: 'Nuevo evento disponible',
+        body: `"${newEvent.title}" el ${formattedDate} — ¡apúntate!`,
+        url: '/dashboard',
+      }).catch(console.error)
     }
 
     revalidatePath('/dashboard')
@@ -273,12 +307,20 @@ export async function removeParticipant(eventId: string, userId: string) {
       .eq('id', userId)
       .single()
 
-    const { error } = await supabase.rpc('leave_event_atomic', {
+    const { data: promotion, error } = await supabase.rpc('leave_event_atomic', {
       p_event_id: eventId,
       p_user_id: userId,
     })
 
     if (error) throw error instanceof Error ? error : new Error(String(error))
+
+    if (promotion?.promoted_user_id) {
+      sendPushToUser(promotion.promoted_user_id, {
+        title: '¡Pasas a titular!',
+        body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
+        url: `/events/${promotion.promoted_event_id}`,
+      }).catch(console.error)
+    }
 
     if (targetProfile?.is_guest) {
       await adminSupabase.auth.admin.deleteUser(userId)

@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
+import { sendPushToUsers } from '@/lib/push'
 
 // Helper to get raw data for the algorithm
 export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number, exclusions: ExclusionRule[] }> {
@@ -171,7 +172,30 @@ export async function saveAllRounds(
   const { error } = await supabase.from('matches').insert(inserts)
   if (error) throw new Error(error.message)
 
-  await supabase.from('events').update({ status: 'in_progress' }).eq('id', eventId)
+  const { data: event } = await supabase
+    .from('events')
+    .update({ status: 'in_progress' })
+    .eq('id', eventId)
+    .select('title, is_test')
+    .single()
+
+  if (event && !event.is_test) {
+    const { data: participants } = await supabase
+      .from('event_participants')
+      .select('user_id')
+      .eq('event_id', eventId)
+
+    const playerIds = Array.from(new Set([
+      ...(participants ?? []).map(p => p.user_id),
+      user.id,
+    ]))
+
+    sendPushToUsers(playerIds, {
+      title: '¡Partidos listos!',
+      body: `Ya puedes ver tus partidos de "${event.title}"`,
+      url: '/dashboard',
+    }).catch(console.error)
+  }
 
   revalidatePath(`/admin/events/${eventId}`)
   return { success: true }
