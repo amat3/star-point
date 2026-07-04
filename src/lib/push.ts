@@ -35,16 +35,18 @@ function ensureVapidConfigured(): boolean {
   }
 }
 
-// Fire-and-forget: cualquier código que inserte en `notifications` debe llamar
-// esto explícitamente (no hay trigger genérico que envíe push automáticamente).
-export async function sendPushToUser(userId: string, payload: PushPayload) {
+// Fire-and-forget: cualquier código que inserte en `notifications` (o quiera
+// avisar de un evento sin fila en esa tabla, como un nuevo mixing publicado)
+// debe llamar a esto explícitamente — no hay trigger genérico automático.
+export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
+  if (!userIds.length) return
   if (!ensureVapidConfigured()) return
 
   const adminSupabase = getAdminClient()
   const { data: subs } = await adminSupabase
     .from('push_subscriptions')
     .select('*')
-    .eq('user_id', userId)
+    .in('user_id', userIds)
 
   if (!subs?.length) return
 
@@ -63,4 +65,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
       }
     }
   }))
+}
+
+export async function sendPushToUser(userId: string, payload: PushPayload) {
+  return sendPushToUsers([userId], payload)
 }
