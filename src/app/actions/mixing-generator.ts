@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
-import { sendPushToUsers } from '@/lib/push'
+import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 
 // Helper to get raw data for the algorithm
 export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number, exclusions: ExclusionRule[] }> {
@@ -179,16 +179,21 @@ export async function saveAllRounds(
     .select('title, is_test')
     .single()
 
-  if (event && !event.is_test) {
-    const { data: participants } = await supabase
-      .from('event_participants')
-      .select('user_id')
-      .eq('event_id', eventId)
+  if (event) {
+    let playerIds: string[]
+    if (event.is_test) {
+      playerIds = TEST_PUSH_AUDIENCE
+    } else {
+      const { data: participants } = await supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', eventId)
 
-    const playerIds = Array.from(new Set([
-      ...(participants ?? []).map(p => p.user_id),
-      user.id,
-    ]))
+      playerIds = Array.from(new Set([
+        ...(participants ?? []).map(p => p.user_id),
+        user.id,
+      ]))
+    }
 
     sendPushToUsers(playerIds, {
       title: '¡Partidos listos!',

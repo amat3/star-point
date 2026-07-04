@@ -7,6 +7,14 @@ type PushPayload = {
   url?: string
 }
 
+// Eventos de prueba (is_test): en vez de omitir el push por completo, se
+// restringe a esta audiencia reducida para poder verificar el flujo sin
+// molestar al resto del club. Juanan (admin) + Paula (player).
+export const TEST_PUSH_AUDIENCE = [
+  'cb288b22-8fdb-4744-a421-c05646c37454',
+  '733d4e30-e5c4-41b9-bbc8-b1f0509f8bba',
+]
+
 let vapidReady = false
 
 // setVapidDetails lanza de forma síncrona si falta cualquier valor. Se hace
