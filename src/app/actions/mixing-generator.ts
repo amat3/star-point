@@ -180,11 +180,15 @@ export async function saveAllRounds(
     .single()
 
   if (event && !event.is_test) {
-    const playerIds = Array.from(new Set(
-      rounds.flatMap(({ matches }) =>
-        matches.flatMap(m => [m.pairA[0].id, m.pairA[1].id, m.pairB[0].id, m.pairB[1].id])
-      )
-    ))
+    const { data: participants } = await supabase
+      .from('event_participants')
+      .select('user_id')
+      .eq('event_id', eventId)
+
+    const playerIds = Array.from(new Set([
+      ...(participants ?? []).map(p => p.user_id),
+      user.id,
+    ]))
 
     sendPushToUsers(playerIds, {
       title: '¡Partidos listos!',

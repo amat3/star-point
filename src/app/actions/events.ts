@@ -200,7 +200,6 @@ export async function createEvent(data: { title: string, start_time: string, max
         .from('profiles')
         .select('id')
         .eq('is_guest', false)
-        .neq('id', user.id)
 
       const playerIds = (players ?? []).map((p) => p.id)
       const formattedDate = new Intl.DateTimeFormat('es-ES', {
