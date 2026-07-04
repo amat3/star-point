@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import { isStandaloneMode, isIOSDevice } from '@/lib/utils'
 
 const DISMISS_KEY = 'pwa-reinstall-dismissed-v1'
 
@@ -10,13 +11,10 @@ export function InstallBanner() {
   const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
-    const nav = window.navigator as Navigator & { standalone?: boolean }
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true
     const dismissed = localStorage.getItem(DISMISS_KEY)
 
-    if (!isStandalone && !dismissed) {
-      setIsIOS(/iphone|ipad|ipod/i.test(nav.userAgent))
+    if (!isStandaloneMode() && !dismissed) {
+      setIsIOS(isIOSDevice())
       setVisible(true)
     }
   }, [])
