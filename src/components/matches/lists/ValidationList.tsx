@@ -119,9 +119,9 @@ function MatchCard({
       {/* Event banner for standard matches */}
       {match.event && match.event.start_time && !match.round_number && (
         <div className="w-full text-center bg-gray-50 dark:bg-gray-900/50 py-1 rounded border-b border-gray-100 dark:border-gray-800 text-[10px] text-muted-foreground font-medium truncate px-2">
-          <span className="font-bold text-primary" suppressHydrationWarning>
+          <span className="font-bold text-primary">
             {new Date(match.event.start_time).toLocaleDateString('es-ES', {
-              weekday: 'long', day: 'numeric', month: 'long'
+              weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid'
             })}
           </span>
         </div>

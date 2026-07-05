@@ -16,8 +16,8 @@ interface NotificationRow {
 
 function formatEventDate(dateStr: string) {
   const date = new Date(dateStr)
-  const day = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  const day = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' })
+  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' })
   return `${day.charAt(0).toUpperCase() + day.slice(1)}, ${time}`
 }
 
