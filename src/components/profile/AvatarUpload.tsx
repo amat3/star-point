@@ -74,14 +74,14 @@ export function AvatarUpload({ userId, avatarUrl, userName }: AvatarUploadProps)
         className="relative block rounded-full disabled:opacity-70"
         title="Cambiar foto de perfil"
       >
-        <Avatar className="h-24 w-24 border-4 border-lime-500">
+        <Avatar className="h-32 w-32 border-4 border-lime-500">
           <AvatarImage src={previewUrl ?? undefined} />
-          <AvatarFallback className="bg-lime-100 text-lime-800 text-3xl font-bold">
+          <AvatarFallback className="bg-lime-100 text-lime-800 text-4xl font-bold">
             {userName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+        <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
         </span>
       </button>
     </div>
