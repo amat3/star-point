@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 
 const MESSAGES_MASC = [
@@ -76,10 +75,10 @@ const MESSAGES_FEM = [
 interface MotivationalCardProps {
   userName: string
   gender: string
+  dayIndex: number
 }
 
-export function MotivationalCard({ userName, gender }: MotivationalCardProps) {
-  const [dayIndex] = useState(() => Math.floor(Date.now() / (1000 * 60 * 60 * 24)))
+export function MotivationalCard({ userName, gender, dayIndex }: MotivationalCardProps) {
   const messages = gender === 'femenino' ? MESSAGES_FEM : MESSAGES_MASC
   const fullMessage = messages[dayIndex % messages.length]
   const [emoji, ...rest] = fullMessage.split(' ')

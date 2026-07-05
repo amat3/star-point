@@ -98,7 +98,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
-        <MotivationalCard userName={userName} gender={userGender} />
+        <MotivationalCard userName={userName} gender={userGender} dayIndex={Math.floor(Date.now() / (1000 * 60 * 60 * 24))} />
 
         {/* Next Mixings Section */}
         <section className="space-y-4">
