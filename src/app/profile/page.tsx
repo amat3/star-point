@@ -7,8 +7,8 @@ export const revalidate = 0
 import { ProfileForm } from '@/components/profile/profile-form'
 import { ThemeToggle } from '@/components/profile/ThemeToggle'
 import { PushNotificationToggle } from '@/components/profile/PushNotificationToggle'
+import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowLeft } from 'lucide-react'
 import { toTitleCase } from '@/lib/utils'
 
@@ -55,12 +55,7 @@ export default async function ProfilePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
-              <Avatar className="h-24 w-24 border-4 border-lime-500">
-                <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-lime-100 text-lime-800 text-3xl font-bold">
-                  {userName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarUpload userId={user.id} avatarUrl={profile?.avatar_url} userName={userName} />
               <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {toTitleCase(userName)}
