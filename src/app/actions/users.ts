@@ -65,3 +65,21 @@ export async function updateProfile(data: z.infer<typeof profileSchema>) {
   revalidatePath('/profile')
   return { success: true }
 }
+
+export async function updateAvatarUrl(url: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autorizado')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: url })
+    .eq('id', user.id)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/dashboard')
+  revalidatePath('/profile')
+  return { success: true }
+}
