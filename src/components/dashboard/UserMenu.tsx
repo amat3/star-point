@@ -15,9 +15,9 @@ export function UserMenu({ profile, userName }: UserMenuProps) {
   return (
     <Link href="/profile" className="flex items-center space-x-3 group outline-none hover:opacity-90 transition-opacity text-inherit no-underline">
       <div className="relative">
-        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-lime-500 transition-transform group-hover:scale-105 group-active:scale-95 shadow-lg shadow-lime-500/20">
+        <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-lime-500 transition-transform group-hover:scale-105 group-active:scale-95 shadow-lg shadow-lime-500/20">
           <AvatarImage src={profile?.avatar_url ?? undefined} />
-          <AvatarFallback className="bg-lime-100 text-lime-800 font-bold">
+          <AvatarFallback className="bg-lime-100 text-lime-800 font-bold text-xl sm:text-2xl">
             {userName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
