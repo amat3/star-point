@@ -19,14 +19,14 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   if (pError) throw new Error(pError.message)
 
   // 1b. Fetch profiles for these users manually
-  type MixingProfile = { id: string; rating?: number; full_name?: string; gender?: string; court_position?: string; preferred_hand?: string; is_guest?: boolean }
+  type MixingProfile = { id: string; rating?: number; full_name?: string; gender?: string; court_position?: string; preferred_hand?: string; is_guest?: boolean; avatar_url?: string | null }
   const userIds = participants.map((p) => p.user_id)
   const profilesMap: Record<string, MixingProfile> = {}
 
   if (userIds.length > 0) {
       const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, rating, full_name, gender, court_position, preferred_hand, is_guest')
+          .select('id, rating, full_name, gender, court_position, preferred_hand, is_guest, avatar_url')
           .in('id', userIds)
 
       profiles?.forEach((p) => {
@@ -112,6 +112,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           full_name: profile.full_name || 'Jugador',
           gender: profile.gender || 'otro',
           court_position: profile.court_position || 'ambos',
+          avatar_url: profile.avatar_url ?? null,
           past_partners: Array.from(historyMap.get(p.user_id) || []),
           past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
           is_guest: profile.is_guest ?? false

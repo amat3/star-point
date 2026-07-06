@@ -16,8 +16,8 @@ export function truncateName(name: string | null | undefined, max = 12) {
   return s.length > max ? s.slice(0, max) + '...' : s
 }
 
-export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean } | null | undefined) {
-  return { name: truncateName(p?.full_name), isGuest: p?.is_guest ?? false }
+export function formatPlayerName(p: { full_name?: string | null; is_guest?: boolean; avatar_url?: string | null } | null | undefined) {
+  return { name: truncateName(p?.full_name), isGuest: p?.is_guest ?? false, avatarUrl: p?.avatar_url ?? null }
 }
 
 export function isStandaloneMode() {
