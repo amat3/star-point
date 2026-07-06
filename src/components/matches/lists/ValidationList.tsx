@@ -146,16 +146,16 @@ function MatchCard({
               </Avatar>
             )
             return <>
-              <div className="flex flex-col items-end gap-1 min-w-0">
+              <div className="flex flex-col items-center gap-1 min-w-0">
                 <div className="flex -space-x-2">
                   {pairAvatar(pa1.name, pa1.avatarUrl, 'z-10')}
                   {pairAvatar(pa2.name, pa2.avatarUrl, 'z-0')}
                 </div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-right">
-                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_a1?.full_name}>
                     {pa1.isGuest && guestBadge}{pa1.name}
                   </p>
-                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_a2?.full_name}>
                     {pa2.isGuest && guestBadge}{pa2.name}
                   </p>
                 </div>
@@ -168,16 +168,16 @@ function MatchCard({
                 </div>
               </div>
 
-              <div className="flex flex-col items-start gap-1 min-w-0">
+              <div className="flex flex-col items-center gap-1 min-w-0">
                 <div className="flex -space-x-2">
                   {pairAvatar(pb1.name, pb1.avatarUrl, 'z-10')}
                   {pairAvatar(pb2.name, pb2.avatarUrl, 'z-0')}
                 </div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-left">
-                  <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_b1?.full_name}>
                     {pb1.name}{pb1.isGuest && guestBadge}
                   </p>
-                  <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_b2?.full_name}>
                     {pb2.name}{pb2.isGuest && guestBadge}
                   </p>
                 </div>
