@@ -377,42 +377,38 @@ export default function GenerateMixPage() {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-4">
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-2">
-                                            {/* Team A */}
-                                            <div className="flex-1 min-w-0 flex flex-col gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
-                                                <PlayerItem 
-                                                    player={match.pairA[0]} 
-                                                    isSelected={selectedPlayerId === match.pairA[0].id}
-                                                    onSelect={() => selectedPlayerId === match.pairA[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[0].id) : setSelectedPlayerId(match.pairA[0].id))}
-                                                />
-                                                <div className="h-px bg-blue-200 dark:bg-blue-800 w-full" />
-                                                <PlayerItem 
-                                                    player={match.pairA[1]} 
-                                                    isSelected={selectedPlayerId === match.pairA[1].id}
-                                                    onSelect={() => selectedPlayerId === match.pairA[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[1].id) : setSelectedPlayerId(match.pairA[1].id))}
-                                                />
-                                            </div>
+                                    <div className="flex flex-col items-center gap-2">
+                                        {/* Team A */}
+                                        <div className="w-full flex items-center gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900">
+                                            <PlayerItem
+                                                player={match.pairA[0]}
+                                                isSelected={selectedPlayerId === match.pairA[0].id}
+                                                onSelect={() => selectedPlayerId === match.pairA[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[0].id) : setSelectedPlayerId(match.pairA[0].id))}
+                                            />
+                                            <div className="w-px self-stretch bg-blue-200 dark:bg-blue-800" />
+                                            <PlayerItem
+                                                player={match.pairA[1]}
+                                                isSelected={selectedPlayerId === match.pairA[1].id}
+                                                onSelect={() => selectedPlayerId === match.pairA[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[1].id) : setSelectedPlayerId(match.pairA[1].id))}
+                                            />
+                                        </div>
 
-                                            {/* VS */}
-                                            <div className="shrink-0 flex flex-col items-center justify-center px-1">
-                                                <span className="text-xl font-black text-muted-foreground/50">VS</span>
-                                            </div>
+                                        {/* VS */}
+                                        <span className="text-xl font-black text-muted-foreground/50 leading-none">VS</span>
 
-                                            {/* Team B */}
-                                            <div className="flex-1 min-w-0 flex flex-col gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
-                                                <PlayerItem 
-                                                    player={match.pairB[0]} 
-                                                    isSelected={selectedPlayerId === match.pairB[0].id}
-                                                    onSelect={() => selectedPlayerId === match.pairB[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[0].id) : setSelectedPlayerId(match.pairB[0].id))}
-                                                />
-                                                <div className="h-px bg-red-200 dark:bg-red-800 w-full" />
-                                                <PlayerItem 
-                                                    player={match.pairB[1]} 
-                                                    isSelected={selectedPlayerId === match.pairB[1].id}
-                                                    onSelect={() => selectedPlayerId === match.pairB[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[1].id) : setSelectedPlayerId(match.pairB[1].id))}
-                                                />
-                                            </div>
+                                        {/* Team B */}
+                                        <div className="w-full flex items-center gap-2 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900">
+                                            <PlayerItem
+                                                player={match.pairB[0]}
+                                                isSelected={selectedPlayerId === match.pairB[0].id}
+                                                onSelect={() => selectedPlayerId === match.pairB[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[0].id) : setSelectedPlayerId(match.pairB[0].id))}
+                                            />
+                                            <div className="w-px self-stretch bg-red-200 dark:bg-red-800" />
+                                            <PlayerItem
+                                                player={match.pairB[1]}
+                                                isSelected={selectedPlayerId === match.pairB[1].id}
+                                                onSelect={() => selectedPlayerId === match.pairB[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[1].id) : setSelectedPlayerId(match.pairB[1].id))}
+                                            />
                                         </div>
                                     </div>
                                     </CardContent>
@@ -446,7 +442,7 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
         <div
             onClick={onSelect}
             className={`
-                w-full min-w-0 flex flex-col items-center gap-1 p-2 rounded cursor-pointer transition-all
+                flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded cursor-pointer transition-all
                 ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-accent'}
             `}
         >
