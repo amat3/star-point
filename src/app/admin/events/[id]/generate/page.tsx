@@ -8,6 +8,7 @@ import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig, Ex
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, RefreshCw, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -445,10 +446,16 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
         <div
             onClick={onSelect}
             className={`
-                w-full min-w-0 flex flex-col items-center p-2 rounded cursor-pointer transition-all
+                w-full min-w-0 flex flex-col items-center gap-1 p-2 rounded cursor-pointer transition-all
                 ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-accent'}
             `}
         >
+            <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border border-lime-500">
+                <AvatarImage src={player.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-xs font-bold">
+                    {player.full_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
             <div className="font-bold text-xs sm:text-sm truncate w-full text-center min-w-0" title={player.full_name}>
                 {toTitleCase(player.full_name)}
             </div>
