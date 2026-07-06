@@ -138,9 +138,9 @@ function MatchCard({
             const pb2 = formatPlayerName(match.p_b2)
             const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
             const pairAvatar = (name: string, url: string | null, z: string) => (
-              <Avatar className={`h-8 w-8 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
+              <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
                 <AvatarImage src={url ?? undefined} />
-                <AvatarFallback className="bg-lime-100 text-lime-800 text-xs font-bold">
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-sm sm:text-base font-bold">
                   {name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
