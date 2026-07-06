@@ -69,9 +69,9 @@ export function MatchHistory({ userId }: MatchHistoryProps) {
              </Select>
         </div>
       </div>
-      <Card className="shadow-lg border-none ring-1 ring-gray-200 dark:ring-gray-800">
+      <Card className="p-0 shadow-lg border-none ring-1 ring-gray-200 dark:ring-gray-800">
       {/* Removed CardHeader */}
-      <CardContent className="space-y-4 pt-6">
+      <CardContent className="space-y-4 p-4 sm:p-6">
         {loading ? (
              <div className="flex flex-col gap-4">
                  {[1, 2, 3].map(i => (
