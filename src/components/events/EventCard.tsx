@@ -9,6 +9,7 @@ import { joinEvent, leaveEvent, removeParticipant, deleteEvent } from '@/app/act
 import { EditEventDialog } from './EditEventDialog'
 import { AddParticipantDialog } from './AddParticipantDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { toTitleCase } from '@/lib/utils'
@@ -174,6 +175,14 @@ export function EventCard({ event, userRole }: EventCardProps) {
                         <div key={`main-${index}`} className="flex items-center justify-between text-sm h-6 group">
                             <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
                                 <span className="text-base shrink-0">🎾</span>
+                                {participant && (
+                                    <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+                                        <AvatarImage src={participant.avatar_url ?? undefined} />
+                                        <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                                            {(participant.full_name ?? "?").charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                )}
                                 <span className={`truncate ${participant ? "text-gray-700 dark:text-gray-200 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                     {participant ? toTitleCase(participant.full_name) : "Libre"}
                                 </span>
@@ -216,8 +225,16 @@ export function EventCard({ event, userRole }: EventCardProps) {
                         
                         return (
                             <div key={`reserve-${index}`} className="flex items-center justify-between text-sm h-6 group">
-                                <div className="flex items-center overflow-hidden">
-                                    <span className="mr-2 text-base text-amber-500 shrink-0">🎾</span>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                    <span className="text-base text-amber-500 shrink-0">🎾</span>
+                                    {participant && (
+                                        <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+                                            <AvatarImage src={participant.avatar_url ?? undefined} />
+                                            <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                                                {(participant.full_name ?? "?").charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    )}
                                     <span className={`truncate ${participant ? "text-amber-700 dark:text-amber-400 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                         {participant ? toTitleCase(participant.full_name) : "Hueco reserva"}
                                     </span>
