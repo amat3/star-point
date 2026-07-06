@@ -5,6 +5,7 @@ export interface MixingParticipant {
   gender: 'masculino' | 'femenino' | 'otro'
   court_position: 'reves' | 'drive' | 'ambos'
   full_name: string
+  avatar_url?: string | null
   past_partners: string[]
   past_opponents: string[]
   is_guest?: boolean

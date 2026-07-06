@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { Trash2, Pencil } from 'lucide-react'
 import { Match } from '@/types'
 import { formatPlayerName } from '@/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { EditMatchDialog } from '../dialogs/EditMatchDialog'
 import { COURT_NAMES } from '@/lib/constants'
 
@@ -136,33 +137,47 @@ function MatchCard({
             const pb1 = formatPlayerName(match.p_b1)
             const pb2 = formatPlayerName(match.p_b2)
             const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+            const pairAvatar = (name: string, url: string | null, z: string) => (
+              <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
+                <AvatarImage src={url ?? undefined} />
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-sm sm:text-base font-bold">
+                  {name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )
             return <>
-              <div className="text-right space-y-0.5 min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
+              <div className="flex flex-col items-center gap-1 min-w-0">
+                <div className="flex -space-x-2">
+                  {pairAvatar(pa1.name, pa1.avatarUrl, 'z-10')}
+                  {pairAvatar(pa2.name, pa2.avatarUrl, 'z-0')}
+                </div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_a1?.full_name}>
                     {pa1.isGuest && guestBadge}{pa1.name}
                   </p>
-                  <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_a2?.full_name}>
                     {pa2.isGuest && guestBadge}{pa2.name}
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
-                <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
+              <div className="flex flex-col items-center justify-center self-stretch px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
+                <span className="text-[10px] font-black text-secondary dark:text-lime-400 italic mb-1">VS</span>
                 <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
                   {match.score_details}
                 </div>
               </div>
 
-              <div className="text-left space-y-0.5 min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-                  <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
+              <div className="flex flex-col items-center gap-1 min-w-0">
+                <div className="flex -space-x-2">
+                  {pairAvatar(pb1.name, pb1.avatarUrl, 'z-10')}
+                  {pairAvatar(pb2.name, pb2.avatarUrl, 'z-0')}
+                </div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_b1?.full_name}>
                     {pb1.name}{pb1.isGuest && guestBadge}
                   </p>
-                  <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
+                  <p className="truncate flex items-center justify-center gap-1" title={match.p_b2?.full_name}>
                     {pb2.name}{pb2.isGuest && guestBadge}
                   </p>
                 </div>
