@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveAllRounds } from '@/app/actions/mixing-generator'
-import { closeEventWithGuests } from '@/app/actions/events'
 import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig, ExclusionRule } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,8 +14,6 @@ import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toTitleCase } from '@/lib/utils'
 import { COURT_NAMES } from '@/lib/constants'
-
-const MAX_GUEST_FILL = 3
 
 export default function GenerateMixPage() {
   const router = useRouter()
@@ -90,18 +87,8 @@ export default function GenerateMixPage() {
 
         if (participants.length < maxSpots) {
             const missing = maxSpots - participants.length
-            if (missing > MAX_GUEST_FILL) {
-                toast.error(`Faltan ${missing} jugadores. Solo se pueden completar hasta ${MAX_GUEST_FILL} huecos con invitados.`)
-                return
-            }
-            try {
-                const result = await closeEventWithGuests(id)
-                toast.info(`${result.added} invitado${result.added > 1 ? 's' : ''} añadido${result.added > 1 ? 's' : ''} automáticamente.`)
-                await loadData()
-            } catch (e) {
-                toast.error(e instanceof Error ? e.message : String(e))
-                return
-            }
+            toast.error(`El evento no está completo (faltan ${missing}). Añade jugadores o invitados desde el dashboard antes de generar.`)
+            return
         }
 
         const newProposals: RoundProposal[] = []
@@ -317,9 +304,19 @@ export default function GenerateMixPage() {
 
           </div>
 
-          <Button onClick={handleGenerate} className="w-full mt-4" size="lg">
+          <Button
+            onClick={handleGenerate}
+            className="w-full mt-4"
+            size="lg"
+            disabled={participants.length < maxSpots}
+          >
             <RefreshCw className="mr-2 h-4 w-4" /> Generar {roundsCount} Rondas
           </Button>
+          {participants.length < maxSpots && (
+            <p className="text-xs text-destructive text-center mt-1">
+              Faltan {maxSpots - participants.length} jugadores para completar el evento. Añade jugadores o invitados desde el dashboard.
+            </p>
+          )}
         </CardContent>
       </Card>
 

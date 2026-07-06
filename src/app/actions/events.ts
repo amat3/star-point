@@ -5,6 +5,7 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
+import { MAX_GUESTS_PER_EVENT } from '@/lib/constants'
 
 const MAX_RESERVES = 6
 
@@ -359,11 +360,33 @@ export async function closeEventWithGuests(eventId: string) {
     const missing = event.max_spots - (currentCount || 0)
 
     if (missing <= 0) throw new Error("El evento ya está completo")
-    if (missing > MAX_RESERVES) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta ${MAX_RESERVES} invitados`)
+    if (missing > MAX_GUESTS_PER_EVENT) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta ${MAX_GUESTS_PER_EVENT} invitados`)
 
     const adminSupabase = getAdminClient()
 
-    for (let i = 1; i <= missing; i++) {
+    // Contar invitados ya presentes para numerar sin duplicar "Invitado 1"
+    // si el hueco se rellena en varias tandas.
+    const { data: participantIds } = await adminSupabase
+      .from('event_participants')
+      .select('user_id')
+      .eq('event_id', eventId)
+
+    let existingGuestCount = 0
+    if (participantIds && participantIds.length > 0) {
+      const { count } = await adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .in('id', participantIds.map(p => p.user_id))
+        .eq('is_guest', true)
+      existingGuestCount = count || 0
+    }
+
+    const totalGuestsAfter = existingGuestCount + missing
+    if (totalGuestsAfter > MAX_GUESTS_PER_EVENT) {
+      throw new Error(`Este evento ya tiene ${existingGuestCount} invitado${existingGuestCount === 1 ? '' : 's'}. Como máximo puede haber ${MAX_GUESTS_PER_EVENT} en total.`)
+    }
+
+    for (let i = existingGuestCount + 1; i <= existingGuestCount + missing; i++) {
       const guestEmail = `invitado-${crypto.randomUUID()}@guest.local`
 
       // Create real auth user (guest can never log in — random password)
