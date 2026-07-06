@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, Users, UserMinus, UserPlus, UserRoundPlus, Pencil, Trash2, X, Shuffle } from 'lucide-react'
+import { Calendar, Clock, Users, UserMinus, UserPlus, UsersRound, Pencil, Trash2, X, Shuffle } from 'lucide-react'
 import { MixingEvent } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, closeEventWithGuests } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
@@ -165,7 +165,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                     : `Rellenar ${missingSpots} hueco${missingSpots > 1 ? 's' : ''} con invitados`
                             }
                         >
-                            <UserRoundPlus className="h-4 w-4" />
+                            <UsersRound className="h-4 w-4" />
                         </Button>
                     )}
                     <Link href={`/admin/events/${event.id}/generate`}>
