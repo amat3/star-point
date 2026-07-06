@@ -56,10 +56,10 @@ export default async function DashboardPage(props: DashboardProps) {
     .from('matches')
     .select(`
       *,
-      p_a1:profiles!player_a1(full_name, is_guest),
-      p_a2:profiles!player_a2(full_name, is_guest),
-      p_b1:profiles!player_b1(full_name, is_guest),
-      p_b2:profiles!player_b2(full_name, is_guest),
+      p_a1:profiles!player_a1(full_name, is_guest, avatar_url),
+      p_a2:profiles!player_a2(full_name, is_guest, avatar_url),
+      p_b1:profiles!player_b1(full_name, is_guest, avatar_url),
+      p_b2:profiles!player_b2(full_name, is_guest, avatar_url),
       last_updated_by,
       court_number,
       event:events(title, start_time, duration_minutes, rounds),
@@ -78,6 +78,7 @@ export default async function DashboardPage(props: DashboardProps) {
   const { data: pendingMatches } = await pendingQuery
 
   const openEvents = await getOpenEvents()
+  const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -98,7 +99,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
         
-        <MotivationalCard userName={userName} gender={userGender} dayIndex={Math.floor(Date.now() / (1000 * 60 * 60 * 24))} />
+        <MotivationalCard userName={userName} gender={userGender} dayIndex={dayIndex} />
 
         {/* Next Mixings Section */}
         <section className="space-y-4">

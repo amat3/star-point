@@ -47,10 +47,10 @@ export interface Match {
   rating_change?: number;
 
   // Joined relations (optional, populated via joins)
-  p_a1?: { full_name: string; is_guest?: boolean };
-  p_a2?: { full_name: string; is_guest?: boolean };
-  p_b1?: { full_name: string; is_guest?: boolean };
-  p_b2?: { full_name: string; is_guest?: boolean };
+  p_a1?: { full_name: string; is_guest?: boolean; avatar_url?: string | null };
+  p_a2?: { full_name: string; is_guest?: boolean; avatar_url?: string | null };
+  p_b1?: { full_name: string; is_guest?: boolean; avatar_url?: string | null };
+  p_b2?: { full_name: string; is_guest?: boolean; avatar_url?: string | null };
   
   // Event Metadata
   court_number?: number;
