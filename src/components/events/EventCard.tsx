@@ -149,20 +149,20 @@ export function EventCard({ event, userRole }: EventCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pb-4">
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <Calendar className="w-4 h-4 mr-2 text-primary" />
+        <div className="flex items-center text-base sm:text-sm text-gray-500 dark:text-gray-400">
+            <Calendar className="w-5 h-5 sm:w-4 sm:h-4 mr-2 text-primary" />
             <span>{formatDate(event.start_time)}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <Clock className="w-4 h-4 mr-2 text-primary" />
+        <div className="flex items-center text-base sm:text-sm text-gray-500 dark:text-gray-400">
+            <Clock className="w-5 h-5 sm:w-4 sm:h-4 mr-2 text-primary" />
             <span>{formatTime(event.start_time)} ({event.duration_minutes || 90} min)</span>
         </div>
-        
+
         {/* Participants List */}
         <div className="mt-4">
             <div className="flex justify-between items-center mb-2">
-                <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
-                    <Users className="w-3 h-3" />
+                <h4 className="text-sm sm:text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                    <Users className="w-4 h-4 sm:w-3 sm:h-3" />
                     Jugadores {Math.min(participantsCount, event.max_spots)}/{event.max_spots}
                 </h4>
             </div>
@@ -172,34 +172,34 @@ export function EventCard({ event, userRole }: EventCardProps) {
                 {Array.from({ length: event.max_spots }).map((_, index) => {
                     const participant = event.participants?.[index]
                     return (
-                        <div key={`main-${index}`} className="flex items-center justify-between text-sm h-6 group">
+                        <div key={`main-${index}`} className="flex items-center justify-between text-base sm:text-sm h-7 sm:h-6 group">
                             <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
                                 {participant ? (
-                                    <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+                                    <Avatar className="h-6 w-6 sm:h-5 sm:w-5 shrink-0 border border-lime-500">
                                         <AvatarImage src={participant.avatar_url ?? undefined} />
-                                        <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                                        <AvatarFallback className="bg-lime-100 text-lime-800 text-[10px] sm:text-[9px] font-bold">
                                             {(participant.full_name ?? "?").charAt(0).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                 ) : (
-                                    <span className="text-base shrink-0">🎾</span>
+                                    <span className="text-lg sm:text-base shrink-0">🎾</span>
                                 )}
                                 <span className={`truncate ${participant ? "text-gray-700 dark:text-gray-200 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                     {participant ? toTitleCase(participant.full_name) : "Libre"}
                                 </span>
                                 {participant?.is_guest && (
-                                    <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+                                    <span className="text-[11px] sm:text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
                                 )}
                             </div>
                             {participant && userRole === 'admin' && (
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity shrink-0"
+                                    className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity shrink-0"
                                     onClick={() => handleRemoveParticipant(participant.user_id)}
                                     title="Eliminar jugador"
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-4 w-4 sm:h-3 sm:w-3" />
                                 </Button>
                             )}
                         </div>
@@ -215,27 +215,27 @@ export function EventCard({ event, userRole }: EventCardProps) {
                 const slotsToShow = Math.min(filledReserves + 1, MAX_RESERVES)
                 return (
             <div className="border-t pt-2 mt-2">
-                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+                <h4 className="text-sm sm:text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-1">
+                    <Clock className="w-4 h-4 sm:w-3 sm:h-3" />
                     Reservas
                 </h4>
                 <div className="space-y-1 pl-1">
                     {Array.from({ length: slotsToShow }).map((_, index) => {
                         const reserveIndex = event.max_spots + index
                         const participant = event.participants?.[reserveIndex]
-                        
+
                         return (
-                            <div key={`reserve-${index}`} className="flex items-center justify-between text-sm h-6 group">
+                            <div key={`reserve-${index}`} className="flex items-center justify-between text-base sm:text-sm h-7 sm:h-6 group">
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     {participant ? (
-                                        <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+                                        <Avatar className="h-6 w-6 sm:h-5 sm:w-5 shrink-0 border border-lime-500">
                                             <AvatarImage src={participant.avatar_url ?? undefined} />
-                                            <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                                            <AvatarFallback className="bg-lime-100 text-lime-800 text-[10px] sm:text-[9px] font-bold">
                                                 {(participant.full_name ?? "?").charAt(0).toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
                                     ) : (
-                                        <span className="text-base text-amber-500 shrink-0">🎾</span>
+                                        <span className="text-lg sm:text-base text-amber-500 shrink-0">🎾</span>
                                     )}
                                     <span className={`truncate ${participant ? "text-amber-700 dark:text-amber-400 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                         {participant ? toTitleCase(participant.full_name) : "Hueco reserva"}
@@ -245,11 +245,11 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity"
+                                        className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity"
                                         onClick={() => handleRemoveParticipant(participant.user_id)}
                                         title="Eliminar jugador"
                                     >
-                                        <X className="h-3 w-3" />
+                                        <X className="h-4 w-4 sm:h-3 sm:w-3" />
                                     </Button>
                                 )}
                             </div>
