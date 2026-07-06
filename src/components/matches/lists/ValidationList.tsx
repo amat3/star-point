@@ -137,23 +137,26 @@ function MatchCard({
             const pb1 = formatPlayerName(match.p_b1)
             const pb2 = formatPlayerName(match.p_b2)
             const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
-            const miniAvatar = (name: string, url: string | null) => (
-              <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+            const pairAvatar = (name: string, url: string | null, z: string) => (
+              <Avatar className={`h-8 w-8 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
                 <AvatarImage src={url ?? undefined} />
-                <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-xs font-bold">
                   {name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             )
             return <>
-              <div className="text-right space-y-0.5 min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+              <div className="flex flex-col items-end gap-1 min-w-0">
+                <div className="flex -space-x-2">
+                  {pairAvatar(pa1.name, pa1.avatarUrl, 'z-10')}
+                  {pairAvatar(pa2.name, pa2.avatarUrl, 'z-0')}
+                </div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-right">
                   <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
-                    {miniAvatar(pa1.name, pa1.avatarUrl)}{pa1.isGuest && guestBadge}{pa1.name}
+                    {pa1.isGuest && guestBadge}{pa1.name}
                   </p>
                   <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
-                    {miniAvatar(pa2.name, pa2.avatarUrl)}{pa2.isGuest && guestBadge}{pa2.name}
+                    {pa2.isGuest && guestBadge}{pa2.name}
                   </p>
                 </div>
               </div>
@@ -165,14 +168,17 @@ function MatchCard({
                 </div>
               </div>
 
-              <div className="text-left space-y-0.5 min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+              <div className="flex flex-col items-start gap-1 min-w-0">
+                <div className="flex -space-x-2">
+                  {pairAvatar(pb1.name, pb1.avatarUrl, 'z-10')}
+                  {pairAvatar(pb2.name, pb2.avatarUrl, 'z-0')}
+                </div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-left">
                   <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
-                    {miniAvatar(pb1.name, pb1.avatarUrl)}{pb1.name}{pb1.isGuest && guestBadge}
+                    {pb1.name}{pb1.isGuest && guestBadge}
                   </p>
                   <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
-                    {miniAvatar(pb2.name, pb2.avatarUrl)}{pb2.name}{pb2.isGuest && guestBadge}
+                    {pb2.name}{pb2.isGuest && guestBadge}
                   </p>
                 </div>
               </div>
