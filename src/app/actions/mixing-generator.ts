@@ -150,6 +150,19 @@ export async function saveAllRounds(
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
 
+  // Defensa en profundidad: el evento debe estar completo antes de generar
+  // partidos, aunque el cliente ya bloquea el botón en este mismo caso.
+  const { data: eventCheck } = await supabase.from('events').select('max_spots').eq('id', eventId).single()
+  if (eventCheck) {
+    const { count: participantCount } = await supabase
+      .from('event_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+    if ((participantCount || 0) < eventCheck.max_spots) {
+      throw new Error('El evento no está completo. Añade jugadores o invitados antes de generar partidos.')
+    }
+  }
+
   const inserts = rounds.flatMap(({ matches, roundNumber }) =>
     matches.map(m => ({
       created_at: new Date().toISOString(),
