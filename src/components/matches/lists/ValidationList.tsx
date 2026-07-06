@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { Trash2, Pencil } from 'lucide-react'
 import { Match } from '@/types'
 import { formatPlayerName } from '@/lib/utils'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { EditMatchDialog } from '../dialogs/EditMatchDialog'
 import { COURT_NAMES } from '@/lib/constants'
 
@@ -136,15 +137,23 @@ function MatchCard({
             const pb1 = formatPlayerName(match.p_b1)
             const pb2 = formatPlayerName(match.p_b2)
             const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+            const miniAvatar = (name: string, url: string | null) => (
+              <Avatar className="h-5 w-5 shrink-0 border border-lime-500">
+                <AvatarImage src={url ?? undefined} />
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-[9px] font-bold">
+                  {name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )
             return <>
               <div className="text-right space-y-0.5 min-w-0">
                 <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja A</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate flex items-center justify-end gap-1" title={match.p_a1?.full_name}>
-                    {pa1.isGuest && guestBadge}{pa1.name}
+                    {miniAvatar(pa1.name, pa1.avatarUrl)}{pa1.isGuest && guestBadge}{pa1.name}
                   </p>
                   <p className="truncate flex items-center justify-end gap-1" title={match.p_a2?.full_name}>
-                    {pa2.isGuest && guestBadge}{pa2.name}
+                    {miniAvatar(pa2.name, pa2.avatarUrl)}{pa2.isGuest && guestBadge}{pa2.name}
                   </p>
                 </div>
               </div>
@@ -160,10 +169,10 @@ function MatchCard({
                 <div className="text-[10px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Pareja B</div>
                 <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                   <p className="truncate flex items-center gap-1" title={match.p_b1?.full_name}>
-                    {pb1.name}{pb1.isGuest && guestBadge}
+                    {miniAvatar(pb1.name, pb1.avatarUrl)}{pb1.name}{pb1.isGuest && guestBadge}
                   </p>
                   <p className="truncate flex items-center gap-1" title={match.p_b2?.full_name}>
-                    {pb2.name}{pb2.isGuest && guestBadge}
+                    {miniAvatar(pb2.name, pb2.avatarUrl)}{pb2.name}{pb2.isGuest && guestBadge}
                   </p>
                 </div>
               </div>
