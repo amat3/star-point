@@ -104,8 +104,8 @@ export default async function DashboardPage(props: DashboardProps) {
         {/* Next Mixings Section */}
         <section className="space-y-4">
            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                 <CalendarDays className="h-5 w-5 text-primary" />
+              <h2 className="text-xl sm:text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                 <CalendarDays className="h-6 w-6 sm:h-5 sm:w-5 text-primary" />
                  Próximos Mixings
               </h2>
               {userRole === 'admin' && <CreateEventDialog />}
@@ -128,8 +128,8 @@ export default async function DashboardPage(props: DashboardProps) {
         <section className="space-y-8">
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <ClipboardCheck className="h-5 w-5 text-primary" />
+              <h2 className="text-xl sm:text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <ClipboardCheck className="h-6 w-6 sm:h-5 sm:w-5 text-primary" />
                   Partidos por Validar
               </h2>
               {/* Badge already handled in logic above? No, logic above just showed number. Let's keep it consistent pattern. */}
@@ -153,8 +153,8 @@ export default async function DashboardPage(props: DashboardProps) {
         {/* Match History Link */}
         <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
           <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <History className="h-5 w-5 text-primary" />
+              <h2 className="text-xl sm:text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <History className="h-6 w-6 sm:h-5 sm:w-5 text-primary" />
                   Historial de Partidos
               </h2>
           </div>
@@ -162,10 +162,10 @@ export default async function DashboardPage(props: DashboardProps) {
              <div className="flex items-center gap-3">
 
                 <div>
-                    <p className="text-muted-foreground text-sm">Consulta y filtra todos tus resultados anteriores</p>
+                    <p className="text-muted-foreground text-base sm:text-sm">Consulta y filtra todos tus resultados anteriores</p>
                 </div>
              </div>
-             <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors" />
+             <ChevronRight className="h-6 w-6 sm:h-5 sm:w-5 text-gray-400 group-hover:text-primary transition-colors" />
           </Link>
         </section>
 

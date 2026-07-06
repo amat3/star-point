@@ -91,14 +91,14 @@ export function MotivationalCard({ userName, gender, dayIndex }: MotivationalCar
       <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-secondary/20 blur-2xl z-0" />
 
       <CardContent className="relative z-10 py-5 sm:py-6 px-1 sm:px-2 flex items-start gap-4 text-white">
-        <div className="shrink-0 p-2 rounded-2xl bg-white/20 backdrop-blur-md mt-0.5 text-2xl leading-none">
+        <div className="shrink-0 p-2 rounded-2xl bg-white/20 backdrop-blur-md mt-0.5 text-3xl sm:text-2xl leading-none">
           {emoji}
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
+          <span className="text-sm sm:text-xs font-semibold uppercase tracking-widest text-primary-foreground/70">
             ¡Hola, {userName}!
           </span>
-          <p className="text-sm sm:text-base font-medium text-white leading-snug">
+          <p className="text-base sm:text-base font-medium text-white leading-snug">
             {text}
           </p>
         </div>

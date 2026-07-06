@@ -22,7 +22,7 @@ export function UserMenu({ profile, userName }: UserMenuProps) {
           </AvatarFallback>
         </Avatar>
         <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 p-0.5 shadow-sm group-hover:bg-lime-50 dark:group-hover:bg-lime-900/20 transition-colors">
-          <ChevronDown className="h-3 w-3 text-gray-500" />
+          <ChevronDown className="h-4 w-4 sm:h-3 sm:w-3 text-gray-500" />
         </div>
       </div>
       <div className="text-left py-1">

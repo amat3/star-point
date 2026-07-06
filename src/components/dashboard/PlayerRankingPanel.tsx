@@ -62,16 +62,16 @@ export function PlayerRankingPanel() {
           onClick={toggle}
           className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
         >
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
-            <Users className="h-4 w-4 text-primary" />
+          <span className="flex items-center gap-2 text-base sm:text-sm font-medium text-gray-900 dark:text-white">
+            <Users className="h-5 w-5 sm:h-4 sm:w-4 text-primary" />
             Jugadores
             {players.length > 0 && (
               <Badge variant="secondary" className="text-[10px] px-1.5">{players.length}</Badge>
             )}
           </span>
           <span className="flex items-center gap-2">
-            {loading && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-            {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            {loading && <RefreshCw className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin text-muted-foreground" />}
+            {open ? <ChevronUp className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />}
           </span>
         </button>
         {open && (
@@ -81,8 +81,8 @@ export function PlayerRankingPanel() {
             title={sortBy === 'name' ? 'Ordenar por ranking' : 'Ordenar alfabéticamente'}
           >
             {sortBy === 'name'
-              ? <Trophy className="h-4 w-4" />
-              : <ArrowDownAZ className="h-4 w-4" />
+              ? <Trophy className="h-5 w-5 sm:h-4 sm:w-4" />
+              : <ArrowDownAZ className="h-5 w-5 sm:h-4 sm:w-4" />
             }
           </button>
         )}
@@ -100,7 +100,7 @@ export function PlayerRankingPanel() {
             {sorted.map((p, idx) => (
               <div
                 key={p.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 text-base sm:text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
                 <span className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
                   {sortBy === 'rating' && (

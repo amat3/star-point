@@ -103,7 +103,7 @@ function MatchCard({
       {/* Court title header */}
       {match.court_number && (
         <div className="px-4 py-2 bg-primary/5 dark:bg-primary/10 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">
+          <span className="text-sm sm:text-xs font-bold uppercase tracking-widest text-primary">
             Pista {match.court_number}{match.court_name ? ` · ${match.court_name}` : ''}
           </span>
           {userRole === 'admin' && match.event_id && (
@@ -136,11 +136,11 @@ function MatchCard({
             const pa2 = formatPlayerName(match.p_a2)
             const pb1 = formatPlayerName(match.p_b1)
             const pb2 = formatPlayerName(match.p_b2)
-            const guestBadge = <span className="text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
+            const guestBadge = <span className="text-[11px] sm:text-[9px] text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
             const pairAvatar = (name: string, url: string | null, z: string) => (
-              <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
+              <Avatar className={`h-12 w-12 sm:h-12 sm:w-12 border-2 border-white dark:border-gray-800 ring-1 ring-lime-500 ${z}`}>
                 <AvatarImage src={url ?? undefined} />
-                <AvatarFallback className="bg-lime-100 text-lime-800 text-sm sm:text-base font-bold">
+                <AvatarFallback className="bg-lime-100 text-lime-800 text-base sm:text-base font-bold">
                   {name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -151,7 +151,7 @@ function MatchCard({
                   {pairAvatar(pa1.name, pa1.avatarUrl, 'z-10')}
                   {pairAvatar(pa2.name, pa2.avatarUrl, 'z-0')}
                 </div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                <div className="text-base sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
                   <p className="truncate flex items-center justify-center gap-1" title={match.p_a1?.full_name}>
                     {pa1.isGuest && guestBadge}{pa1.name}
                   </p>
@@ -173,7 +173,7 @@ function MatchCard({
                   {pairAvatar(pb1.name, pb1.avatarUrl, 'z-10')}
                   {pairAvatar(pb2.name, pb2.avatarUrl, 'z-0')}
                 </div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
+                <div className="text-base sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight text-center">
                   <p className="truncate flex items-center justify-center gap-1" title={match.p_b1?.full_name}>
                     {pb1.name}{pb1.isGuest && guestBadge}
                   </p>
