@@ -133,53 +133,51 @@ export function EventCard({ event, userRole }: EventCardProps) {
         onConfirm={() => pending?.action()}
       />
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-            <div className="flex flex-col gap-1">
-                <Link href={`/events/${event.id}`} className="hover:underline">
-                    <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
-                </Link>
-                {event.is_test && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full w-fit">
-                        🧪 Prueba · No computa en ranking
-                    </span>
+        {userRole === 'admin' && (
+            <div className="flex justify-end gap-1 flex-wrap mb-2">
+                {event.status === 'open' && (
+                    <AddParticipantDialog
+                        eventId={event.id}
+                        alreadyJoined={(event.participants || []).map(p => p.user_id)}
+                    />
                 )}
+                {event.status === 'open' && missingSpots > 0 && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
+                        onClick={handleFillWithGuests}
+                        disabled={missingSpots > MAX_GUESTS_PER_EVENT}
+                        title={
+                            missingSpots > MAX_GUESTS_PER_EVENT
+                                ? `Faltan ${missingSpots} jugadores, máximo ${MAX_GUESTS_PER_EVENT} invitados`
+                                : `Rellenar ${missingSpots} hueco${missingSpots > 1 ? 's' : ''} con invitados`
+                        }
+                    >
+                        <UsersRound className="h-4 w-4" />
+                    </Button>
+                )}
+                <Link href={`/admin/events/${event.id}/generate`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
+                        <Shuffle className="h-4 w-4" />
+                    </Button>
+                </Link>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditOpen(true)}>
+                    <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={handleDeleteEvent}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
             </div>
-            {userRole === 'admin' && (
-                <div className="flex gap-1">
-                    {event.status === 'open' && (
-                        <AddParticipantDialog
-                            eventId={event.id}
-                            alreadyJoined={(event.participants || []).map(p => p.user_id)}
-                        />
-                    )}
-                    {event.status === 'open' && missingSpots > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
-                            onClick={handleFillWithGuests}
-                            disabled={missingSpots > MAX_GUESTS_PER_EVENT}
-                            title={
-                                missingSpots > MAX_GUESTS_PER_EVENT
-                                    ? `Faltan ${missingSpots} jugadores, máximo ${MAX_GUESTS_PER_EVENT} invitados`
-                                    : `Rellenar ${missingSpots} hueco${missingSpots > 1 ? 's' : ''} con invitados`
-                            }
-                        >
-                            <UsersRound className="h-4 w-4" />
-                        </Button>
-                    )}
-                    <Link href={`/admin/events/${event.id}/generate`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
-                            <Shuffle className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditOpen(true)}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={handleDeleteEvent}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
+        )}
+        <div className="flex flex-col gap-1">
+            <Link href={`/events/${event.id}`} className="hover:underline">
+                <CardTitle className="text-xl font-bold text-primary">{event.title}</CardTitle>
+            </Link>
+            {event.is_test && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full w-fit">
+                    🧪 Prueba · No computa en ranking
+                </span>
             )}
         </div>
       </CardHeader>
