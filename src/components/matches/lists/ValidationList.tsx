@@ -162,7 +162,7 @@ function MatchCard({
               </div>
 
               <div className="flex flex-col items-center justify-center self-stretch px-2 py-1 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 min-w-17.5 shrink-0">
-                <span className="text-[10px] font-black text-secondary italic mb-1">VS</span>
+                <span className="text-[10px] font-black text-secondary dark:text-lime-400 italic mb-1">VS</span>
                 <div className="text-lg font-black leading-none text-gray-900 dark:text-white text-center">
                   {match.score_details}
                 </div>
