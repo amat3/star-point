@@ -218,7 +218,7 @@ function MatchCard({
             </Button>
           )}
 
-          {userRole !== 'admin' && userId !== match.creator_id && match.status !== 'disputed' && (
+          {userRole !== 'admin' && userId !== match.creator_id && match.status !== 'disputed' && match.score_details !== '0-0' && (
             <Button
               variant="outline"
               size="sm"
