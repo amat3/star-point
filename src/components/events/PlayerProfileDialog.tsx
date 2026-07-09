@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PlayerStatsCard } from '@/components/dashboard/PlayerStatsCard'
@@ -68,6 +69,9 @@ export function PlayerProfileDialog({ userId, open, onOpenChange }: PlayerProfil
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Perfil del Jugador</DialogTitle>
+          <DialogDescription className="sr-only">
+            Datos y estadísticas del jugador seleccionado
+          </DialogDescription>
         </DialogHeader>
 
         {loading && (
