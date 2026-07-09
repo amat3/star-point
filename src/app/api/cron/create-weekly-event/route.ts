@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { PLAYERS_PER_COURT } from '@/lib/utils'
+import { sendPushToUsers } from '@/lib/push'
 
 const MADRID_TZ = 'Europe/Madrid'
 const COURTS = 3
@@ -102,6 +103,25 @@ export async function GET(request: Request) {
     console.error('Cron error creating event:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  const { data: players } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('is_guest', false)
+
+  const formattedDate = new Intl.DateTimeFormat('es-ES', {
+    timeZone: MADRID_TZ,
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(startTime))
+
+  await sendPushToUsers((players ?? []).map(p => p.id), {
+    title: 'Nuevo evento disponible',
+    body: `"Mixing" el ${formattedDate} — ¡apúntate!`,
+    url: '/dashboard',
+  }).catch(console.error)
 
   return NextResponse.json({ created: true, start_time: startTime })
 }
