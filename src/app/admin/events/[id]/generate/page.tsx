@@ -348,7 +348,11 @@ export default function GenerateMixPage() {
                 {proposals.map((proposal, rIdx) => (
                     <TabsContent key={rIdx} value={`round-${rIdx + 1}`} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            {proposal.matches.map((match, mIdx) => (
+                            {proposal.matches.map((match, mIdx) => {
+                                const availableCourtNames = COURT_NAMES.filter(name =>
+                                    name === courtNames[match.courtNumber] || !assignedNames.includes(name)
+                                )
+                                return (
                                 <Card key={mIdx} className={`border-2 ${match.warning ? 'border-red-400 dark:border-red-700' : 'border-primary/10'}`}>
                                     <CardHeader className="pb-2 bg-muted/30">
                                         <CardTitle className="text-sm font-bold text-center flex flex-col items-center gap-2">
@@ -366,7 +370,7 @@ export default function GenerateMixPage() {
                                                     <SelectValue placeholder="Nombre pista..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {COURT_NAMES.map(name => (
+                                                    {availableCourtNames.map(name => (
                                                         <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -410,7 +414,8 @@ export default function GenerateMixPage() {
                                     </div>
                                     </CardContent>
                                 </Card>
-                            ))}
+                                )
+                            })}
                         </div>
 
                         {proposal.leftovers.length > 0 && (
