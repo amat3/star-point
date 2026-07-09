@@ -2,8 +2,10 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MatchHistory } from '@/components/dashboard/MatchHistory'
-import { ArrowLeft, History, Trophy, Activity } from 'lucide-react'
+import { PlayerStatsCard } from '@/components/dashboard/PlayerStatsCard'
+import { ArrowLeft, History, Trophy } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getPlayerGameStats } from '@/app/actions/matches'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -28,6 +30,7 @@ export default async function HistoryPage() {
 
   const matchesPlayed = profile?.matches_played ?? 0
   const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%'
+  const { gamesWon, gamesLost } = await getPlayerGameStats(user.id)
 
   return (
     <div className="min-h-screen bg-background animate-in fade-in duration-500">
@@ -52,27 +55,22 @@ export default async function HistoryPage() {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
         
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
-              <Activity className="h-4 w-4 text-gray-500" />
-              <CardTitle className="text-sm font-medium">Partidos Jugados</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center pb-4">
-              <div className="text-2xl font-bold">{matchesPlayed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
-              <Trophy className="h-4 w-4 text-lime-500" />
-              <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center pb-4">
-              <div className="text-2xl font-bold">{winRatio}</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Stats */}
+        <Card>
+          <CardContent className="pt-6">
+            <PlayerStatsCard matchesPlayed={matchesPlayed} gamesWon={gamesWon} gamesLost={gamesLost} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
+            <Trophy className="h-4 w-4 text-lime-500" />
+            <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center pb-4">
+            <div className="text-2xl font-bold">{winRatio}</div>
+          </CardContent>
+        </Card>
 
         <MatchHistory userId={user.id} />
       </main>

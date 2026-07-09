@@ -28,6 +28,28 @@ function parseGames(score: string) {
   return { gamesA, gamesB }
 }
 
+export async function getPlayerGameStats(userId: string) {
+  const supabase = await createClient()
+
+  const { data: matches } = await supabase
+    .from('matches')
+    .select('player_a1, player_a2, score_details')
+    .eq('status', 'confirmed')
+    .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
+
+  let gamesWon = 0
+  let gamesLost = 0
+
+  for (const match of matches ?? []) {
+    const isTeamA = match.player_a1 === userId || match.player_a2 === userId
+    const { gamesA, gamesB } = parseGames(match.score_details || '')
+    gamesWon += isTeamA ? gamesA : gamesB
+    gamesLost += isTeamA ? gamesB : gamesA
+  }
+
+  return { gamesWon, gamesLost }
+}
+
 export async function confirmMatch(matchId: string) {
   console.log('🎾 Iniciando confirmación de partido:', matchId)
   const supabase = await createClient()

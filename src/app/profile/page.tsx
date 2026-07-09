@@ -65,8 +65,6 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-
-
         {/* Edit Form */}
         <Card>
           <CardHeader>
