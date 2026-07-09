@@ -63,7 +63,6 @@ export function AvatarUpload({ userId, avatarUrl, userName }: AvatarUploadProps)
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="user"
         className="hidden"
         onChange={handleFileChange}
       />
