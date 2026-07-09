@@ -8,6 +8,7 @@ import { MixingEvent } from '@/types/events'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, closeEventWithGuests } from '@/app/actions/events'
 import { EditEventDialog } from './EditEventDialog'
 import { AddParticipantDialog } from './AddParticipantDialog'
+import { PlayerProfileDialog } from './PlayerProfileDialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
@@ -41,6 +42,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
   const [pending, setPending] = useState<PendingConfirm | null>(null)
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
 
   const participantsCount = event.participants_count || 0
   const isJoined = event.is_joined
@@ -124,6 +126,11 @@ export function EventCard({ event, userRole }: EventCardProps) {
   return (
     <Card className="w-full relative overflow-hidden border-l-4 border-l-primary shadow-sm hover:shadow-md transition-all px-0">
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
+      <PlayerProfileDialog
+        userId={selectedProfileId}
+        open={selectedProfileId !== null}
+        onOpenChange={(open) => { if (!open) setSelectedProfileId(null) }}
+      />
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => { if (!open) setPending(null) }}
@@ -206,7 +213,12 @@ export function EventCard({ event, userRole }: EventCardProps) {
                     const participant = event.participants?.[index]
                     return (
                         <div key={`main-${index}`} className="flex items-center justify-between text-base sm:text-sm h-7 sm:h-6 group">
-                            <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => participant && setSelectedProfileId(participant.user_id)}
+                                disabled={!participant}
+                                className="flex items-center gap-1.5 overflow-hidden min-w-0 text-left rounded disabled:cursor-default enabled:hover:opacity-70 enabled:focus-visible:ring-2 enabled:focus-visible:ring-primary transition-opacity"
+                            >
                                 {participant ? (
                                     <Avatar className="h-6 w-6 sm:h-5 sm:w-5 shrink-0 border border-lime-500">
                                         <AvatarImage src={participant.avatar_url ?? undefined} />
@@ -223,7 +235,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                 {participant?.is_guest && (
                                     <span className="text-[11px] sm:text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded shrink-0">Inv.</span>
                                 )}
-                            </div>
+                            </button>
                             {participant && userRole === 'admin' && (
                                 <Button
                                     variant="ghost"
@@ -259,7 +271,12 @@ export function EventCard({ event, userRole }: EventCardProps) {
 
                         return (
                             <div key={`reserve-${index}`} className="flex items-center justify-between text-base sm:text-sm h-7 sm:h-6 group">
-                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => participant && setSelectedProfileId(participant.user_id)}
+                                    disabled={!participant}
+                                    className="flex items-center gap-1.5 overflow-hidden text-left rounded disabled:cursor-default enabled:hover:opacity-70 enabled:focus-visible:ring-2 enabled:focus-visible:ring-primary transition-opacity"
+                                >
                                     {participant ? (
                                         <Avatar className="h-6 w-6 sm:h-5 sm:w-5 shrink-0 border border-lime-500">
                                             <AvatarImage src={participant.avatar_url ?? undefined} />
@@ -273,7 +290,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                     <span className={`truncate ${participant ? "text-amber-700 dark:text-amber-400 font-medium" : "text-gray-300 dark:text-gray-600 font-light"}`}>
                                         {participant ? toTitleCase(participant.full_name) : "Hueco reserva"}
                                     </span>
-                                </div>
+                                </button>
                                 {participant && userRole === 'admin' && (
                                     <Button
                                         variant="ghost"

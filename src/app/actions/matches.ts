@@ -50,6 +50,35 @@ export async function getPlayerGameStats(userId: string) {
   return { gamesWon, gamesLost }
 }
 
+export type PlayerProfileDetails = {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+  gender: 'masculino' | 'femenino' | 'otro' | null
+  preferred_hand: 'diestro' | 'zurdo' | 'ambidiestro' | null
+  court_position: 'reves' | 'drive' | 'ambos' | null
+  matches_played: number
+  win_ratio: number
+  gamesWon: number
+  gamesLost: number
+}
+
+export async function getPlayerProfileDetails(userId: string): Promise<PlayerProfileDetails | null> {
+  const supabase = await createClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url, gender, preferred_hand, court_position, matches_played, win_ratio')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (!profile) return null
+
+  const { gamesWon, gamesLost } = await getPlayerGameStats(userId)
+
+  return { ...profile, gamesWon, gamesLost }
+}
+
 export async function confirmMatch(matchId: string) {
   console.log('🎾 Iniciando confirmación de partido:', matchId)
   const supabase = await createClient()
