@@ -15,6 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toTitleCase } from '@/lib/utils'
 import { COURT_NAMES } from '@/lib/constants'
 
+// Swap manual en stand-by: se mantiene el código pero deshabilitado a petición del admin.
+// Reactivar cambiando esto a `true`.
+const SWAP_ENABLED = false
+
 export default function GenerateMixPage() {
   const router = useRouter()
   const params = useParams()
@@ -384,13 +388,13 @@ export default function GenerateMixPage() {
                                             <PlayerItem
                                                 player={match.pairA[0]}
                                                 isSelected={selectedPlayerId === match.pairA[0].id}
-                                                onSelect={() => selectedPlayerId === match.pairA[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[0].id) : setSelectedPlayerId(match.pairA[0].id))}
+                                                onSelect={SWAP_ENABLED ? () => selectedPlayerId === match.pairA[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[0].id) : setSelectedPlayerId(match.pairA[0].id)) : undefined}
                                             />
                                             <div className="w-px self-stretch bg-blue-200 dark:bg-blue-800" />
                                             <PlayerItem
                                                 player={match.pairA[1]}
                                                 isSelected={selectedPlayerId === match.pairA[1].id}
-                                                onSelect={() => selectedPlayerId === match.pairA[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[1].id) : setSelectedPlayerId(match.pairA[1].id))}
+                                                onSelect={SWAP_ENABLED ? () => selectedPlayerId === match.pairA[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairA[1].id) : setSelectedPlayerId(match.pairA[1].id)) : undefined}
                                             />
                                         </div>
 
@@ -402,13 +406,13 @@ export default function GenerateMixPage() {
                                             <PlayerItem
                                                 player={match.pairB[0]}
                                                 isSelected={selectedPlayerId === match.pairB[0].id}
-                                                onSelect={() => selectedPlayerId === match.pairB[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[0].id) : setSelectedPlayerId(match.pairB[0].id))}
+                                                onSelect={SWAP_ENABLED ? () => selectedPlayerId === match.pairB[0].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[0].id) : setSelectedPlayerId(match.pairB[0].id)) : undefined}
                                             />
                                             <div className="w-px self-stretch bg-red-200 dark:bg-red-800" />
                                             <PlayerItem
                                                 player={match.pairB[1]}
                                                 isSelected={selectedPlayerId === match.pairB[1].id}
-                                                onSelect={() => selectedPlayerId === match.pairB[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[1].id) : setSelectedPlayerId(match.pairB[1].id))}
+                                                onSelect={SWAP_ENABLED ? () => selectedPlayerId === match.pairB[1].id ? setSelectedPlayerId(null) : (selectedPlayerId ? handleSwap(rIdx, match.pairB[1].id) : setSelectedPlayerId(match.pairB[1].id)) : undefined}
                                             />
                                         </div>
                                     </div>
@@ -437,15 +441,16 @@ export default function GenerateMixPage() {
   )
 }
 
-function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipant, isSelected: boolean, onSelect: () => void }) {
+function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipant, isSelected: boolean, onSelect?: () => void }) {
     if (!player) return <div>Empty</div>
-    
+
     return (
         <div
             onClick={onSelect}
             className={`
-                flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded cursor-pointer transition-all
-                ${isSelected ? 'ring-2 ring-primary bg-primary/10' : 'hover:bg-accent'}
+                flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded transition-all
+                ${onSelect ? 'cursor-pointer' : ''}
+                ${isSelected ? 'ring-2 ring-primary bg-primary/10' : onSelect ? 'hover:bg-accent' : ''}
             `}
         >
             <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border border-lime-500">
