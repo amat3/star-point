@@ -165,12 +165,22 @@ export default function GenerateMixPage() {
     const c1 = findCoords(selectedPlayerId)
     const c2 = findCoords(targetPlayerId)
 
+    if (c1 && c2 && c1.mIdx !== c2.mIdx) {
+        // Un swap entre pistas distintas deshace el balance de nivel, la
+        // complementariedad de posición y las exclusiones que el algoritmo
+        // calculó para ese grupo de 4 concreto — solo se permite reordenar
+        // parejas dentro del mismo partido/pista.
+        toast.error('Solo puedes intercambiar jugadores dentro de la misma pista')
+        setSelectedPlayerId(null)
+        return
+    }
+
     if (c1 && c2) {
-        // Clonar los objetos match para no mutar el estado de React directamente
+        // c1.mIdx === c2.mIdx garantizado por el chequeo anterior: siempre es
+        // un reordenamiento dentro del mismo partido/pista.
         const m1 = { ...newMatches[c1.mIdx] }
         newMatches[c1.mIdx] = m1
-        const m2 = c1.mIdx === c2.mIdx ? m1 : { ...newMatches[c2.mIdx] }
-        if (c1.mIdx !== c2.mIdx) newMatches[c2.mIdx] = m2
+        const m2 = m1
 
         type PlayerKey = 'player1' | 'player2' | 'player3' | 'player4'
         const playerKeys: PlayerKey[] = ['player1', 'player2', 'player3', 'player4']
