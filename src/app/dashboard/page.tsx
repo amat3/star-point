@@ -16,6 +16,7 @@ import { CreateEventDialog } from '@/components/events/CreateEventDialog'
 import { PlayerRankingPanel } from '@/components/dashboard/PlayerRankingPanel'
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
+import { getDayIndex } from '@/lib/utils'
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -78,7 +79,7 @@ export default async function DashboardPage(props: DashboardProps) {
   const { data: pendingMatches } = await pendingQuery
 
   const openEvents = await getOpenEvents()
-  const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
+  const dayIndex = getDayIndex()
 
   return (
     <div className="animate-in fade-in duration-500">
