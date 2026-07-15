@@ -7,6 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export const PLAYERS_PER_COURT = 4
 
+/** Índice del día actual (para elegir un mensaje motivacional estable durante el día). */
+export function getDayIndex() {
+  return Math.floor(Date.now() / (1000 * 60 * 60 * 24))
+}
+
 export function toTitleCase(name: string | null | undefined) {
   return (name ?? '').toLowerCase().split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
@@ -37,13 +42,19 @@ const MADRID_TZ = 'Europe/Madrid'
 
 /**
  * Offset de Madrid respecto a UTC (en horas, +1 CET o +2 CEST) para una fecha dada.
- * Usa mediodía UTC de ese día como referencia para no toparse con la ambigüedad
- * del propio cambio de hora.
+ * Lee el offset directamente vía Intl (`shortOffset`) en vez de reinterpretar un
+ * string formateado como si fuera hora local del runtime — ese truco alternativo
+ * da resultados incorrectos (offset 0) precisamente cuando el propio runtime ya
+ * está en zona horaria Europe/Madrid, que es el caso más común para esta app.
  */
 function getMadridOffsetHoursForDate(referenceDate: Date): number {
-  const noonUTC = new Date(Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate(), 12, 0, 0))
-  const madridAtNoon = new Date(noonUTC.toLocaleString('en-US', { timeZone: MADRID_TZ }))
-  return Math.round((madridAtNoon.getTime() - noonUTC.getTime()) / 3_600_000)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MADRID_TZ,
+    timeZoneName: 'shortOffset',
+  }).formatToParts(referenceDate)
+  const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+0'
+  const match = tzPart.match(/GMT([+-]\d+)/)
+  return match ? parseInt(match[1], 10) : 0
 }
 
 /**

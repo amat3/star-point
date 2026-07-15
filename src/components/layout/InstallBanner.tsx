@@ -10,11 +10,13 @@ export function InstallBanner() {
   const [state, setState] = useState({ visible: false, isIOS: false })
 
   useEffect(() => {
-    const dismissed = localStorage.getItem(DISMISS_KEY)
-
-    if (isTouchDevice() && !isStandaloneMode() && !dismissed) {
-      setState({ visible: true, isIOS: isIOSDevice() })
+    function checkInstallState() {
+      const dismissed = localStorage.getItem(DISMISS_KEY)
+      if (isTouchDevice() && !isStandaloneMode() && !dismissed) {
+        setState({ visible: true, isIOS: isIOSDevice() })
+      }
     }
+    checkInstallState()
   }, [])
 
   function dismiss() {
