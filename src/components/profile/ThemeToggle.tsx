@@ -11,7 +11,10 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    function markMounted() {
+      setMounted(true)
+    }
+    markMounted()
   }, [])
 
   if (!mounted) {

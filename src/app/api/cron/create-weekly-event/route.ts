@@ -24,38 +24,56 @@ function getMadridHour(): number {
 // que se PUBLICA el evento (22:00-22:59 Madrid, ver `getMadridHour` más abajo).
 const EVENT_START_HOUR_MADRID = 20
 
+const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+
+// Offset de Madrid respecto a UTC (horas, +1 CET o +2 CEST) para una fecha dada.
+// Lee el offset directamente vía Intl en vez de reinterpretar un string
+// formateado como si fuera hora local del runtime — ese truco alternativo da
+// resultados incorrectos precisamente cuando el runtime ya está en Europe/Madrid
+// (no es el caso de Vercel, que corre en UTC, pero sí de una ejecución local).
+function getMadridOffsetHoursForDate(date: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: MADRID_TZ, timeZoneName: 'shortOffset' }).formatToParts(date)
+  const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+0'
+  const match = tzPart.match(/GMT([+-]\d+)/)
+  return match ? parseInt(match[1], 10) : 0
+}
+
+// Componentes de fecha (año/mes/día/día-de-semana) tal como se ven en Madrid,
+// leídos directamente vía Intl sin reinterpretar strings en la zona del runtime.
+function getMadridDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MADRID_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return {
+    year: parseInt(get('year'), 10),
+    month: parseInt(get('month'), 10),
+    day: parseInt(get('day'), 10),
+    weekdayIndex: WEEKDAY_INDEX[get('weekday')] ?? 0,
+  }
+}
+
 // Computes the UTC ISO string for "next Wednesday at EVENT_START_HOUR_MADRID:00 Madrid",
 // correctly accounting for DST on that specific date.
 function getNextWednesdayMatchStartUTC(): string {
   const now = new Date()
 
-  // Current day of week in Madrid
-  const madridNow = new Date(now.toLocaleString('en-US', { timeZone: MADRID_TZ }))
-  const currentDay = madridNow.getDay() // 0=Sun…6=Sat
+  const { weekdayIndex: currentDay } = getMadridDateParts(now)
   const daysToAdd = (3 - currentDay + 7) % 7 || 7 // always next Wednesday
 
-  // Approximate next Wednesday at noon UTC to determine DST offset on that date
+  // Próximo miércoles a mediodía UTC, solo para fijar la fecha y determinar el
+  // offset (CET/CEST) correcto en ese día concreto.
   const approxNextWedUTC = new Date(now)
   approxNextWedUTC.setUTCDate(now.getUTCDate() + daysToAdd)
   approxNextWedUTC.setUTCHours(12, 0, 0, 0)
 
-  // Madrid UTC offset (ms) on next Wednesday (handles DST correctly)
-  const madridOnNextWed = new Date(
-    approxNextWedUTC.toLocaleString('en-US', { timeZone: MADRID_TZ })
-  )
-  const madridOffsetMs = madridOnNextWed.getTime() - approxNextWedUTC.getTime()
-  const madridOffsetHours = Math.round(madridOffsetMs / 3_600_000) // 1 (CET) or 2 (CEST)
-
-  // Next Wednesday date components in Madrid
-  const nextWedMadrid = new Date(madridNow)
-  nextWedMadrid.setDate(madridNow.getDate() + daysToAdd)
-  const y = nextWedMadrid.getFullYear()
-  const m = String(nextWedMadrid.getMonth() + 1).padStart(2, '0')
-  const d = String(nextWedMadrid.getDate()).padStart(2, '0')
+  const { year: y, month: m, day: d } = getMadridDateParts(approxNextWedUTC)
+  const offsetHours = getMadridOffsetHoursForDate(approxNextWedUTC)
 
   // EVENT_START_HOUR_MADRID:00 Madrid = (EVENT_START_HOUR_MADRID - offset) UTC
-  const utcHour = EVENT_START_HOUR_MADRID - madridOffsetHours
-  return `${y}-${m}-${d}T${String(utcHour).padStart(2, '0')}:00:00.000Z`
+  const utcHour = EVENT_START_HOUR_MADRID - offsetHours
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(utcHour).padStart(2, '0')}:00:00.000Z`
 }
 
 export async function GET(request: Request) {
