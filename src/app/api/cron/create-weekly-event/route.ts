@@ -20,9 +20,13 @@ function getMadridHour(): number {
   )
 }
 
-// Computes the UTC ISO string for "next Wednesday at 22:00 Madrid",
+// Hora de inicio real de los partidos (Madrid) — distinta de la ventana en la
+// que se PUBLICA el evento (22:00-22:59 Madrid, ver `getMadridHour` más abajo).
+const EVENT_START_HOUR_MADRID = 20
+
+// Computes the UTC ISO string for "next Wednesday at EVENT_START_HOUR_MADRID:00 Madrid",
 // correctly accounting for DST on that specific date.
-function getNextWednesdayAt22UTC(): string {
+function getNextWednesdayMatchStartUTC(): string {
   const now = new Date()
 
   // Current day of week in Madrid
@@ -49,8 +53,8 @@ function getNextWednesdayAt22UTC(): string {
   const m = String(nextWedMadrid.getMonth() + 1).padStart(2, '0')
   const d = String(nextWedMadrid.getDate()).padStart(2, '0')
 
-  // 22:00 Madrid = (22 - offset) UTC
-  const utcHour = 22 - madridOffsetHours
+  // EVENT_START_HOUR_MADRID:00 Madrid = (EVENT_START_HOUR_MADRID - offset) UTC
+  const utcHour = EVENT_START_HOUR_MADRID - madridOffsetHours
   return `${y}-${m}-${d}T${String(utcHour).padStart(2, '0')}:00:00.000Z`
 }
 
@@ -70,13 +74,14 @@ export async function GET(request: Request) {
     })
   }
 
-  const startTime = getNextWednesdayAt22UTC()
+  const startTime = getNextWednesdayMatchStartUTC()
 
   const supabase = getAdminClient()
 
   // Avoid duplicates: check if an event already exists for next Wednesday
-  const windowStart = startTime.replace('T22', 'T00').slice(0, 10) + 'T00:00:00.000Z'
-  const windowEnd   = startTime.replace('T22', 'T00').slice(0, 10) + 'T23:59:59.000Z'
+  const datePart = startTime.slice(0, 10) // 'YYYY-MM-DD'
+  const windowStart = `${datePart}T00:00:00.000Z`
+  const windowEnd = `${datePart}T23:59:59.000Z`
 
   const { data: existing } = await supabase
     .from('events')
