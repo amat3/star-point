@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { CalendarPlus } from 'lucide-react'
-import { PLAYERS_PER_COURT } from '@/lib/utils'
+import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -50,7 +50,7 @@ export function CreateEventDialog() {
     defaultValues: {
       title: "Mixing",
       courts: 3,
-      date: new Date().toISOString().split('T')[0],
+      date: utcToMadridDateTime(new Date().toISOString()).date,
       time: "20:00",
       rounds: 3,
       duration_minutes: 90,
@@ -61,12 +61,9 @@ export function CreateEventDialog() {
   async function onSubmit(values: FormValues) {
     setIsSubmitting(true)
     try {
-      // Combine date and time to ISO string
-      const dateTime = new Date(`${values.date}T${values.time}:00`)
-      
       await createEvent({
         title: values.title,
-        start_time: dateTime.toISOString(),
+        start_time: madridDateTimeToUTC(values.date, values.time),
         max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes,

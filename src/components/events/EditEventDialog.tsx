@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { PLAYERS_PER_COURT } from '@/lib/utils'
+import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
 import { updateEvent } from '@/app/actions/events'
 import { MixingEvent } from '@/types/events'
 
@@ -42,15 +42,8 @@ interface EditEventDialogProps {
   event: MixingEvent
 }
 
-function toLocalDateAndTime(isoString: string) {
-  const dt = new Date(isoString)
-  const date = dt.toLocaleDateString('sv') // 'sv' locale → YYYY-MM-DD en hora local
-  const time = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
-  return { date, time }
-}
-
 export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogProps) {
-  const { date: datePart, time: timePart } = toLocalDateAndTime(event.start_time)
+  const { date: datePart, time: timePart } = utcToMadridDateTime(event.start_time)
 
   const form = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,7 +82,7 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
   // Reset form when event changes or dialog opens
   useEffect(() => {
     if (open) {
-      const { date, time } = toLocalDateAndTime(event.start_time)
+      const { date, time } = utcToMadridDateTime(event.start_time)
       form.reset({
         title: event.title,
         date,
@@ -104,10 +97,9 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
   async function onSubmit(values: FormValues) {
     setIsLoading(true)
     try {
-      const dateTime = new Date(`${values.date}T${values.time}:00`)
       await updateEvent(event.id, {
         title: values.title,
-        start_time: dateTime.toISOString(),
+        start_time: madridDateTimeToUTC(values.date, values.time),
         max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
         duration_minutes: values.duration_minutes
