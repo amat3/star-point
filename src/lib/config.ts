@@ -12,7 +12,7 @@ export const RATING_CONFIG = {
   
   // --- CONFIGURACIÓN BASE (La que ya tenías) ---
   SCALE_DIVISOR: 3,
-  MATCH_WEIGHT: 0.40,
+  MATCH_WEIGHT: 0.70, // subido desde 0.40 el 2026-07-16 tras simular emparejamientos: con 0.40 el rating apenas diferenciaba a los jugadores (stddev ~0.19 tras 9 partidos), lo que dejaba a "similar_levels" trabajando casi a ciegas. Recalculado con carácter retroactivo — ver script de migración.
   MIN_RATING: 0,
   MAX_RATING: 7,
   INITIAL_RATING: 3.5,
