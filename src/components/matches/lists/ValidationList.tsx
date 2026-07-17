@@ -7,11 +7,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { confirmMatch } from '@/app/actions/matches'
+import { confirmMatch, rotateMatchPlayers } from '@/app/actions/matches'
 import { disputeMatch } from '@/app/actions/dispute'
 import { deleteMatch, updateCourtName } from '@/app/actions/admin-matches'
 import { toast } from 'sonner'
-import { Trash2, Pencil } from 'lucide-react'
+import { Trash2, Pencil, Shuffle } from 'lucide-react'
 import { Match } from '@/types'
 import { formatPlayerName } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -71,6 +71,36 @@ function CourtNameEditor({ eventId, courtNumber, currentName }: { eventId: strin
   )
 }
 
+function RotatePlayersButton({ matchId, disabled }: { matchId: string; disabled: boolean }) {
+  const [rotating, setRotating] = useState(false)
+  const router = useRouter()
+
+  const handleClick = async () => {
+    setRotating(true)
+    try {
+      const result = await rotateMatchPlayers(matchId)
+      if (!result.success) throw new Error('No se pudo rotar')
+      toast.success('Jugadores rotados')
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al rotar jugadores')
+    } finally {
+      setRotating(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className="p-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-primary/50"
+      title={disabled ? 'Solo se puede rotar antes de introducir el resultado' : 'Rotar parejas de esta pista'}
+      disabled={disabled || rotating}
+    >
+      <Shuffle className={`w-3 h-3 ${rotating ? 'animate-pulse' : ''}`} />
+    </button>
+  )
+}
+
 function MatchCard({
   match,
   userId,
@@ -107,11 +137,17 @@ function MatchCard({
             Pista {match.court_number}{match.court_name ? ` · ${match.court_name}` : ''}
           </span>
           {userRole === 'admin' && match.event_id && (
-            <CourtNameEditor
-              eventId={match.event_id}
-              courtNumber={match.court_number}
-              currentName={match.court_name}
-            />
+            <div className="flex items-center gap-1">
+              <RotatePlayersButton
+                matchId={match.id}
+                disabled={match.status === 'confirmed' || match.score_details !== '0-0'}
+              />
+              <CourtNameEditor
+                eventId={match.event_id}
+                courtNumber={match.court_number}
+                currentName={match.court_name}
+              />
+            </div>
           )}
         </div>
       )}
