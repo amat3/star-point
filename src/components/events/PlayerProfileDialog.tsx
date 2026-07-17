@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Trophy } from 'lucide-react'
+import { Loader2, Trophy, Pencil, Check, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,18 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PlayerStatsCard } from '@/components/dashboard/PlayerStatsCard'
 import { getPlayerProfileDetails, type PlayerProfileDetails } from '@/app/actions/matches'
+import { renameGuest } from '@/app/actions/events'
 import { toTitleCase } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface PlayerProfileDialogProps {
   userId: string | null
+  userRole?: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -46,9 +51,12 @@ function InfoRow({ label, value }: { label: string, value: string }) {
   )
 }
 
-export function PlayerProfileDialog({ userId, open, onOpenChange }: PlayerProfileDialogProps) {
+export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: PlayerProfileDialogProps) {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<PlayerProfileDetails | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [savingName, setSavingName] = useState(false)
 
   useEffect(() => {
     if (!open || !userId) return
@@ -56,6 +64,7 @@ export function PlayerProfileDialog({ userId, open, onOpenChange }: PlayerProfil
     async function load() {
       setLoading(true)
       setData(null)
+      setEditingName(false)
       const result = await getPlayerProfileDetails(userId!)
       setData(result)
       setLoading(false)
@@ -63,6 +72,26 @@ export function PlayerProfileDialog({ userId, open, onOpenChange }: PlayerProfil
 
     load()
   }, [open, userId])
+
+  function startEditingName() {
+    setNameDraft(data?.full_name ?? '')
+    setEditingName(true)
+  }
+
+  async function saveName() {
+    if (!data) return
+    setSavingName(true)
+    try {
+      await renameGuest(data.id, nameDraft)
+      setData({ ...data, full_name: nameDraft.trim() })
+      setEditingName(false)
+      toast.success('Nombre actualizado')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al renombrar')
+    } finally {
+      setSavingName(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,7 +124,37 @@ export function PlayerProfileDialog({ userId, open, onOpenChange }: PlayerProfil
                   {(data.full_name ?? '?').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-lg font-bold">{toTitleCase(data.full_name)}</span>
+              {editingName ? (
+                <div className="flex items-center gap-1 w-full max-w-56">
+                  <Input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    className="h-8 text-center"
+                    autoFocus
+                    disabled={savingName}
+                  />
+                  <Button size="icon" className="h-8 w-8 shrink-0" onClick={saveName} disabled={savingName}>
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setEditingName(false)} disabled={savingName}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-bold">{toTitleCase(data.full_name)}</span>
+                  {userRole === 'admin' && data.is_guest && (
+                    <button
+                      type="button"
+                      onClick={startEditingName}
+                      className="text-muted-foreground hover:text-primary"
+                      title="Editar nombre del invitado"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5 border-t pt-3">

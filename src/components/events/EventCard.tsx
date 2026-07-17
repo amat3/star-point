@@ -128,6 +128,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} />
       <PlayerProfileDialog
         userId={selectedProfileId}
+        userRole={userRole}
         open={selectedProfileId !== null}
         onOpenChange={(open) => { if (!open) setSelectedProfileId(null) }}
       />

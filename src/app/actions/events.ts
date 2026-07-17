@@ -429,6 +429,34 @@ export async function closeEventWithGuests(eventId: string) {
   }
 }
 
+export async function renameGuest(guestId: string, newName: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const trimmedName = newName.trim()
+    if (trimmedName.length < 2) throw new Error("El nombre debe tener al menos 2 caracteres")
+
+    const adminSupabase = getAdminClient()
+
+    // Solo se puede renombrar a invitados, nunca a jugadores reales
+    const { data: target } = await adminSupabase.from('profiles').select('is_guest').eq('id', guestId).single()
+    if (!target?.is_guest) throw new Error("Solo se puede editar el nombre de invitados")
+
+    const { error } = await adminSupabase.from('profiles').update({ full_name: trimmedName }).eq('id', guestId)
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+}
+
 export async function addParticipant(eventId: string, userId: string) {
   try {
     const supabase = await createClient()

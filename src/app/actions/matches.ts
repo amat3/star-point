@@ -61,6 +61,7 @@ export type PlayerProfileDetails = {
   win_ratio: number
   gamesWon: number
   gamesLost: number
+  is_guest: boolean
 }
 
 export async function getPlayerProfileDetails(userId: string): Promise<PlayerProfileDetails | null> {
@@ -68,7 +69,7 @@ export async function getPlayerProfileDetails(userId: string): Promise<PlayerPro
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, gender, preferred_hand, court_position, matches_played, win_ratio')
+    .select('id, full_name, avatar_url, gender, preferred_hand, court_position, matches_played, win_ratio, is_guest')
     .eq('id', userId)
     .maybeSingle()
 
