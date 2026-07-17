@@ -18,17 +18,19 @@
 
 ### 🏆 Ranking ELO adaptado a pádel dobles
 - **K-factor dinámico**: `K=0.40` para nuevos jugadores (< 10 partidos), `K=0.15` para veteranos
-- **Multiplicador de intensidad**: el margen del resultado pondera el cambio de nivel
+- **Multiplicador de intensidad** (`MATCH_WEIGHT = 0.70`): el margen del resultado pondera el cambio de nivel — ajustado tras 3 semanas de uso real para lograr un ranking con más distanciamiento entre jugadores y mejores emparejamientos automáticos
 - **Filtro de disparidad**: partidos desequilibrados (>2.5 puntos de diferencia entre equipos) no afectan al ranking
 - **Amortiguación en el extremo superior**: la volatilidad se reduce progresivamente a partir de nivel 4.5
 - Actualización atómica de los 4 perfiles + historial + estado del partido en una única transacción PostgreSQL (RPC `confirm_match_atomic`)
 - Solo los partidos de tipo **mixing** puntúan
+- Cambios en los parámetros de rating pueden recalcularse con carácter retroactivo sobre todo el historial (`src/scripts/retroactive-match-weight.ts`, dry-run por defecto)
 
 ### ⚔️ Validación de partidos
 - Un partido requiere confirmación antes de aplicar ELO
 - Protección contra doble confirmación concurrente (`FOR UPDATE` lock en la transacción)
 - Mecanismo de impugnación para resultados incorrectos
 - Historial paginado con filtros
+- **Reorganizar parejas en un partido ya publicado** (🔀, solo admin): permite rotar cíclicamente a los 4 jugadores de un partido cuando lo acuerdan sobre la pista, sin necesidad de volver a generar rondas. Bloqueado en cuanto el partido tiene resultado o está confirmado, para no afectar al ELO ya aplicado
 
 ### 🔒 Seguridad
 - **Row Level Security** habilitado en `profiles` y `rating_history`
@@ -45,7 +47,7 @@
 | Rol | Capacidades |
 |---|---|
 | **Jugador** | Inscribirse a mixings, validar partidos, ver historial y ranking |
-| **Admin** | Todo lo anterior + crear/editar/eliminar eventos, generar rondas de mixing, gestionar participantes, añadir invitados para completar eventos, vista de ranking completo |
+| **Admin** | Todo lo anterior + crear/editar/eliminar eventos, generar rondas de mixing, gestionar participantes, añadir/renombrar invitados para completar eventos, reorganizar parejas en partidos ya publicados, vista de ranking completo |
 
 > El registro de nuevos usuarios es solo por invitación (gestión vía admin).
 
@@ -116,6 +118,15 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...   # Solo para operaciones de admin
 
 ---
 
+## ✅ Tests y CI
+
+- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de emparejamiento (`mixing-algorithm.test.ts`) y utilidades de zona horaria (`utils.test.ts`).
+- `npm run test` (una vez) / `npm run test:watch` (modo watch).
+- **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
+- Fuera de alcance por ahora: tests E2E y de server actions que hablan con Supabase.
+
+---
+
 ## ⚙️ Configuración del sistema de rating
 
 Los parámetros del ELO se centralizan en `src/lib/config.ts`:
@@ -128,6 +139,7 @@ DISPARITY_FULL: 1.0   // Gap ≤ 1.0 → partido vale 100%
 DISPARITY_ZERO: 2.5   // Gap ≥ 2.5 → partido vale 0%
 DAMPENING_START: 4.5  // Desde aquí se reduce la volatilidad
 DAMPENING_END: 6.5    // Aquí K queda al 60%
+MATCH_WEIGHT: 0.70    // Peso del margen del resultado (subido desde 0.40 en jul-2026)
 MIN_RATING: 0
 MAX_RATING: 7
 INITIAL_RATING: 3.5

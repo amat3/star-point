@@ -48,11 +48,11 @@ function CourtNameEditor({ eventId, courtNumber, currentName }: { eventId: strin
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="p-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors"
+          className="p-2.5 -m-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors"
           title="Cambiar nombre de pista"
           disabled={saving}
         >
-          <Pencil className="w-3 h-3" />
+          <Pencil className="w-5 h-5" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2" align="end">
@@ -92,11 +92,11 @@ function RotatePlayersButton({ matchId, disabled }: { matchId: string; disabled:
   return (
     <button
       onClick={handleClick}
-      className="p-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-primary/50"
+      className="p-2.5 -m-1 rounded hover:bg-primary/10 text-primary/50 hover:text-primary transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-primary/50"
       title={disabled ? 'Solo se puede rotar antes de introducir el resultado' : 'Rotar parejas de esta pista'}
       disabled={disabled || rotating}
     >
-      <Shuffle className={`w-3 h-3 ${rotating ? 'animate-pulse' : ''}`} />
+      <Shuffle className={`w-5 h-5 ${rotating ? 'animate-pulse' : ''}`} />
     </button>
   )
 }

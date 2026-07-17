@@ -192,22 +192,31 @@ SUPABASE_SERVICE_ROLE_KEY       # Admin key (server-side only, never expose)
 K_PROVISIONAL: 0.40      // High volatility — new players
 K_ESTABLISHED: 0.15      // Stable — veterans
 PROVISIONAL_LIMIT: 10    // Matches until established
-MAX_LEVEL_DIFF: 2.0      // Matches with >2.0 team gap don't affect rating
-RATING_DAMPENING_THRESHOLD: 5.0  // High-rated players gain less
+DISPARITY_FULL: 1.0      // gap ≤ 1.0 → match counts 100%
+DISPARITY_ZERO: 2.5      // gap ≥ 2.5 → match counts 0% (linear falloff between)
+DAMPENING_START: 4.5     // volatility starts decreasing from here
+DAMPENING_END: 6.5       // K bottoms out at 60% here
+SCALE_DIVISOR: 3
+MATCH_WEIGHT: 0.70       // raised from 0.40 on 2026-07-16, see "Rating tuning history" below
 MIN_RATING: 0
 MAX_RATING: 7
 INITIAL_RATING: 3.5
-MIXING_WEIGHT: 0.25      // Mixing matches worth 25%
-MATCH_WEIGHT: 1.0        // Standard matches worth 100%
+BASE_SCORE_MULTIPLIER: 0.9
+SCORE_RATIO_WEIGHT: 0.2
 ```
 
 ### Calculation flow (`src/lib/rating-logic.ts`)
 1. Get 4 players' ratings + match counts
 2. Assign K-factor (provisional vs established)
-3. Parse score → intensity multiplier (0.8 tight → 1.2 blowout)
-4. Apply disparity filter: if team avg diff > `MAX_LEVEL_DIFF`, no rating change
-5. Clamp result to [0, 7]
-6. On confirmation: update `profiles`, insert into `rating_history`
+3. Parse score → intensity multiplier weighted by `MATCH_WEIGHT`
+4. Apply disparity filter: linear falloff between `DISPARITY_FULL` and `DISPARITY_ZERO` team gap
+5. Apply dampening for high-rated players between `DAMPENING_START` and `DAMPENING_END`
+6. Clamp result to `[MIN_RATING, MAX_RATING]`
+7. On confirmation: the Postgres RPC `confirm_match_atomic` is the **only** place that writes `profiles.rating`, `matches_played`, `matches_won`, `win_ratio` and inserts into `rating_history` — atomic transaction with a `FOR UPDATE` lock + `ALREADY_CONFIRMED` guard. If the match's event has `is_test = true`, this RPC writes nothing, which is how end-to-end tests avoid touching real rankings.
+
+### Rating tuning history
+- `MATCH_WEIGHT` was raised 0.40 → 0.70 on 2026-07-16 after ~3 weeks of real usage showed ratings barely differentiating players (stddev ~0.19 on a 0–7 scale after 9 matches/player) despite very different win/loss records. Candidates were compared by simulating both rating spread *and* actual pairing quality (running the real `generateMixingRound` hundreds of times per candidate), not just spread.
+- The change was applied **retroactively** (recomputing all of `rating_history` in chronological order) via `src/scripts/retroactive-match-weight.ts` — a standalone script that imports the real `calculateNewRating`, dry-runs by default, and only writes with an explicit `--apply` flag. Kept committed as the reference pattern for any future retroactive rating-config change: simulate with real data → show the resulting listing to the user → apply only after explicit confirmation.
 
 ---
 
@@ -250,12 +259,21 @@ Auto-pairs players for round-robin mixing events.
 4. Edit/delete any match
 5. View all pending matches and confirm them
 6. Share event via WhatsApp-friendly text
+7. Rename a guest player's display name (`renameGuest`, from `PlayerProfileDialog`), for easier identification when filling an event with guests
+8. Rotate the 4 players of an **already-published** match when they agree to swap partners courtside (see "Rotate players in a published match" below)
 
 ### Match lifecycle
 ```
 Created (pending) → Confirmed (ratings calculated) → Audit in rating_history
                  ↘ Disputed
 ```
+
+### Rotate players in a published match
+- Once an event's rounds are published (`saveAllRounds`, event → `in_progress`), players sometimes agree on-court to swap who partners whom in a given round/court. The player's decision takes priority even though it affects ELO.
+- `rotateMatchPlayers(matchId)` in `src/app/actions/matches.ts`: admin-only, keeps `player_a1` fixed and cyclically rotates `a2 → b1 → b2 → a2` on the same `matches` row (never moves a player to a different court/match). One click = one rotation through the 3 possible pairings.
+- Blocked when `status === 'confirmed'` or when `score_details !== '0-0'` (a result was already entered) — before that point nothing has been written to ELO yet, so it's safe.
+- UI: a single 🔀 (`Shuffle` from lucide-react) icon on the existing match card in `ValidationList.tsx`, next to the court-name editor. **There is no dedicated screen for this** — an earlier design built a whole new admin page with a 2-player-click-to-select swap UI, which was scrapped in favor of the single-icon rotation because it's simpler and matches exactly how the interaction happens in real life (quick, in-situ, courtside). Lesson: before building a new screen/flow, check whether the desired outcome fits as a simpler interaction on the existing UI — especially when the user describes the interaction with a concrete step-by-step example (take it as literal spec, not inspiration).
+- Verified end-to-end (with disposable `is_test` event/match/guest profiles, deleted afterward) that ELO is applied based on the player's **current/rotated** position, not their original one.
 
 ---
 
@@ -288,9 +306,51 @@ npm run lint     # ESLint
 ## Known Constraints & Notes
 
 - Registration is **disabled** in the UI — new users must be created manually or via admin
-- Mixing matches count **25%** of standard matches toward rating
-- Matches with team rating gap > 2.0 **do not affect ratings**
+- Disparity/dampening rules on ratings — see "Rating System" above for current values (don't trust older numbers you may recall; `src/lib/config.ts` is the source of truth)
 - `force-dynamic` + `revalidate: 0` on dashboard, history, profile — always fresh data
-- No test suite configured (TypeScript + ESLint only)
-- All UI text is in **Spanish**
+- Test suite: **Vitest** (see "Testing & CI" below) — TypeScript + ESLint alone is no longer accurate
+- All UI text is in **Spanish**; code, identifiers and comments in **English**
 - Deployment target: **Vercel** + Supabase
+
+---
+
+## Workflow
+
+- **Branches**: non-trivial features go on a branch (`feature/...`, `tune/...`), merged `--no-ff` into `main`. Small fixes go straight to `main`.
+- **Before considering any change done**, run in order:
+  ```bash
+  npx tsc --noEmit
+  npm run lint
+  npm run test        # vitest run
+  npm run build
+  ```
+- **Deploy**: manual, `vercel --prod --yes` after pushing to `main`. Vercel's auto-deploy is not relied on as the sole mechanism.
+- **CI**: `.github/workflows/ci.yml` runs the same 4 steps on every push to `main` and every PR (Node 22; build step uses placeholder Supabase env vars since it never makes a real network call).
+
+## Testing & CI
+
+- `vitest.config.ts`: `environment: 'node'`, alias `@` → `./src`, matches `src/**/*.test.ts`.
+- Current coverage is deliberately narrow — only high-risk pure logic: `rating-logic.test.ts` (ELO), `mixing-algorithm.test.ts` (pairing algorithm), `utils.test.ts` (timezone helpers). **No E2E tests, no server-action tests that talk to Supabase** — an explicit scope decision, not an oversight.
+- These tests already caught one real production bug the same day they were written (see Timezone section below) — worth extending when touching similar pure logic.
+
+## Timezone (Europe/Madrid)
+
+`src/lib/utils.ts` (`getMadridOffsetHoursForDate`) computes Madrid's UTC offset with:
+```ts
+Intl.DateTimeFormat(..., { timeZoneName: 'shortOffset' }).formatToParts(date)
+```
+Do **not** reinterpret a Madrid-formatted date string as if it were the runtime's local time — that trick fails silently (offset=0) precisely when the runtime's own timezone already *is* `Europe/Madrid` (the most likely case for the admin's own device/dev machine). This was a real bug caught by the Vitest suite the same day it was added. The weekly-event cron (`src/app/api/cron/create-weekly-event/route.ts`) uses the same robust technique.
+
+## Guest players
+
+- Create: `supabase.auth.admin.createUser({ email: 'x@guest.local', password: randomUUID(), email_confirm: true })`, then update the auto-created `profiles` row (`full_name`, `rating: 3.5`, `role: 'player'`, `is_guest: true`, `matches_played/won/win_ratio: 0`).
+- Delete: `supabase.auth.admin.deleteUser(id)` — cascades to `profiles`. Same pattern for both real event guests and disposable test-only profiles.
+- Admin can rename a guest from `PlayerProfileDialog` (`renameGuest` in `src/app/actions/events.ts`).
+
+## Safety when operating locally / maintenance scripts
+
+- **Never `pkill` with broad patterns.** To kill a process on a port: `lsof -ti:PORT` then `kill <PID>` on the exact PIDs.
+- **Be careful with `rm -rf .next`** if a `next dev` may be running live — it can hang. If it happens, kill only the exact PIDs (`lsof -ti:3000`) and restart `npm run dev`.
+- `src/scripts/` is the established home for one-off maintenance/migration scripts (ESLint-ignored). Disposable, non-reusable test scripts live outside git at the repo root with a `.tmp-` prefix and get deleted at the end, along with any rows/users they created.
+- Never touch the real production event when testing. Always use events with `is_test = true` and fully clean up everything created (matches → participants → event → guests) afterward, verifying nothing is left over.
+- Before any irreversible production data migration: take a Supabase backup (`pg_dump` of the `public` schema + `auth.users` data).
