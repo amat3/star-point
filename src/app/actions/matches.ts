@@ -312,6 +312,47 @@ export async function updateMatchScore(
   return { success: true }
 }
 
+/**
+ * Rota las parejas de un partido ya publicado entre sus 3 combinaciones
+ * posibles (jugador_a1 siempre fijo como ancla):
+ *   a1+a2 vs b1+b2  →  a1+b1 vs a2+b2  →  a1+b2 vs a2+b1  →  (vuelve al inicio)
+ * Cada pulsación avanza un paso. Solo admin, y solo mientras el partido no
+ * esté confirmado ni tenga ya un resultado introducido (evita desincronizar
+ * quién jugó de verdad de a quién se le atribuye el marcador/rating).
+ */
+export async function rotateMatchPlayers(matchId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Requiere admin')
+
+  const { data: match } = await supabase
+    .from('matches')
+    .select('event_id, status, score_details, player_a1, player_a2, player_b1, player_b2')
+    .eq('id', matchId)
+    .single()
+
+  if (!match) throw new Error('Partido no encontrado')
+  if (match.status === 'confirmed') throw new Error('No se puede reorganizar un partido ya confirmado')
+  if (match.score_details && match.score_details !== '0-0') throw new Error('Ya se ha introducido un resultado para este partido')
+
+  const { error } = await supabase
+    .from('matches')
+    .update({
+      player_a2: match.player_b1,
+      player_b1: match.player_b2,
+      player_b2: match.player_a2,
+    })
+    .eq('id', matchId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
 export async function getUserMatches(userId: string, limit: number, page: number) {
   const supabase = await createClient()
 
