@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateNewRating } from '@/lib/rating-logic'
+import { calculateNewRating, applyGuestProtection } from '@/lib/rating-logic'
 
 /**
  * Helper para extraer juegos totales de un marcador tipo "6-4 6-2" o "12-5"
@@ -126,13 +126,16 @@ export async function confirmMatch(matchId: string) {
 
   // Mapa para acceso rápido a datos del perfil
   const profileMap = Object.fromEntries(profiles.map(p => [
-    p.id, 
-    { 
-      rating: p.rating, 
+    p.id,
+    {
+      rating: p.rating,
       matches_played: p.matches_played || 0,
-      matches_won: p.matches_won || 0
+      matches_won: p.matches_won || 0,
+      is_guest: p.is_guest || false
     }
   ]))
+
+  const matchHasGuest = playerIds.some(id => profileMap[id].is_guest)
 
   // 3. Experiencia previa para K-Factor — usamos matches_played del perfil (fuente canónica)
   const matchesA1 = profileMap[match.player_a1].matches_played
@@ -177,27 +180,43 @@ export async function confirmMatch(matchId: string) {
   // 5. Calcular nuevos ratings
 
   // TEAM A
-  const resultA1 = calculateNewRating(
-    profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, resultTypeA, matchesA1
+  const resultA1 = applyGuestProtection(
+    profileMap[match.player_a1].rating,
+    calculateNewRating(
+      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
+      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
+      gamesA, gamesB, resultTypeA, matchesA1
+    ),
+    matchHasGuest, profileMap[match.player_a1].is_guest
   )
-  const resultA2 = calculateNewRating(
-    profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
-    profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    gamesA, gamesB, resultTypeA, matchesA2
+  const resultA2 = applyGuestProtection(
+    profileMap[match.player_a2].rating,
+    calculateNewRating(
+      profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
+      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
+      gamesA, gamesB, resultTypeA, matchesA2
+    ),
+    matchHasGuest, profileMap[match.player_a2].is_guest
   )
 
   // TEAM B
-  const resultB1 = calculateNewRating(
-    profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-    profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, resultTypeB, matchesB1
+  const resultB1 = applyGuestProtection(
+    profileMap[match.player_b1].rating,
+    calculateNewRating(
+      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
+      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
+      gamesB, gamesA, resultTypeB, matchesB1
+    ),
+    matchHasGuest, profileMap[match.player_b1].is_guest
   )
-  const resultB2 = calculateNewRating(
-    profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
-    profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-    gamesB, gamesA, resultTypeB, matchesB2
+  const resultB2 = applyGuestProtection(
+    profileMap[match.player_b2].rating,
+    calculateNewRating(
+      profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
+      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
+      gamesB, gamesA, resultTypeB, matchesB2
+    ),
+    matchHasGuest, profileMap[match.player_b2].is_guest
   )
 
   // 6. Preparar actualizaciones de BD

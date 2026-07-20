@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateNewRating } from './rating-logic'
+import { calculateNewRating, applyGuestProtection } from './rating-logic'
 import { RATING_CONFIG } from './config'
 
 describe('calculateNewRating', () => {
@@ -62,5 +62,32 @@ describe('calculateNewRating', () => {
     const landslide = calculateNewRating(3.5, 3.5, 3.5, 3.5, 6, 0, 'win', 20)
     const narrow = calculateNewRating(3.5, 3.5, 3.5, 3.5, 4, 3, 'win', 20)
     expect(Math.abs(landslide.change)).toBeGreaterThan(Math.abs(narrow.change))
+  })
+})
+
+describe('applyGuestProtection', () => {
+  it('neutraliza una pérdida de un jugador real cuando hay un invitado en el partido', () => {
+    const loss = calculateNewRating(3.5, 3.5, 3.5, 3.5, 2, 6, 'loss', 20)
+    const protectedResult = applyGuestProtection(3.5, loss, true, false)
+    expect(protectedResult.change).toBe(0)
+    expect(protectedResult.newRating).toBe(3.5)
+  })
+
+  it('deja intacta una ganancia de un jugador real cuando hay un invitado en el partido', () => {
+    const win = calculateNewRating(3.5, 3.5, 3.5, 3.5, 6, 2, 'win', 20)
+    const protectedResult = applyGuestProtection(3.5, win, true, false)
+    expect(protectedResult).toEqual(win)
+  })
+
+  it('no protege al propio invitado de perder rating', () => {
+    const loss = calculateNewRating(3.5, 3.5, 3.5, 3.5, 2, 6, 'loss', 20)
+    const protectedResult = applyGuestProtection(3.5, loss, true, true)
+    expect(protectedResult).toEqual(loss)
+  })
+
+  it('no altera el resultado si no hay ningún invitado en el partido', () => {
+    const loss = calculateNewRating(3.5, 3.5, 3.5, 3.5, 2, 6, 'loss', 20)
+    const protectedResult = applyGuestProtection(3.5, loss, false, false)
+    expect(protectedResult).toEqual(loss)
   })
 })

@@ -64,3 +64,17 @@ export function calculateNewRating(
     change: Number((clampedRating - playerRating).toFixed(3))
   };
 }
+
+/**
+ * Si el partido incluye algún invitado, ningún jugador real puede perder rating
+ * (solo subir o quedar igual). El invitado no tiene esta protección.
+ */
+export function applyGuestProtection(
+  currentRating: number,
+  result: RatingResult,
+  matchHasGuest: boolean,
+  isGuestPlayer: boolean
+): RatingResult {
+  if (!matchHasGuest || isGuestPlayer || result.change >= 0) return result;
+  return { newRating: currentRating, change: 0 };
+}
