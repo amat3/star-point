@@ -9,4 +9,4 @@ export const COURT_NAMES = [
   'ESTRELLA DAMM (exterior)',
 ]
 
-export const MAX_GUESTS_PER_EVENT = 3
+export const MAX_GUESTS_PER_EVENT = 5
