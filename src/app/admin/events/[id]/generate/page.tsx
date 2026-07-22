@@ -114,6 +114,7 @@ export default function GenerateMixPage() {
                     const p = currentParticipants.find(cp => cp.id === pid)
                     if (p) {
                         if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
+                        if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
                         opponents.forEach(oid => {
                             if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
                         })

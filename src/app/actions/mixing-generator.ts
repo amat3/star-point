@@ -54,20 +54,27 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   // Filter only Titulares (first maxSpots)
   const titulares = combinedParticipants.slice(0, maxSpots)
 
-  // 2. Fetch all matches of this event to build history
-  // Now we can filter strictly by event_id to see previous rounds of THIS event
+  // 2. Fetch matches to build history. Deliberadamente SIN filtrar por
+  // event_id: el historial de pareja/rival abarca todo el club (ver
+  // fde67a62) para evitar repetir pareja de una semana a otra como
+  // preferencia soft. Además, distinguimos aparte qué de ese historial
+  // pertenece a ESTE evento (currentEventHistoryMap), que se trata como
+  // restricción dura en el algoritmo — repetir pareja dentro del mismo
+  // evento no puede pasar nunca.
   const { data: matches } = await supabase
     .from('matches')
-    .select('player_a1, player_a2, player_b1, player_b2')
+    .select('event_id, player_a1, player_a2, player_b1, player_b2')
     .eq('match_type', 'mixing')
     .in('status', ['pending', 'confirmed'])
-  
+
   const historyMap = new Map<string, Set<string>>()
   const opponentsMap = new Map<string, Set<string>>()
-  
+  const currentEventHistoryMap = new Map<string, Set<string>>()
+
   titulares.forEach((p) => {
       historyMap.set(p.user_id, new Set())
       opponentsMap.set(p.user_id, new Set())
+      currentEventHistoryMap.set(p.user_id, new Set())
   })
 
   // Build history (who played with whom as PARTNER and OPPONENT)
@@ -77,16 +84,25 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           const a2 = m.player_a2
           const b1 = m.player_b1
           const b2 = m.player_b2
+          const isCurrentEvent = m.event_id === eventId
 
           // Pair A Partners
           if (a1 && a2) {
               historyMap.get(a1)?.add(a2)
               historyMap.get(a2)?.add(a1)
+              if (isCurrentEvent) {
+                  currentEventHistoryMap.get(a1)?.add(a2)
+                  currentEventHistoryMap.get(a2)?.add(a1)
+              }
           }
           // Pair B Partners
           if (b1 && b2) {
               historyMap.get(b1)?.add(b2)
               historyMap.get(b2)?.add(b1)
+              if (isCurrentEvent) {
+                  currentEventHistoryMap.get(b1)?.add(b2)
+                  currentEventHistoryMap.get(b2)?.add(b1)
+              }
           }
 
           // Opponents (A vs B)
@@ -115,6 +131,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           avatar_url: profile.avatar_url ?? null,
           past_partners: Array.from(historyMap.get(p.user_id) || []),
           past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
+          current_event_partners: Array.from(currentEventHistoryMap.get(p.user_id) || []),
           is_guest: profile.is_guest ?? false
       }
   })
