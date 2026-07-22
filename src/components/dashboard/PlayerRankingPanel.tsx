@@ -31,7 +31,7 @@ export function PlayerRankingPanel() {
   const sorted = useMemo(() =>
     [...players].sort((a, b) =>
       sortBy === 'rating'
-        ? b.rating - a.rating
+        ? (b.rating - a.rating) || (b.matches_played - a.matches_played)
         : (a.full_name ?? '').localeCompare(b.full_name ?? '', 'es')
     ), [players, sortBy]
   )
