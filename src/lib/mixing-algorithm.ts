@@ -8,6 +8,7 @@ export interface MixingParticipant {
   avatar_url?: string | null
   past_partners: string[]
   past_opponents: string[]
+  current_event_partners: string[]
   is_guest?: boolean
 }
 
@@ -75,6 +76,92 @@ function checkExclusionViolation(
   )
 }
 
+type PartnerIssueReason = 'exclusion' | 'repetition'
+
+/**
+ * Clasifica si dos jugadores NO pueden ser pareja: por exclusión manual
+ * (no_partner/no_contact) o por haber sido ya pareja en ESTE evento (hard
+ * constraint — repetir pareja entre eventos distintos sigue permitido y se
+ * gestiona aparte como preferencia soft vía past_partners).
+ */
+function classifyPartnerIssue(
+  a: MixingParticipant,
+  b: MixingParticipant,
+  exclusions: ExclusionRule[]
+): PartnerIssueReason | null {
+  if (exclusionPenalty(a.id, b.id, true, exclusions) < 0) return 'exclusion'
+  if (a.current_event_partners.includes(b.id) || b.current_event_partners.includes(a.id)) return 'repetition'
+  return null
+}
+
+/**
+ * Repara el array de parejas del método Serpentín intercambiando un miembro
+ * entre dos parejas cuando una de ellas viola una exclusión o repite pareja
+ * dentro del evento actual. Prueba las 2 particiones posibles entre cada par
+ * de parejas candidatas y acepta la de menor distorsión de balance de nivel
+ * que no introduzca una nueva pareja "mala". Best-effort: si no hay
+ * intercambio válido, la pareja queda como estaba y se marca en `unresolved`.
+ */
+function repairSnakePairs(
+  pairs: [MixingParticipant, MixingParticipant][],
+  exclusions: ExclusionRule[]
+): { pairs: [MixingParticipant, MixingParticipant][], unresolved: Map<number, PartnerIssueReason> } {
+  const result = [...pairs]
+  const isBad = (a: MixingParticipant, b: MixingParticipant) => classifyPartnerIssue(a, b, exclusions) !== null
+  const rank = (r: PartnerIssueReason | null) => (r === 'exclusion' ? 0 : 1)
+
+  const badIndices = result
+    .map((_, i) => i)
+    .filter(i => isBad(result[i][0], result[i][1]))
+    .sort((i, j) =>
+      rank(classifyPartnerIssue(result[i][0], result[i][1], exclusions)) -
+      rank(classifyPartnerIssue(result[j][0], result[j][1], exclusions))
+    )
+
+  const unresolved = new Map<number, PartnerIssueReason>()
+
+  for (const i of badIndices) {
+    const reason = classifyPartnerIssue(result[i][0], result[i][1], exclusions)
+    if (!reason) continue // ya se arregló como efecto colateral de un swap previo
+
+    const [x1, x2] = result[i]
+    let bestJ = -1
+    let bestCost = Infinity
+    let bestReplacement: [[MixingParticipant, MixingParticipant], [MixingParticipant, MixingParticipant]] | null = null
+
+    for (let j = 0; j < result.length; j++) {
+      if (j === i) continue
+      const [y1, y2] = result[j]
+      const originalGap = Math.abs(x1.rating - x2.rating) + Math.abs(y1.rating - y2.rating)
+
+      const candidates: [[MixingParticipant, MixingParticipant], [MixingParticipant, MixingParticipant]][] = [
+        [[x1, y1], [x2, y2]],
+        [[x1, y2], [x2, y1]],
+      ]
+
+      for (const [newI, newJ] of candidates) {
+        if (isBad(newI[0], newI[1]) || isBad(newJ[0], newJ[1])) continue
+        const newGap = Math.abs(newI[0].rating - newI[1].rating) + Math.abs(newJ[0].rating - newJ[1].rating)
+        const cost = Math.abs(newGap - originalGap)
+        if (cost < bestCost) {
+          bestCost = cost
+          bestJ = j
+          bestReplacement = [newI, newJ]
+        }
+      }
+    }
+
+    if (bestJ !== -1 && bestReplacement) {
+      result[i] = bestReplacement[0]
+      result[bestJ] = bestReplacement[1]
+    } else {
+      unresolved.set(i, reason)
+    }
+  }
+
+  return { pairs: result, unresolved }
+}
+
 function getPairGroupings(indices: number[], groupCount: number): [number, number][][] {
   if (groupCount === 0) return [[]]
   const [first, ...rest] = indices
@@ -111,10 +198,15 @@ function generateSnakeRound(
   const halfN = usableCount / 2
 
   // Snake pairs: P[0]+P[n-1], P[1]+P[n-2], ...
-  const pairs: [MixingParticipant, MixingParticipant][] = []
+  const snakePairs: [MixingParticipant, MixingParticipant][] = []
   for (let i = 0; i < halfN; i++) {
-    pairs.push([usable[i], usable[usableCount - 1 - i]])
+    snakePairs.push([usable[i], usable[usableCount - 1 - i]])
   }
+
+  // Reparar parejas que violan una exclusión o repiten pareja dentro de este
+  // evento — el patrón serpentín las fija de forma determinista por ranking,
+  // así que sin esto podrían repetirse en todas las rondas del evento.
+  const { pairs, unresolved } = repairSnakePairs(snakePairs, exclusions)
 
   const buildMatch = (pairA: [MixingParticipant, MixingParticipant], pairB: [MixingParticipant, MixingParticipant], courtNumber: number): MatchProposal => ({
     courtNumber,
@@ -122,6 +214,17 @@ function generateSnakeRound(
     player3: pairB[0], player4: pairB[1],
     pairA, pairB
   })
+
+  const buildWarning = (idxA: number, idxB: number, pA: [MixingParticipant, MixingParticipant], pB: [MixingParticipant, MixingParticipant]): string | undefined => {
+    const msgs: string[] = []
+    if (exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)) {
+      msgs.push('No fue posible respetar todas las exclusiones en esta pista')
+    }
+    if (unresolved.get(idxA) === 'repetition' || unresolved.get(idxB) === 'repetition') {
+      msgs.push('No fue posible evitar que esta pareja repita respecto a una ronda anterior de este evento')
+    }
+    return msgs.length > 0 ? msgs.join(' ') : undefined
+  }
 
   const scoreGrouping = (grouping: [number, number][]): number => {
     let score = 0
@@ -167,20 +270,22 @@ function generateSnakeRound(
     bestGrouping.forEach(([aIdx, bIdx], courtIdx) => {
       const pA = pairs[aIdx]
       const pB = pairs[bIdx]
-      const violated = exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)
+      const warning = buildWarning(aIdx, bIdx, pA, pB)
       matches.push({
         ...buildMatch(pA, pB, courtIdx + 1),
-        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
+        ...(warning ? { warning } : {})
       })
     })
   } else {
     for (let i = 0; i < courtCount; i++) {
-      const pA = pairs[i]
-      const pB = pairs[halfN - 1 - i]
-      const violated = exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)
+      const aIdx = i
+      const bIdx = halfN - 1 - i
+      const pA = pairs[aIdx]
+      const pB = pairs[bIdx]
+      const warning = buildWarning(aIdx, bIdx, pA, pB)
       matches.push({
         ...buildMatch(pA, pB, i + 1),
-        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
+        ...(warning ? { warning } : {})
       })
     }
   }
@@ -242,11 +347,21 @@ export function generateMixingRound(
       { id: 'full_balance', pairs: [[p1, p4], [p2, p3]] }
     ]
 
-    let bestPermutation = permutations[2] // Default to full_balance (1+4 vs 2+3)
+    // Filtro duro: descartar permutaciones donde alguna pareja viole una
+    // exclusión o repita pareja dentro de este evento, si existe al menos
+    // una permutación limpia. Si las 3 tienen el mismo problema, no hay
+    // alternativa matemática y se cae al scoring de siempre (+ aviso).
+    const hasHardPartnerIssue = (permPairs: [MixingParticipant, MixingParticipant][]): boolean =>
+      permPairs.some(([a, b]) => classifyPartnerIssue(a, b, exclusions) !== null)
+
+    const cleanPermutations = permutations.filter(perm => !hasHardPartnerIssue(perm.pairs as [MixingParticipant, MixingParticipant][]))
+    const usablePermutations = cleanPermutations.length > 0 ? cleanPermutations : permutations
+
+    let bestPermutation = usablePermutations[usablePermutations.length - 1]
     let bestScore = -Infinity
-    
+
     // Evaluate permutations
-    for (const perm of permutations) {
+    for (const perm of usablePermutations) {
         let score = 0
         const pairs = perm.pairs as [MixingParticipant, MixingParticipant][]
         const pairA = pairs[0]
