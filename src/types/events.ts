@@ -6,7 +6,7 @@ export interface MixingEvent {
   max_spots: number
   rounds: number
   duration_minutes: number
-  status: 'open' | 'closed' | 'finished'
+  status: 'open' | 'in_progress'
   created_by: string
   is_test: boolean
 
