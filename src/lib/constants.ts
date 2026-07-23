@@ -8,5 +8,3 @@ export const COURT_NAMES = [
   'SERVIMAIN',
   'ESTRELLA DAMM (exterior)',
 ]
-
-export const MAX_GUESTS_PER_EVENT = 5
