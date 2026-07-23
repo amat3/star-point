@@ -8,6 +8,15 @@ import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 
 const MAX_RESERVES = 6
 
+// Un evento in_progress deja de mostrarse en cuanto TODOS sus partidos están
+// confirmados — no hay ningún estado 'finished' en BD, se calcula al vuelo.
+export async function isEventFullyConfirmed(eventId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: matches } = await supabase.from('matches').select('status').eq('event_id', eventId)
+  if (!matches || matches.length === 0) return false
+  return matches.every(m => m.status === 'confirmed')
+}
+
 export async function getOpenEvents(): Promise<MixingEvent[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,7 +37,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
         created_by,
         is_test
     `)
-    .eq('status', 'open')
+    .in('status', ['open', 'in_progress'])
     .order('start_time', { ascending: true })
 
   if (error || !events) {
@@ -90,7 +99,14 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     } as MixingEvent
   }))
 
-  return eventsWithInfo
+  // Los eventos in_progress con todos sus partidos ya confirmados dejan de mostrarse
+  const visibleEvents = await Promise.all(eventsWithInfo.map(async (event) => {
+    if (event.status !== 'in_progress') return event
+    const fullyConfirmed = await isEventFullyConfirmed(event.id)
+    return fullyConfirmed ? null : event
+  }))
+
+  return visibleEvents.filter((e): e is MixingEvent => e !== null)
 }
 
 export async function joinEvent(eventId: string) {
@@ -238,6 +254,9 @@ export async function updateEvent(eventId: string, data: { title: string, start_
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
+    const { data: existingEvent } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (existingEvent?.status !== 'open') throw new Error('No se puede editar un evento con los partidos ya en marcha')
+
     const { error } = await supabase
       .from('events')
       .update({
@@ -266,6 +285,9 @@ export async function deleteEvent(eventId: string) {
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: existingEvent } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (existingEvent?.status !== 'open') throw new Error('No se puede anular un evento con los partidos ya en marcha')
 
     // Bloquear si hay partidos con ELO ya aplicado
     const { count: confirmedCount } = await supabase
@@ -301,6 +323,9 @@ export async function removeParticipant(eventId: string, userId: string) {
     // Check Admin
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: existingEvent } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (existingEvent?.status !== 'open') throw new Error('No se puede quitar a un jugador con los partidos ya en marcha')
 
     const adminSupabase = getAdminClient()
 
