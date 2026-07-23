@@ -45,6 +45,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
 
   const participantsCount = event.participants_count || 0
   const isJoined = event.is_joined
+  const isReadOnly = event.status !== 'open'
 
   const handleJoin = () => {
     startTransition(async () => {
@@ -135,32 +136,50 @@ export function EventCard({ event, userRole }: EventCardProps) {
       <CardHeader className="pb-2">
         {userRole === 'admin' && (
             <div className="flex justify-end gap-1 flex-wrap mb-2">
-                {event.status === 'open' && (
-                    <AddParticipantDialog
-                        eventId={event.id}
-                        alreadyJoined={(event.participants || []).map(p => p.user_id)}
-                    />
-                )}
-                {event.status === 'open' && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
-                        onClick={handleAddGuest}
-                        title="Añadir invitado"
-                    >
-                        <UsersRound className="h-4 w-4" />
-                    </Button>
-                )}
-                <Link href={`/admin/events/${event.id}/generate`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
+                <AddParticipantDialog
+                    eventId={event.id}
+                    alreadyJoined={(event.participants || []).map(p => p.user_id)}
+                    disabled={isReadOnly}
+                />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
+                    onClick={handleAddGuest}
+                    disabled={isReadOnly}
+                    title={isReadOnly ? 'Los partidos ya están en marcha' : 'Añadir invitado'}
+                >
+                    <UsersRound className="h-4 w-4" />
+                </Button>
+                {isReadOnly ? (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground disabled:opacity-30" disabled title="Los partidos ya están en marcha">
                         <Shuffle className="h-4 w-4" />
                     </Button>
-                </Link>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setEditOpen(true)}>
+                ) : (
+                    <Link href={`/admin/events/${event.id}/generate`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Generar Ronda">
+                            <Shuffle className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                )}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
+                    onClick={() => setEditOpen(true)}
+                    disabled={isReadOnly}
+                    title={isReadOnly ? 'Los partidos ya están en marcha' : undefined}
+                >
                     <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={handleDeleteEvent}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive disabled:opacity-30"
+                    onClick={handleDeleteEvent}
+                    disabled={isReadOnly}
+                    title={isReadOnly ? 'Los partidos ya están en marcha' : undefined}
+                >
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
@@ -228,9 +247,10 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity shrink-0"
+                                    className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity shrink-0 disabled:opacity-30 disabled:pointer-fine:opacity-30"
                                     onClick={() => handleRemoveParticipant(participant.user_id)}
-                                    title="Eliminar jugador"
+                                    disabled={isReadOnly}
+                                    title={isReadOnly ? 'Los partidos ya están en marcha' : 'Eliminar jugador'}
                                 >
                                     <X className="h-4 w-4 sm:h-3 sm:w-3" />
                                 </Button>
@@ -283,7 +303,7 @@ export function EventCard({ event, userRole }: EventCardProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity"
+                                        className="h-6 w-6 sm:h-5 sm:w-5 text-muted-foreground hover:text-destructive opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 transition-opacity disabled:opacity-30 disabled:pointer-fine:opacity-30"
                                         onClick={() => handleRemoveParticipant(participant.user_id)}
                                         title="Eliminar jugador"
                                     >
@@ -301,7 +321,11 @@ export function EventCard({ event, userRole }: EventCardProps) {
 
       </CardContent>
       <CardFooter className="pt-2 mt-auto">
-        {isJoined ? (
+        {isReadOnly ? (
+          <div className="w-full text-center text-sm text-muted-foreground py-2">
+            Partidos en marcha — no se puede modificar la inscripción
+          </div>
+        ) : isJoined ? (
           <Button 
             variant="destructive" 
             className="w-full" 

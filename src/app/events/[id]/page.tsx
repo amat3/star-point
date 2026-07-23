@@ -5,6 +5,7 @@ import { ShareEventButton } from '@/components/events/ShareEventButton'
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
 import { MixingEvent } from '@/types/events'
+import { isEventFullyConfirmed } from '@/app/actions/events'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,12 @@ export default async function EventPage(props: EventPageProps) {
 
   if (error || !event) {
     notFound()
+  }
+
+  // Un evento in_progress con todos sus partidos ya confirmados ha terminado
+  // del todo — deja de ser accesible, igual que en el listado del dashboard.
+  if (event.status === 'in_progress' && await isEventFullyConfirmed(params.id)) {
+    redirect('/dashboard')
   }
 
   // 2. Fetch Participants
