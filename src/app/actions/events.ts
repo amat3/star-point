@@ -5,7 +5,6 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
-import { MAX_GUESTS_PER_EVENT } from '@/lib/constants'
 
 const MAX_RESERVES = 6
 
@@ -340,7 +339,7 @@ export async function removeParticipant(eventId: string, userId: string) {
   }
 }
 
-export async function closeEventWithGuests(eventId: string) {
+export async function addGuestToEvent(eventId: string) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -349,23 +348,13 @@ export async function closeEventWithGuests(eventId: string) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    const { data: event } = await supabase.from('events').select('status, max_spots').eq('id', eventId).single()
+    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
     if (!event || event.status !== 'open') throw new Error("El evento no está disponible")
-
-    const { count: currentCount } = await supabase
-      .from('event_participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', eventId)
-
-    const missing = event.max_spots - (currentCount || 0)
-
-    if (missing <= 0) throw new Error("El evento ya está completo")
-    if (missing > MAX_GUESTS_PER_EVENT) throw new Error(`Faltan ${missing} jugadores. Solo se pueden añadir hasta ${MAX_GUESTS_PER_EVENT} invitados`)
 
     const adminSupabase = getAdminClient()
 
     // Contar invitados ya presentes para numerar sin duplicar "Invitado 1"
-    // si el hueco se rellena en varias tandas.
+    // si se añaden varios de uno en uno.
     const { data: participantIds } = await adminSupabase
       .from('event_participants')
       .select('user_id')
@@ -381,49 +370,45 @@ export async function closeEventWithGuests(eventId: string) {
       existingGuestCount = count || 0
     }
 
-    const totalGuestsAfter = existingGuestCount + missing
-    if (totalGuestsAfter > MAX_GUESTS_PER_EVENT) {
-      throw new Error(`Este evento ya tiene ${existingGuestCount} invitado${existingGuestCount === 1 ? '' : 's'}. Como máximo puede haber ${MAX_GUESTS_PER_EVENT} en total.`)
+    const guestEmail = `invitado-${crypto.randomUUID()}@guest.local`
+
+    // Create real auth user (guest can never log in — random password)
+    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+      email: guestEmail,
+      password: crypto.randomUUID(),
+      email_confirm: true
+    })
+
+    if (authError || !authData.user) throw new Error(authError?.message || 'Error creando auth invitado')
+
+    const guestId = authData.user.id
+
+    // The trigger on_auth_user_created already created the profile row.
+    // We just update it with guest-specific fields.
+    const { error: profileError } = await adminSupabase
+      .from('profiles')
+      .update({ full_name: `Invitado ${existingGuestCount + 1}`, rating: 3.5, role: 'player', is_guest: true, matches_played: 0, matches_won: 0, win_ratio: 0 })
+      .eq('id', guestId)
+
+    if (profileError) {
+      await adminSupabase.auth.admin.deleteUser(guestId)
+      throw new Error(profileError.message)
     }
 
-    for (let i = existingGuestCount + 1; i <= existingGuestCount + missing; i++) {
-      const guestEmail = `invitado-${crypto.randomUUID()}@guest.local`
+    // Sin fijar joined_at: cae al final de la cola por el default now() de la
+    // columna, así que ocupa el siguiente hueco libre (titular o reserva)
+    // según corresponda, sin desplazar a nadie ya apuntado.
+    const { error: participantError } = await adminSupabase
+      .from('event_participants')
+      .insert({ event_id: eventId, user_id: guestId })
 
-      // Create real auth user (guest can never log in — random password)
-      const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
-        email: guestEmail,
-        password: crypto.randomUUID(),
-        email_confirm: true
-      })
-
-      if (authError || !authData.user) throw new Error(authError?.message || 'Error creando auth invitado')
-
-      const guestId = authData.user.id
-
-      // The trigger on_auth_user_created already created the profile row.
-      // We just update it with guest-specific fields.
-      const { error: profileError } = await adminSupabase
-        .from('profiles')
-        .update({ full_name: `Invitado ${i}`, rating: 3.5, role: 'player', is_guest: true, matches_played: 0, matches_won: 0, win_ratio: 0 })
-        .eq('id', guestId)
-
-      if (profileError) {
-        await adminSupabase.auth.admin.deleteUser(guestId)
-        throw new Error(profileError.message)
-      }
-
-      const { error: participantError } = await adminSupabase
-        .from('event_participants')
-        .insert({ event_id: eventId, user_id: guestId })
-
-      if (participantError) {
-        await adminSupabase.auth.admin.deleteUser(guestId)
-        throw new Error(participantError.message)
-      }
+    if (participantError) {
+      await adminSupabase.auth.admin.deleteUser(guestId)
+      throw new Error(participantError.message)
     }
 
     revalidatePath('/dashboard')
-    return { success: true, added: missing }
+    return { success: true }
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error))
   }
