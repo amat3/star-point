@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Trophy, Pencil, Check, X } from 'lucide-react'
+import { Trophy, Pencil, Check, X } from 'lucide-react'
+import { ThinkingOrb } from 'thinking-orbs'
 import {
   Dialog,
   DialogContent,
@@ -105,7 +106,7 @@ export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: Pl
 
         {loading && (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Cargando…" />
           </div>
         )}
 

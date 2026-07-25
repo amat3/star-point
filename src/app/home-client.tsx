@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { ThinkingOrb } from 'thinking-orbs'
 
 interface HomeClientProps {
   destination: string
@@ -29,7 +29,7 @@ export default function HomeClient({ destination }: HomeClientProps) {
           La app de Padel & Risas
         </p>
         <div className="pt-8 flex justify-center">
-          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+          <ThinkingOrb state="composing" size={64} theme="auto" aria-label="Cargando…" />
         </div>
       </div>
     </div>
