@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera } from 'lucide-react'
+import { ThinkingOrb } from 'thinking-orbs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClient } from '@/utils/supabase/client'
 import { updateAvatarUrl } from '@/app/actions/users'
@@ -80,7 +81,7 @@ export function AvatarUpload({ userId, avatarUrl, userName }: AvatarUploadProps)
           </AvatarFallback>
         </Avatar>
         <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
-          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          {uploading ? <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Subiendo…" /> : <Camera className="h-5 w-5" />}
         </span>
       </button>
     </div>
