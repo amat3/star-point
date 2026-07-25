@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, RefreshCw, Save } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Save } from 'lucide-react'
+import { ThinkingOrb } from 'thinking-orbs'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toTitleCase } from '@/lib/utils'
@@ -227,7 +228,7 @@ export default function GenerateMixPage() {
   }
 
   if (loadingData) {
-    return <div className="p-8 flex justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+    return <div className="p-8 flex justify-center"><ThinkingOrb state="composing" size={64} theme="auto" aria-label="Cargando…" /></div>
   }
 
   const assignedNames = Object.values(courtNames).filter(Boolean)
