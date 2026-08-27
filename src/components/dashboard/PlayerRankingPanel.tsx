@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users, ChevronDown, ChevronUp, RefreshCw, ArrowDownAZ, Trophy } from 'lucide-react'
 import { toTitleCase } from '@/lib/utils'
+import { PlayerProfileDialog } from '../events/PlayerProfileDialog'
+
 
 type Player = {
   id: string
@@ -16,17 +18,22 @@ type Player = {
   gender?: string | null
 }
 
+interface PlayerRankingPanelProps {
+  userRole?: string
+}
+
 const positionLabel: Record<string, string> = {
   drive: 'DRV',
   reves: 'REV',
   ambos: 'MIX',
 }
 
-export function PlayerRankingPanel() {
+export function PlayerRankingPanel({ userRole }: PlayerRankingPanelProps) {
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'name' | 'rating'>('name')
+    const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
 
   const sorted = useMemo(() =>
     [...players].sort((a, b) =>
@@ -57,6 +64,12 @@ export function PlayerRankingPanel() {
 
   return (
     <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+      <PlayerProfileDialog
+        userId={selectedProfileId}
+        userRole={userRole}
+        open={selectedProfileId !== null}
+        onOpenChange={(open) => { if (!open) setSelectedProfileId(null) }}
+      />
       <div className="flex items-center">
         <button
           onClick={toggle}
@@ -102,12 +115,16 @@ export function PlayerRankingPanel() {
                 key={p.id}
                 className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 text-base sm:text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
               >
-                <span className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProfileId(p.id)}
+                  className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5 text-left rounded hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary transition-opacity"
+                >
                   {sortBy === 'rating' && (
                     <span className="text-[10px] font-bold text-muted-foreground w-4 shrink-0">#{idx + 1}</span>
                   )}
                   {p.full_name ? toTitleCase(p.full_name) : '—'}
-                </span>
+                </button>
                 <span className="text-[10px] text-center text-muted-foreground">
                   {positionLabel[p.court_position ?? ''] ?? '—'}
                 </span>
