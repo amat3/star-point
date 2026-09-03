@@ -8,6 +8,7 @@ export interface MixingParticipant {
   avatar_url?: string | null
   past_partners: string[]
   past_opponents: string[]
+  encounter_counts: Record<string, number> // 🆕 nº TOTAL de encuentros (pareja + rival) con cada id, SOLO en este evento (hard constraint)
   current_event_partners: string[]
   is_guest?: boolean
 }
@@ -45,6 +46,11 @@ export interface RoundProposal {
 
 const EXCLUSION_PENALTY = -100000
 
+// 🎯 Prioridad máxima: dentro de un mismo evento, dos jugadores no pueden
+// coincidir (ni como pareja NI como rivales, sumando ambos) más de esta
+// cantidad de veces. Es un cupo ÚNICO y COMPARTIDO entre los dos roles.
+const MAX_TOTAL_ENCOUNTERS = 2
+
 function exclusionPenalty(
   a: string, b: string,
   asPartners: boolean,
@@ -78,11 +84,15 @@ function checkExclusionViolation(
 
 type PartnerIssueReason = 'exclusion' | 'repetition'
 
+function encounterCount(a: MixingParticipant, b: MixingParticipant): number {
+  return a.encounter_counts?.[b.id] ?? 0
+}
+
 /**
  * Clasifica si dos jugadores NO pueden ser pareja: por exclusión manual
- * (no_partner/no_contact) o por haber sido ya pareja en ESTE evento (hard
- * constraint — repetir pareja entre eventos distintos sigue permitido y se
- * gestiona aparte como preferencia soft vía past_partners).
+ * (no_partner/no_contact), por haber sido ya pareja en ESTE evento (nunca
+ * se repite pareja), o por haber alcanzado ya el cupo TOTAL de encuentros
+ * (pareja + rival combinados) permitido en este evento.
  */
 function classifyPartnerIssue(
   a: MixingParticipant,
@@ -91,16 +101,33 @@ function classifyPartnerIssue(
 ): PartnerIssueReason | null {
   if (exclusionPenalty(a.id, b.id, true, exclusions) < 0) return 'exclusion'
   if (a.current_event_partners.includes(b.id) || b.current_event_partners.includes(a.id)) return 'repetition'
+  if (encounterCount(a, b) >= MAX_TOTAL_ENCOUNTERS) return 'repetition'
+  return null
+}
+
+/**
+ * Clasifica si dos jugadores NO pueden volver a ser rivales: por exclusión
+ * manual (no_opponent/no_contact) o por haber alcanzado ya el cupo TOTAL de
+ * encuentros (pareja + rival combinados) permitido en este evento.
+ */
+function classifyOpponentIssue(
+  a: MixingParticipant,
+  b: MixingParticipant,
+  exclusions: ExclusionRule[]
+): PartnerIssueReason | null {
+  if (exclusionPenalty(a.id, b.id, false, exclusions) < 0) return 'exclusion'
+  if (encounterCount(a, b) >= MAX_TOTAL_ENCOUNTERS) return 'repetition'
   return null
 }
 
 /**
  * Repara el array de parejas del método Serpentín intercambiando un miembro
- * entre dos parejas cuando una de ellas viola una exclusión o repite pareja
- * dentro del evento actual. Prueba las 2 particiones posibles entre cada par
- * de parejas candidatas y acepta la de menor distorsión de balance de nivel
- * que no introduzca una nueva pareja "mala". Best-effort: si no hay
- * intercambio válido, la pareja queda como estaba y se marca en `unresolved`.
+ * entre dos parejas cuando una de ellas viola una exclusión, repite pareja,
+ * o agota el cupo total de encuentros dentro del evento actual. Prueba las 2
+ * particiones posibles entre cada par de parejas candidatas y acepta la de
+ * menor distorsión de balance de nivel que no introduzca una nueva pareja
+ * "mala". Best-effort: si no hay intercambio válido, la pareja queda como
+ * estaba y se marca en `unresolved`.
  */
 function repairSnakePairs(
   pairs: [MixingParticipant, MixingParticipant][],
@@ -203,9 +230,8 @@ function generateSnakeRound(
     snakePairs.push([usable[i], usable[usableCount - 1 - i]])
   }
 
-  // Reparar parejas que violan una exclusión o repiten pareja dentro de este
-  // evento — el patrón serpentín las fija de forma determinista por ranking,
-  // así que sin esto podrían repetirse en todas las rondas del evento.
+  // Reparar parejas que violan una exclusión, repiten pareja, o agotan el
+  // cupo total de encuentros dentro de este evento.
   const { pairs, unresolved } = repairSnakePairs(snakePairs, exclusions)
 
   const buildMatch = (pairA: [MixingParticipant, MixingParticipant], pairB: [MixingParticipant, MixingParticipant], courtNumber: number): MatchProposal => ({
@@ -215,6 +241,20 @@ function generateSnakeRound(
     pairA, pairB
   })
 
+  // Chequeo duro de cupo de encuentros agotado para un emparejamiento final
+  // concreto (se usa tanto para el warning como para filtrar agrupaciones
+  // enteras antes de puntuarlas).
+  const hasHardEncounterIssue = (pA: [MixingParticipant, MixingParticipant], pB: [MixingParticipant, MixingParticipant]): boolean => {
+    const [a1, a2] = pA
+    const [b1, b2] = pB
+    return (
+      classifyOpponentIssue(a1, b1, exclusions) === 'repetition' ||
+      classifyOpponentIssue(a1, b2, exclusions) === 'repetition' ||
+      classifyOpponentIssue(a2, b1, exclusions) === 'repetition' ||
+      classifyOpponentIssue(a2, b2, exclusions) === 'repetition'
+    )
+  }
+
   const buildWarning = (idxA: number, idxB: number, pA: [MixingParticipant, MixingParticipant], pB: [MixingParticipant, MixingParticipant]): string | undefined => {
     const msgs: string[] = []
     if (exclusions.length > 0 && checkExclusionViolation(pA, pB, exclusions)) {
@@ -222,6 +262,9 @@ function generateSnakeRound(
     }
     if (unresolved.get(idxA) === 'repetition' || unresolved.get(idxB) === 'repetition') {
       msgs.push('No fue posible evitar que esta pareja repita respecto a una ronda anterior de este evento')
+    }
+    if (hasHardEncounterIssue(pA, pB)) {
+      msgs.push('No fue posible evitar que estos jugadores agotaran su cupo de encuentros permitido en este evento')
     }
     return msgs.length > 0 ? msgs.join(' ') : undefined
   }
@@ -239,7 +282,7 @@ function generateSnakeRound(
       score += exclusionPenalty(a1.id, b2.id, false, exclusions)
       score += exclusionPenalty(a2.id, b1.id, false, exclusions)
       score += exclusionPenalty(a2.id, b2.id, false, exclusions)
-      // Soft history
+      // Soft history (histórico de club, entre eventos distintos)
       if (a1.past_partners.includes(a2.id)) score -= 2000
       if (b1.past_partners.includes(b2.id)) score -= 2000
       if (a1.past_opponents.includes(b1.id)) score -= 500
@@ -261,9 +304,18 @@ function generateSnakeRound(
   if (config.avoidRepetition) {
     const pairIndices = Array.from({ length: halfN }, (_, i) => i)
     const groupings = getPairGroupings(pairIndices, courtCount)
+
+    // Descartar agrupaciones donde algún cruce agote el cupo total de
+    // encuentros en este evento, igual que ya se hace con exclusiones/pareja.
+    const hasHardEncounterIssueInGrouping = (grouping: [number, number][]): boolean =>
+      grouping.some(([aIdx, bIdx]) => hasHardEncounterIssue(pairs[aIdx], pairs[bIdx]))
+
+    const cleanGroupings = groupings.filter(g => !hasHardEncounterIssueInGrouping(g))
+    const usableGroupings = cleanGroupings.length > 0 ? cleanGroupings : groupings // best-effort si no hay alternativa limpia
+
     let bestScore = -Infinity
-    let bestGrouping = groupings[0]
-    for (const g of groupings) {
+    let bestGrouping = usableGroupings[0]
+    for (const g of usableGroupings) {
       const s = scoreGrouping(g)
       if (s > bestScore) { bestScore = s; bestGrouping = g }
     }
@@ -311,7 +363,7 @@ export function generateMixingRound(
       if (config.avoidRepetition) {
           // Jitter range: +/- 0.25 (Total 0.5 variation)
           // Enough to mix close levels, but preserves general hierarchy.
-          const noise = 0.5 
+          const noise = 0.5
           const ratingA = a.rating + ((Math.random() - 0.5) * noise)
           const ratingB = b.rating + ((Math.random() - 0.5) * noise)
           return ratingB - ratingA
@@ -321,26 +373,26 @@ export function generateMixingRound(
 
   const matches: MatchProposal[] = []
   const leftovers: MixingParticipant[] = []
-  
+
   // 2. Chunk into groups of 4 (Courts)
   // TODO: Handle gender separation if mode is 'separated' or 'mixed' specific logic
   // For 'open', we just take the top 4, then next 4...
-  
+
   const courtCount = Math.floor(sorted.length / 4)
-  
+
   for (let i = 0; i < courtCount; i++) {
     const group = sorted.slice(i * 4, (i * 4) + 4)
     const courtNumber = i + 1
-    
+
     // Players for this court:
     // P1 (Best), P2, P3, P4 (Worst in this group)
     const [p1, p2, p3, p4] = group
-    
+
     // 3. Generate Permutations using the indices 0,1,2,3 from the group array
     // Case A: (0+1) vs (2+3) -> Best 2 vs Worst 2 (Usually very unbalanced)
     // Case B: (0+2) vs (1+3) -> 1st+3rd vs 2nd+4th
     // Case C: (0+3) vs (1+2) -> 1st+4th vs 2nd+3rd (Usually most balanced aka 'similar_levels')
-    
+
     const permutations = [
       { id: 'custom', pairs: [[p1, p2], [p3, p4]] },
       { id: 'mid_balance', pairs: [[p1, p3], [p2, p4]] },
@@ -348,13 +400,29 @@ export function generateMixingRound(
     ]
 
     // Filtro duro: descartar permutaciones donde alguna pareja viole una
-    // exclusión o repita pareja dentro de este evento, si existe al menos
-    // una permutación limpia. Si las 3 tienen el mismo problema, no hay
-    // alternativa matemática y se cae al scoring de siempre (+ aviso).
+    // exclusión, repita pareja, o agote su cupo total de encuentros dentro
+    // de este evento — si existe al menos una permutación limpia. Si las 3
+    // tienen el mismo problema, no hay alternativa matemática y se cae al
+    // scoring de siempre (+ aviso).
     const hasHardPartnerIssue = (permPairs: [MixingParticipant, MixingParticipant][]): boolean =>
       permPairs.some(([a, b]) => classifyPartnerIssue(a, b, exclusions) !== null)
 
-    const cleanPermutations = permutations.filter(perm => !hasHardPartnerIssue(perm.pairs as [MixingParticipant, MixingParticipant][]))
+    const hasHardOpponentIssue = (permPairs: [MixingParticipant, MixingParticipant][]): boolean => {
+      const [pairA, pairB] = permPairs
+      const [a1, a2] = pairA
+      const [b1, b2] = pairB
+      return (
+        classifyOpponentIssue(a1, b1, exclusions) === 'repetition' ||
+        classifyOpponentIssue(a1, b2, exclusions) === 'repetition' ||
+        classifyOpponentIssue(a2, b1, exclusions) === 'repetition' ||
+        classifyOpponentIssue(a2, b2, exclusions) === 'repetition'
+      )
+    }
+
+    const cleanPermutations = permutations.filter(perm => {
+      const pairs = perm.pairs as [MixingParticipant, MixingParticipant][]
+      return !hasHardPartnerIssue(pairs) && !hasHardOpponentIssue(pairs)
+    })
     const usablePermutations = cleanPermutations.length > 0 ? cleanPermutations : permutations
 
     let bestPermutation = usablePermutations[usablePermutations.length - 1]
@@ -366,14 +434,14 @@ export function generateMixingRound(
         const pairs = perm.pairs as [MixingParticipant, MixingParticipant][]
         const pairA = pairs[0]
         const pairB = pairs[1]
-        
+
         // A. Balance Strategy Score
         if (config.balanceStrategy === 'similar_levels') {
             // Prefer balanced matches (Team A rating approx Team B rating)
             const teamARating = pairA[0].rating + pairA[1].rating
             const teamBRating = pairB[0].rating + pairB[1].rating
             const diff = Math.abs(teamARating - teamBRating)
-            // Lower diff is better. 
+            // Lower diff is better.
             // Max typical rating sum diff might be ~2-3. We subtract diff * 10.
             score -= (diff * 10)
         } else if (config.balanceStrategy === 'pro_am') {
@@ -382,7 +450,7 @@ export function generateMixingRound(
              // We can heavily weight the presence of (0+3) pairing.
              if (perm.id === 'full_balance') score += 50
         }
-        
+
         // B. Position Score
         if (config.forcePosition) {
             pairs.forEach(pair => {
@@ -390,7 +458,7 @@ export function generateMixingRound(
                 score += getPositionScore(a, b)
             })
         }
-        
+
         // C. Hard exclusions
         if (exclusions.length > 0) {
             const [ea1, ea2] = pairA
@@ -416,7 +484,7 @@ export function generateMixingRound(
             // 2. Avoid repeating Opponents (High Priority) - Check Pair A vs Pair B
             const [a1, a2] = pairA
             const [b1, b2] = pairB
-            
+
             // Check if any A played against any B
             // A1 vs B1, A1 vs B2, A2 vs B1, A2 vs B2
             let repetitionCount = 0
@@ -424,25 +492,30 @@ export function generateMixingRound(
             if (a1.past_opponents.includes(b2.id)) repetitionCount++
             if (a2.past_opponents.includes(b1.id)) repetitionCount++
             if (a2.past_opponents.includes(b2.id)) repetitionCount++
-            
+
             // Penalty per repetition
             score -= (repetitionCount * 500)
-            
+
             // 3. Avoid previous partners becoming opponents? (Optional)
             if (a1.past_partners.includes(b1.id)) score -= 200
             if (a1.past_partners.includes(b2.id)) score -= 200
             if (a2.past_partners.includes(b1.id)) score -= 200
             if (a2.past_partners.includes(b2.id)) score -= 200
         }
-        
+
         if (score > bestScore) {
             bestScore = score
             bestPermutation = perm
         }
     }
-    
+
     const finalPairs = bestPermutation.pairs as [MixingParticipant, MixingParticipant][]
-    const violated = exclusions.length > 0 && checkExclusionViolation(finalPairs[0], finalPairs[1], exclusions)
+    const excludedViolated = exclusions.length > 0 && checkExclusionViolation(finalPairs[0], finalPairs[1], exclusions)
+    const encounterViolated = hasHardOpponentIssue(finalPairs)
+
+    const warningMsgs: string[] = []
+    if (excludedViolated) warningMsgs.push('No fue posible respetar todas las exclusiones en esta pista')
+    if (encounterViolated) warningMsgs.push('No fue posible evitar que estos jugadores agotaran su cupo de encuentros permitido en este evento')
 
     matches.push({
         courtNumber,
@@ -452,7 +525,7 @@ export function generateMixingRound(
         player4: finalPairs[1][1],
         pairA: finalPairs[0],
         pairB: finalPairs[1],
-        ...(violated ? { warning: 'No fue posible respetar todas las exclusiones en esta pista' } : {})
+        ...(warningMsgs.length > 0 ? { warning: warningMsgs.join(' ') } : {})
     })
   }
 
@@ -468,27 +541,27 @@ export function generateMixingRound(
 function getPositionScore(a: MixingParticipant, b: MixingParticipant): number {
     const posA = a.court_position
     const posB = b.court_position
-    
+
     // Ideal: ONE drive + ONE reves
     // Or: ONE side + ONE ambos
     // Or: TWO ambos
-    
+
     // Perfect coverage
     if (posA === 'drive' && posB === 'reves') return 20
     if (posA === 'reves' && posB === 'drive') return 20
-    
+
     // Good flexible coverage
     if (posA === 'ambos' || posB === 'ambos') {
         // If we have distinct bad clash (e.g. drive + drive) but one is ambos, it's fine
         // But pure 'drive' + 'drive' (if strictly interpreted) is bad.
         // If one is ambos, they can switch.
-        return 15 
+        return 15
     }
-    
+
     // Bad: Drive + Drive or Reves + Reves (where neither is ambos)
     if (posA === posB) {
         return -50 // Heavy penalty
     }
-    
+
     return 0
 }
