@@ -58,13 +58,12 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   // event_id: el historial de pareja/rival abarca todo el club (ver
   // fde67a62) para evitar repetir pareja de una semana a otra como
   // preferencia soft. Además, distinguimos aparte qué de ese historial
-  // pertenece a ESTE evento (currentEventHistoryMap / currentEventEncounterCountsMap),
-  // que se trata como restricción DURA en el algoritmo:
-  //   - Pareja repetida dentro del mismo evento -> nunca puede pasar.
-  //   - Dos jugadores que ya coincidieron 2 veces en total dentro del mismo
-  //     evento (sumando pareja Y rival, sea la combinación que sea) -> no
-  //     pueden volver a coincidir de ninguna forma (ver mixing-algorithm.ts,
-  //     MAX_TOTAL_ENCOUNTERS).
+  // pertenece a ESTE evento (currentEventHistoryMap / currentEventOpponentCountsMap),
+  // que se trata como restricción DURA en el algoritmo, con 2 cupos
+  // INDEPENDIENTES:
+  //   - Pareja repetida dentro del mismo evento -> nunca puede pasar (máx 1 vez).
+  //   - Rival repetido más de MAX_TIMES_AS_OPPONENT (1) veces dentro del
+  //     mismo evento -> tampoco puede pasar (ver mixing-algorithm.ts).
   // El histórico entre eventos distintos (past_partners/past_opponents)
   // sigue siendo solo una preferencia soft (penaliza, no bloquea).
   const { data: matches } = await supabase
@@ -76,13 +75,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   const historyMap = new Map<string, Set<string>>()
   const opponentsMap = new Map<string, Set<string>>()
   const currentEventHistoryMap = new Map<string, Set<string>>()
-  const currentEventEncounterCountsMap = new Map<string, Map<string, number>>() // 🆕 hard constraint combinado: pareja + rival, solo este evento
+  const currentEventOpponentCountsMap = new Map<string, Map<string, number>>() // 🆕 hard constraint: rival, solo este evento
 
   titulares.forEach((p) => {
       historyMap.set(p.user_id, new Set())
       opponentsMap.set(p.user_id, new Set())
       currentEventHistoryMap.set(p.user_id, new Set())
-      currentEventEncounterCountsMap.set(p.user_id, new Map()) // 🆕
+      currentEventOpponentCountsMap.set(p.user_id, new Map()) // 🆕
   })
 
   // Build history (who played with whom as PARTNER and OPPONENT)
@@ -94,16 +93,6 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           const b2 = m.player_b2
           const isCurrentEvent = m.event_id === eventId
 
-          // 🆕 helper: suma 1 al cupo combinado de encuentros, en ambos sentidos,
-          // SOLO si el partido pertenece a este evento
-          const bumpEncounter = (x: string | null, y: string | null) => {
-              if (!isCurrentEvent || !x || !y) return
-              const mx = currentEventEncounterCountsMap.get(x)
-              if (mx) mx.set(y, (mx.get(y) || 0) + 1)
-              const my = currentEventEncounterCountsMap.get(y)
-              if (my) my.set(x, (my.get(x) || 0) + 1)
-          }
-
           // Pair A Partners
           if (a1 && a2) {
               historyMap.get(a1)?.add(a2)
@@ -112,7 +101,6 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
                   currentEventHistoryMap.get(a1)?.add(a2)
                   currentEventHistoryMap.get(a2)?.add(a1)
               }
-              bumpEncounter(a1, a2) // 🆕 pareja también cuenta para el cupo combinado
           }
           // Pair B Partners
           if (b1 && b2) {
@@ -122,7 +110,6 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
                   currentEventHistoryMap.get(b1)?.add(b2)
                   currentEventHistoryMap.get(b2)?.add(b1)
               }
-              bumpEncounter(b1, b2) // 🆕
           }
 
           // Opponents (A vs B) — histórico de club (soft, todo Set sí/no)
@@ -137,18 +124,29 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
               if (b2) { opponentsMap.get(a2)?.add(b2); opponentsMap.get(b2)?.add(a2); }
           }
 
-          // 🆕 Rival también cuenta para el mismo cupo combinado
-          bumpEncounter(a1, b1)
-          bumpEncounter(a1, b2)
-          bumpEncounter(a2, b1)
-          bumpEncounter(a2, b2)
+          // 🆕 Opponent counts — SOLO de este evento (hard constraint, independiente del de pareja)
+          if (isCurrentEvent) {
+              const bump = (x: string | null, y: string | null) => {
+                  if (!x || !y) return
+                  const m = currentEventOpponentCountsMap.get(x)
+                  if (m) m.set(y, (m.get(y) || 0) + 1)
+              }
+              bump(a1, b1)
+              bump(b1, a1)
+              bump(a1, b2)
+              bump(b2, a1)
+              bump(a2, b1)
+              bump(b1, a2)
+              bump(a2, b2)
+              bump(b2, a2)
+          }
       })
   }
 
   // Transform to serializable object (Set -> Array, Map -> Record)
   const mappedParticipants = titulares.map((p) => {
       const profile = p.profiles
-      const countsMap = currentEventEncounterCountsMap.get(p.user_id) || new Map<string, number>()
+      const countsMap = currentEventOpponentCountsMap.get(p.user_id) || new Map<string, number>()
       return {
           id: p.user_id,
           rating: profile.rating || 0,
@@ -158,7 +156,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           avatar_url: profile.avatar_url ?? null,
           past_partners: Array.from(historyMap.get(p.user_id) || []),
           past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
-          encounter_counts: Object.fromEntries(countsMap), // 🆕 hard constraint combinado, solo evento actual
+          opponent_counts: Object.fromEntries(countsMap), // 🆕 hard constraint (rival), solo evento actual
           current_event_partners: Array.from(currentEventHistoryMap.get(p.user_id) || []),
           is_guest: profile.is_guest ?? false
       }

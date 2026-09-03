@@ -101,7 +101,7 @@ export default function GenerateMixPage() {
         console.log("Cloning participants...")
         // Deep clone to avoid mutating state directly and to reset for calculation
 const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants)).map(
-  (p: MixingParticipant) => ({ ...p, encounter_counts: p.encounter_counts ?? {} })
+  (p: MixingParticipant) => ({ ...p, opponent_counts: p.opponent_counts ?? {} })
 )
 
         console.log("Starting loop", roundsCount)
@@ -117,13 +117,12 @@ const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(parti
    const p = currentParticipants.find(cp => cp.id === pid)
    if (p) {
        if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
-       if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
-       p.encounter_counts[partnerId] = (p.encounter_counts[partnerId] || 0) + 1 // 🆕 compañero también cuenta para el cupo combinado
+if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
 
-       opponents.forEach(oid => {
-           if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
-           p.encounter_counts[oid] = (p.encounter_counts[oid] || 0) + 1 // 🔁 renombrado de opponent_counts
-       })
+opponents.forEach(oid => {
+    if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
+    p.opponent_counts[oid] = (p.opponent_counts[oid] || 0) + 1
+})
    }
 }
 

@@ -8,7 +8,7 @@ export interface MixingParticipant {
   avatar_url?: string | null
   past_partners: string[]
   past_opponents: string[]
-  encounter_counts: Record<string, number> // 🆕 nº TOTAL de encuentros (pareja + rival) con cada id, SOLO en este evento (hard constraint)
+  opponent_counts: Record<string, number> // 🆕 nº de veces que ha sido RIVAL de cada id, SOLO en este evento (hard constraint independiente del de pareja)
   current_event_partners: string[]
   is_guest?: boolean
 }
@@ -46,10 +46,13 @@ export interface RoundProposal {
 
 const EXCLUSION_PENALTY = -100000
 
-// 🎯 Prioridad máxima: dentro de un mismo evento, dos jugadores no pueden
-// coincidir (ni como pareja NI como rivales, sumando ambos) más de esta
-// cantidad de veces. Es un cupo ÚNICO y COMPARTIDO entre los dos roles.
-const MAX_TOTAL_ENCOUNTERS = 2
+// 🎯 Dentro de un mismo evento, dos jugadores pueden ser RIVALES como
+// máximo esta cantidad de veces. Es un cupo INDEPENDIENTE del de pareja
+// (pareja nunca se repite, ver classifyPartnerIssue). El ideal sería que
+// no coincidieran ni una sola vez más allá de su primer cruce, pero con
+// pocos jugadores (~12) y varias rondas es matemáticamente imposible
+// garantizarlo siempre — de ahí el fallback best-effort + warning.
+const MAX_TIMES_AS_OPPONENT = 1
 
 function exclusionPenalty(
   a: string, b: string,
@@ -84,15 +87,12 @@ function checkExclusionViolation(
 
 type PartnerIssueReason = 'exclusion' | 'repetition'
 
-function encounterCount(a: MixingParticipant, b: MixingParticipant): number {
-  return a.encounter_counts?.[b.id] ?? 0
-}
-
 /**
  * Clasifica si dos jugadores NO pueden ser pareja: por exclusión manual
- * (no_partner/no_contact), por haber sido ya pareja en ESTE evento (nunca
- * se repite pareja), o por haber alcanzado ya el cupo TOTAL de encuentros
- * (pareja + rival combinados) permitido en este evento.
+ * (no_partner/no_contact) o por haber sido ya pareja en ESTE evento (hard
+ * constraint — repetir pareja entre eventos distintos sigue permitido y se
+ * gestiona aparte como preferencia soft vía past_partners). Este cupo es
+ * INDEPENDIENTE del de rival (ver classifyOpponentIssue).
  */
 function classifyPartnerIssue(
   a: MixingParticipant,
@@ -101,14 +101,13 @@ function classifyPartnerIssue(
 ): PartnerIssueReason | null {
   if (exclusionPenalty(a.id, b.id, true, exclusions) < 0) return 'exclusion'
   if (a.current_event_partners.includes(b.id) || b.current_event_partners.includes(a.id)) return 'repetition'
-  if (encounterCount(a, b) >= MAX_TOTAL_ENCOUNTERS) return 'repetition'
   return null
 }
 
 /**
  * Clasifica si dos jugadores NO pueden volver a ser rivales: por exclusión
- * manual (no_opponent/no_contact) o por haber alcanzado ya el cupo TOTAL de
- * encuentros (pareja + rival combinados) permitido en este evento.
+ * manual (no_opponent/no_contact) o por haber alcanzado ya MAX_TIMES_AS_OPPONENT
+ * veces como rivales DENTRO DE ESTE EVENTO. Cupo INDEPENDIENTE del de pareja.
  */
 function classifyOpponentIssue(
   a: MixingParticipant,
@@ -116,18 +115,18 @@ function classifyOpponentIssue(
   exclusions: ExclusionRule[]
 ): PartnerIssueReason | null {
   if (exclusionPenalty(a.id, b.id, false, exclusions) < 0) return 'exclusion'
-  if (encounterCount(a, b) >= MAX_TOTAL_ENCOUNTERS) return 'repetition'
+  const count = a.opponent_counts?.[b.id] ?? 0
+  if (count >= MAX_TIMES_AS_OPPONENT) return 'repetition'
   return null
 }
 
 /**
  * Repara el array de parejas del método Serpentín intercambiando un miembro
- * entre dos parejas cuando una de ellas viola una exclusión, repite pareja,
- * o agota el cupo total de encuentros dentro del evento actual. Prueba las 2
- * particiones posibles entre cada par de parejas candidatas y acepta la de
- * menor distorsión de balance de nivel que no introduzca una nueva pareja
- * "mala". Best-effort: si no hay intercambio válido, la pareja queda como
- * estaba y se marca en `unresolved`.
+ * entre dos parejas cuando una de ellas viola una exclusión o repite pareja
+ * dentro del evento actual. Prueba las 2 particiones posibles entre cada par
+ * de parejas candidatas y acepta la de menor distorsión de balance de nivel
+ * que no introduzca una nueva pareja "mala". Best-effort: si no hay
+ * intercambio válido, la pareja queda como estaba y se marca en `unresolved`.
  */
 function repairSnakePairs(
   pairs: [MixingParticipant, MixingParticipant][],
@@ -230,8 +229,9 @@ function generateSnakeRound(
     snakePairs.push([usable[i], usable[usableCount - 1 - i]])
   }
 
-  // Reparar parejas que violan una exclusión, repiten pareja, o agotan el
-  // cupo total de encuentros dentro de este evento.
+  // Reparar parejas que violan una exclusión o repiten pareja dentro de este
+  // evento — el patrón serpentín las fija de forma determinista por ranking,
+  // así que sin esto podrían repetirse en todas las rondas del evento.
   const { pairs, unresolved } = repairSnakePairs(snakePairs, exclusions)
 
   const buildMatch = (pairA: [MixingParticipant, MixingParticipant], pairB: [MixingParticipant, MixingParticipant], courtNumber: number): MatchProposal => ({
@@ -241,10 +241,10 @@ function generateSnakeRound(
     pairA, pairB
   })
 
-  // Chequeo duro de cupo de encuentros agotado para un emparejamiento final
-  // concreto (se usa tanto para el warning como para filtrar agrupaciones
-  // enteras antes de puntuarlas).
-  const hasHardEncounterIssue = (pA: [MixingParticipant, MixingParticipant], pB: [MixingParticipant, MixingParticipant]): boolean => {
+  // Chequeo duro de rival repetido para un emparejamiento final concreto
+  // (se usa tanto para el warning como para filtrar agrupaciones enteras
+  // antes de puntuarlas).
+  const hasHardOpponentIssue = (pA: [MixingParticipant, MixingParticipant], pB: [MixingParticipant, MixingParticipant]): boolean => {
     const [a1, a2] = pA
     const [b1, b2] = pB
     return (
@@ -263,8 +263,8 @@ function generateSnakeRound(
     if (unresolved.get(idxA) === 'repetition' || unresolved.get(idxB) === 'repetition') {
       msgs.push('No fue posible evitar que esta pareja repita respecto a una ronda anterior de este evento')
     }
-    if (hasHardEncounterIssue(pA, pB)) {
-      msgs.push('No fue posible evitar que estos jugadores agotaran su cupo de encuentros permitido en este evento')
+    if (hasHardOpponentIssue(pA, pB)) {
+      msgs.push('No fue posible evitar que estos jugadores repitan como rivales en este evento')
     }
     return msgs.length > 0 ? msgs.join(' ') : undefined
   }
@@ -305,12 +305,12 @@ function generateSnakeRound(
     const pairIndices = Array.from({ length: halfN }, (_, i) => i)
     const groupings = getPairGroupings(pairIndices, courtCount)
 
-    // Descartar agrupaciones donde algún cruce agote el cupo total de
-    // encuentros en este evento, igual que ya se hace con exclusiones/pareja.
-    const hasHardEncounterIssueInGrouping = (grouping: [number, number][]): boolean =>
-      grouping.some(([aIdx, bIdx]) => hasHardEncounterIssue(pairs[aIdx], pairs[bIdx]))
+    // Descartar agrupaciones con rival repetido más de MAX_TIMES_AS_OPPONENT
+    // veces en este evento, igual que ya se hace con exclusiones/pareja.
+    const hasHardOpponentIssueInGrouping = (grouping: [number, number][]): boolean =>
+      grouping.some(([aIdx, bIdx]) => hasHardOpponentIssue(pairs[aIdx], pairs[bIdx]))
 
-    const cleanGroupings = groupings.filter(g => !hasHardEncounterIssueInGrouping(g))
+    const cleanGroupings = groupings.filter(g => !hasHardOpponentIssueInGrouping(g))
     const usableGroupings = cleanGroupings.length > 0 ? cleanGroupings : groupings // best-effort si no hay alternativa limpia
 
     let bestScore = -Infinity
@@ -400,10 +400,10 @@ export function generateMixingRound(
     ]
 
     // Filtro duro: descartar permutaciones donde alguna pareja viole una
-    // exclusión, repita pareja, o agote su cupo total de encuentros dentro
-    // de este evento — si existe al menos una permutación limpia. Si las 3
-    // tienen el mismo problema, no hay alternativa matemática y se cae al
-    // scoring de siempre (+ aviso).
+    // exclusión, repita pareja, o repita rival más de MAX_TIMES_AS_OPPONENT
+    // veces dentro de este evento — si existe al menos una permutación
+    // limpia. Si las 3 tienen el mismo problema, no hay alternativa
+    // matemática y se cae al scoring de siempre (+ aviso).
     const hasHardPartnerIssue = (permPairs: [MixingParticipant, MixingParticipant][]): boolean =>
       permPairs.some(([a, b]) => classifyPartnerIssue(a, b, exclusions) !== null)
 
@@ -511,11 +511,11 @@ export function generateMixingRound(
 
     const finalPairs = bestPermutation.pairs as [MixingParticipant, MixingParticipant][]
     const excludedViolated = exclusions.length > 0 && checkExclusionViolation(finalPairs[0], finalPairs[1], exclusions)
-    const encounterViolated = hasHardOpponentIssue(finalPairs)
+    const opponentViolated = hasHardOpponentIssue(finalPairs)
 
     const warningMsgs: string[] = []
     if (excludedViolated) warningMsgs.push('No fue posible respetar todas las exclusiones en esta pista')
-    if (encounterViolated) warningMsgs.push('No fue posible evitar que estos jugadores agotaran su cupo de encuentros permitido en este evento')
+    if (opponentViolated) warningMsgs.push('No fue posible evitar que estos jugadores repitan como rivales en este evento')
 
     matches.push({
         courtNumber,
