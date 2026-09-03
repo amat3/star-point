@@ -100,7 +100,9 @@ export default function GenerateMixPage() {
         
         console.log("Cloning participants...")
         // Deep clone to avoid mutating state directly and to reset for calculation
-        const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
+const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants)).map(
+  (p: MixingParticipant) => ({ ...p, encounter_counts: p.encounter_counts ?? {} })
+)
 
         console.log("Starting loop", roundsCount)
         for (let i = 0; i < roundsCount; i++) {
@@ -111,16 +113,19 @@ export default function GenerateMixPage() {
             
             // Update history for next round
             result.matches.forEach(m => {
-                 const updateHistory = (pid: string, partnerId: string, opponents: string[]) => {
-                    const p = currentParticipants.find(cp => cp.id === pid)
-                    if (p) {
-                        if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
-                        if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
-                        opponents.forEach(oid => {
-                            if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
-                        })
-                    }
-                 }
+               const updateHistory = (pid: string, partnerId: string, opponents: string[]) => {
+   const p = currentParticipants.find(cp => cp.id === pid)
+   if (p) {
+       if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
+       if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
+       p.encounter_counts[partnerId] = (p.encounter_counts[partnerId] || 0) + 1 // 🆕 compañero también cuenta para el cupo combinado
+
+       opponents.forEach(oid => {
+           if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
+           p.encounter_counts[oid] = (p.encounter_counts[oid] || 0) + 1 // 🔁 renombrado de opponent_counts
+       })
+   }
+}
 
                  // Update for all 4 players
                  // P1: Partner P2, Opponents P3, P4

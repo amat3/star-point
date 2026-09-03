@@ -48,7 +48,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
     .single()
 
   if (eError) throw new Error(eError.message)
-  
+
   const maxSpots = eventData.max_spots
 
   // Filter only Titulares (first maxSpots)
@@ -58,9 +58,15 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   // event_id: el historial de pareja/rival abarca todo el club (ver
   // fde67a62) para evitar repetir pareja de una semana a otra como
   // preferencia soft. Además, distinguimos aparte qué de ese historial
-  // pertenece a ESTE evento (currentEventHistoryMap), que se trata como
-  // restricción dura en el algoritmo — repetir pareja dentro del mismo
-  // evento no puede pasar nunca.
+  // pertenece a ESTE evento (currentEventHistoryMap / currentEventEncounterCountsMap),
+  // que se trata como restricción DURA en el algoritmo:
+  //   - Pareja repetida dentro del mismo evento -> nunca puede pasar.
+  //   - Dos jugadores que ya coincidieron 2 veces en total dentro del mismo
+  //     evento (sumando pareja Y rival, sea la combinación que sea) -> no
+  //     pueden volver a coincidir de ninguna forma (ver mixing-algorithm.ts,
+  //     MAX_TOTAL_ENCOUNTERS).
+  // El histórico entre eventos distintos (past_partners/past_opponents)
+  // sigue siendo solo una preferencia soft (penaliza, no bloquea).
   const { data: matches } = await supabase
     .from('matches')
     .select('event_id, player_a1, player_a2, player_b1, player_b2')
@@ -70,11 +76,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   const historyMap = new Map<string, Set<string>>()
   const opponentsMap = new Map<string, Set<string>>()
   const currentEventHistoryMap = new Map<string, Set<string>>()
+  const currentEventEncounterCountsMap = new Map<string, Map<string, number>>() // 🆕 hard constraint combinado: pareja + rival, solo este evento
 
   titulares.forEach((p) => {
       historyMap.set(p.user_id, new Set())
       opponentsMap.set(p.user_id, new Set())
       currentEventHistoryMap.set(p.user_id, new Set())
+      currentEventEncounterCountsMap.set(p.user_id, new Map()) // 🆕
   })
 
   // Build history (who played with whom as PARTNER and OPPONENT)
@@ -86,6 +94,16 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           const b2 = m.player_b2
           const isCurrentEvent = m.event_id === eventId
 
+          // 🆕 helper: suma 1 al cupo combinado de encuentros, en ambos sentidos,
+          // SOLO si el partido pertenece a este evento
+          const bumpEncounter = (x: string | null, y: string | null) => {
+              if (!isCurrentEvent || !x || !y) return
+              const mx = currentEventEncounterCountsMap.get(x)
+              if (mx) mx.set(y, (mx.get(y) || 0) + 1)
+              const my = currentEventEncounterCountsMap.get(y)
+              if (my) my.set(x, (my.get(x) || 0) + 1)
+          }
+
           // Pair A Partners
           if (a1 && a2) {
               historyMap.get(a1)?.add(a2)
@@ -94,6 +112,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
                   currentEventHistoryMap.get(a1)?.add(a2)
                   currentEventHistoryMap.get(a2)?.add(a1)
               }
+              bumpEncounter(a1, a2) // 🆕 pareja también cuenta para el cupo combinado
           }
           // Pair B Partners
           if (b1 && b2) {
@@ -103,9 +122,10 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
                   currentEventHistoryMap.get(b1)?.add(b2)
                   currentEventHistoryMap.get(b2)?.add(b1)
               }
+              bumpEncounter(b1, b2) // 🆕
           }
 
-          // Opponents (A vs B)
+          // Opponents (A vs B) — histórico de club (soft, todo Set sí/no)
           // A1 vs B1/B2
           if (a1) {
               if (b1) { opponentsMap.get(a1)?.add(b1); opponentsMap.get(b1)?.add(a1); }
@@ -116,12 +136,19 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
               if (b1) { opponentsMap.get(a2)?.add(b1); opponentsMap.get(b1)?.add(a2); }
               if (b2) { opponentsMap.get(a2)?.add(b2); opponentsMap.get(b2)?.add(a2); }
           }
+
+          // 🆕 Rival también cuenta para el mismo cupo combinado
+          bumpEncounter(a1, b1)
+          bumpEncounter(a1, b2)
+          bumpEncounter(a2, b1)
+          bumpEncounter(a2, b2)
       })
   }
 
-  // Transform to serializable object (Set -> Array)
+  // Transform to serializable object (Set -> Array, Map -> Record)
   const mappedParticipants = titulares.map((p) => {
       const profile = p.profiles
+      const countsMap = currentEventEncounterCountsMap.get(p.user_id) || new Map<string, number>()
       return {
           id: p.user_id,
           rating: profile.rating || 0,
@@ -131,6 +158,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           avatar_url: profile.avatar_url ?? null,
           past_partners: Array.from(historyMap.get(p.user_id) || []),
           past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
+          encounter_counts: Object.fromEntries(countsMap), // 🆕 hard constraint combinado, solo evento actual
           current_event_partners: Array.from(currentEventHistoryMap.get(p.user_id) || []),
           is_guest: profile.is_guest ?? false
       }
@@ -245,7 +273,7 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
-    
+
     // Insert matches
     // We map MatchProposal to DB schema
     const inserts = matches.map(m => ({
@@ -267,12 +295,12 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
     }))
 
     const { error } = await supabase.from('matches').insert(inserts)
-    
+
     if (error) throw new Error(error.message)
-    
+
     // Update event status to 'in_progress' so it disappears from the "Open Events" dashboard list
     await supabase.from('events').update({ status: 'in_progress' }).eq('id', eventId)
-    
+
     revalidatePath(`/admin/events/${eventId}`)
     return { success: true }
 }
