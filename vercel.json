@@ -1,12 +1,5 @@
 {
   "crons": [
-    {
-      "path": "/api/cron/create-weekly-event",
-      "schedule": "0 20 * * 3"
-    },
-    {
-      "path": "/api/cron/create-weekly-event",
-      "schedule": "0 21 * * 3"
-    }
+   
   ]
 }
