@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEventMixingData, saveAllRounds } from '@/app/actions/mixing-generator'
-import { generateMixingRound, MixingParticipant, RoundProposal, MixingConfig, ExclusionRule } from '@/lib/mixing-algorithm'
+import { generateEventRounds, MixingParticipant, RoundProposal, MixingConfig, ExclusionRule } from '@/lib/mixing-algorithm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -24,15 +24,15 @@ export default function GenerateMixPage() {
   const router = useRouter()
   const params = useParams()
   const id = params?.id as string
-  
+
   const [participants, setParticipants] = useState<MixingParticipant[]>([])
   const [loadingData, setLoadingData] = useState(true)
-  
+
   // Multi-round state
   const [roundsCount, setRoundsCount] = useState(1)
   const [proposals, setProposals] = useState<RoundProposal[]>([])
   const [activeTab, setActiveTab] = useState("round-1")
-  
+
   // Selection for swapping
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
@@ -96,49 +96,16 @@ export default function GenerateMixPage() {
             return
         }
 
-        const newProposals: RoundProposal[] = []
-        
         console.log("Cloning participants...")
-        // Deep clone to avoid mutating state directly and to reset for calculation
-const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants)).map(
-  (p: MixingParticipant) => ({ ...p, opponent_counts: p.opponent_counts ?? {} })
-)
+        // Deep clone para no mutar el state directamente. generateEventRounds
+        // gestiona internamente el historial (pareja/rival) entre rondas y la
+        // rotación de grupos — ya no hace falta reimplementarlo aquí.
+        const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
 
-        console.log("Starting loop", roundsCount)
-        for (let i = 0; i < roundsCount; i++) {
-            console.log("Generating round", i + 1)
-            const result = generateMixingRound(currentParticipants, { ...config, exclusions })
-            console.log("Round result", result)
-            newProposals.push(result)
-            
-            // Update history for next round
-            result.matches.forEach(m => {
-               const updateHistory = (pid: string, partnerId: string, opponents: string[]) => {
-   const p = currentParticipants.find(cp => cp.id === pid)
-   if (p) {
-       if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
-if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
+        console.log("Generating", roundsCount, "rounds")
+        const newProposals = generateEventRounds(currentParticipants, { ...config, exclusions }, roundsCount)
+        console.log("Rounds generated", newProposals)
 
-opponents.forEach(oid => {
-    if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid)
-    p.opponent_counts[oid] = (p.opponent_counts[oid] || 0) + 1
-})
-   }
-}
-
-                 // Update for all 4 players
-                 // P1: Partner P2, Opponents P3, P4
-                 updateHistory(m.player1.id, m.player2.id, [m.player3.id, m.player4.id])
-                 // P2: Partner P1, Opponents P3, P4
-                 updateHistory(m.player2.id, m.player1.id, [m.player3.id, m.player4.id])
-                 // P3: Partner P4, Opponents P1, P2
-                 updateHistory(m.player3.id, m.player4.id, [m.player1.id, m.player2.id])
-                 // P4: Partner P3, Opponents P1, P2
-                 updateHistory(m.player4.id, m.player3.id, [m.player1.id, m.player2.id])
-            })
-        }
-
-        console.log("Setting proposals", newProposals)
         setProposals(newProposals)
         setSelectedPlayerId(null)
         setActiveTab("round-1")
@@ -156,7 +123,7 @@ opponents.forEach(oid => {
 
     // Find the two players locations
     const newMatches = [...proposal.matches]
-    
+
     // Helper to find player coords
     const findCoords = (pid: string) => {
         for (let mIdx = 0; mIdx < newMatches.length; mIdx++) {
@@ -208,7 +175,7 @@ opponents.forEach(oid => {
     } else {
         toast.error('No se pudo realizar el intercambio')
     }
-    
+
     setSelectedPlayerId(null)
   }
 
@@ -260,12 +227,12 @@ opponents.forEach(oid => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-6">
-            
+
             {/* Strategy */}
             <div className="space-y-2">
                 <label className="text-sm font-medium">Estrategia</label>
                 <div className="flex gap-2">
-                    <Button 
+                    <Button
                         variant={config.balanceStrategy === 'similar_levels' ? 'default' : 'outline'}
                         onClick={() => setConfig({...config, balanceStrategy: 'similar_levels'})}
                         size="sm"
@@ -292,7 +259,7 @@ opponents.forEach(oid => {
             <div className="space-y-2">
                 <label className="text-sm font-medium">Evitar Repetición</label>
                 <div className="flex gap-2">
-                     <Button 
+                     <Button
                         variant={config.avoidRepetition ? 'default' : 'outline'}
                         onClick={() => setConfig({...config, avoidRepetition: !config.avoidRepetition})}
                         size="sm"
@@ -301,7 +268,7 @@ opponents.forEach(oid => {
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    Prioriza que no repitan pareja los mismos jugadores en este evento.
+                    Prioriza que no repitan pareja ni rival los mismos jugadores en este evento, rotando quién comparte pista con quién.
                 </p>
             </div>
 
@@ -309,7 +276,7 @@ opponents.forEach(oid => {
             <div className="space-y-2">
                 <label className="text-sm font-medium">Respetar Posición en Pista</label>
                  <div className="flex gap-2">
-                     <Button 
+                     <Button
                         variant={config.forcePosition ? 'default' : 'outline'}
                         onClick={() => setConfig({...config, forcePosition: !config.forcePosition})}
                         size="sm"
@@ -364,7 +331,7 @@ opponents.forEach(oid => {
                         <TabsTrigger key={idx} value={`round-${idx + 1}`}>Ronda {idx + 1}</TabsTrigger>
                     ))}
                 </TabsList>
-                
+
                 {proposals.map((proposal, rIdx) => (
                     <TabsContent key={rIdx} value={`round-${rIdx + 1}`} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -486,4 +453,3 @@ function PlayerItem({ player, isSelected, onSelect }: { player: MixingParticipan
         </div>
     )
 }
-
