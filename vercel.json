@@ -1,5 +1,8 @@
 {
   "crons": [
-   
+   {
+      "path": "/api/cron/generate-event",
+      "schedule": "0 22 * * 3"
+    }
   ]
 }
