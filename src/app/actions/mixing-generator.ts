@@ -13,6 +13,12 @@ const HISTORY_WINDOW_EVENTS = 2
 export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number, exclusions: ExclusionRule[] }> {
   const supabase = await createClient()
 
+  // Ratings and the whole draw input: admins only
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No auth')
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (callerProfile?.role !== 'admin') throw new Error('Requiere admin')
+
   const { data: participants, error: pError } = await supabase
     .from('event_participants')
     .select('user_id, joined_at')
@@ -154,10 +160,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   }
 }
 
+// Court chosen for each court number of the draw (1-based), from the event's club.
+export type DrawCourts = Record<number, { id: string; name: string }>
+
 export async function saveAllRounds(
   eventId: string,
   rounds: { matches: MatchProposal[], roundNumber: number }[],
-  courtNames: Record<number, string> = {}
+  courts: DrawCourts = {}
 ) {
   const supabase = await createClient()
 
@@ -167,15 +176,30 @@ export async function saveAllRounds(
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
 
-  const { data: eventCheck } = await supabase.from('events').select('max_spots').eq('id', eventId).single()
-  if (eventCheck) {
-    const { count: participantCount } = await supabase
-      .from('event_participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', eventId)
-    if ((participantCount || 0) < eventCheck.max_spots) {
-      throw new Error('El evento no está completo. Añade jugadores o invitados antes de generar partidos.')
-    }
+  const { data: eventCheck } = await supabase.from('events').select('max_spots, status, club_id').eq('id', eventId).single()
+  if (!eventCheck) throw new Error('Evento no encontrado')
+  if (eventCheck.status !== 'open') throw new Error('Este evento ya tiene el sorteo publicado')
+
+  const { count: participantCount } = await supabase
+    .from('event_participants')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+  if ((participantCount || 0) < eventCheck.max_spots) {
+    throw new Error('El evento no está completo. Añade jugadores o invitados antes de generar partidos.')
+  }
+
+  // Never save a second draw on top of an existing one
+  const { count: existingMatches } = await supabase
+    .from('matches')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+  if ((existingMatches ?? 0) > 0) throw new Error('Este evento ya tiene partidos generados')
+
+  // Courts must belong to the event's club
+  const courtIds = Object.values(courts).map(c => c.id)
+  if (courtIds.length > 0) {
+    const { data: valid } = await supabase.from('courts').select('id').in('id', courtIds).eq('club_id', eventCheck.club_id ?? '')
+    if ((valid ?? []).length !== new Set(courtIds).size) throw new Error('Alguna pista no pertenece al club del evento')
   }
 
   const inserts = rounds.flatMap(({ matches, roundNumber }) =>
@@ -193,7 +217,8 @@ export async function saveAllRounds(
       score_details: '0-0',
       event_id: eventId,
       court_number: m.courtNumber,
-      court_name: courtNames[m.courtNumber] || null,
+      court_id: courts[m.courtNumber]?.id ?? null,
+      court_name: courts[m.courtNumber]?.name ?? null,
       round_number: roundNumber
     }))
   )
@@ -225,49 +250,14 @@ export async function saveAllRounds(
     }
 
     sendPushToUsers(playerIds, {
-      title: '¡Partidos listos!',
+      title: '¡Sorteo listo!',
       body: `Ya puedes ver tus partidos de "${event.title}"`,
-      url: '/dashboard',
+      url: `/events/${eventId}`,
     }).catch(console.error)
   }
 
-  revalidatePath(`/admin/events/${eventId}`)
+  revalidatePath('/')
+  revalidatePath('/mixing')
+  revalidatePath(`/events/${eventId}`)
   return { success: true }
-}
-
-export async function saveRoundMatches(eventId: string, matches: MatchProposal[], roundNumber: number = 1, courtNames: Record<number, string> = {}) {
-    const supabase = await createClient()
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No auth')
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
-
-    const inserts = matches.map(m => ({
-        created_at: new Date().toISOString(),
-        creator_id: user.id,
-        match_type: 'mixing',
-        status: 'pending',
-        player_a1: m.pairA[0].id,
-        player_a2: m.pairA[1].id,
-        player_b1: m.pairB[0].id,
-        player_b2: m.pairB[1].id,
-        sets_a: 0,
-        sets_b: 0,
-        score_details: '0-0',
-        event_id: eventId,
-        court_number: m.courtNumber,
-        court_name: courtNames[m.courtNumber] || null,
-        round_number: roundNumber
-    }))
-
-    const { error } = await supabase.from('matches').insert(inserts)
-
-    if (error) throw new Error(error.message)
-
-    await supabase.from('events').update({ status: 'in_progress' }).eq('id', eventId)
-
-    revalidatePath(`/admin/events/${eventId}`)
-    return { success: true }
 }

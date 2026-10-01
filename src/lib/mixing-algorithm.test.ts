@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   generateMixingRound,
   generateEventRounds,
+  summarizeRounds,
   MixingParticipant,
   MixingConfig,
   ExclusionRule,
@@ -303,3 +304,21 @@ describe('prioridad de nivel: partidos igualados (opción A)', () => {
   })
 })
 
+describe('summarizeRounds', () => {
+  it('cuenta los reencuentros dentro del evento y los avisos', () => {
+    const rounds = generateEventRounds(makeParticipants(12), baseConfig, 3)
+    const summary = summarizeRounds(rounds)
+    // 12 jugadores y 3 rondas: el mínimo posible son 9 reencuentros
+    expect(summary.reMeetings).toBeGreaterThanOrEqual(9)
+    expect(summary.warnings).toBeGreaterThan(0)
+  })
+
+  it('con 16 jugadores y 3 rondas no hay reencuentros ni avisos', () => {
+    const summary = summarizeRounds(generateEventRounds(makeParticipants(16), baseConfig, 3))
+    expect(summary.reMeetings).toBeLessThanOrEqual(2)
+  })
+
+  it('sin rondas todo es cero', () => {
+    expect(summarizeRounds([])).toEqual({ reMeetings: 0, warnings: 0 })
+  })
+})
