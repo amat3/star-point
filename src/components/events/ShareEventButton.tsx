@@ -1,6 +1,7 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import styled from '@emotion/styled'
+import Button from '@/components/atoms/Button'
 import { MessageCircle } from 'lucide-react'
 import { MixingEvent } from '@/types/events'
 
@@ -69,12 +70,22 @@ export function ShareEventButton({ event }: ShareEventButtonProps) {
   }
 
   return (
-    <Button 
-      onClick={handleShare}
-      className="bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold gap-2 w-full sm:w-auto shadow-md transition-all hover:scale-105"
-    >
-      <MessageCircle className="w-5 h-5" />
-      Notificar al Grupo
-    </Button>
+    <ShareButton type="button" onClick={handleShare}>
+      <MessageCircle />
+      Notificar al grupo
+    </ShareButton>
   )
 }
+
+// WhatsApp green: a brand color, so it stays the same in light and dark.
+const ShareButton = styled(Button)`
+  width: 100%;
+  background: #25d366;
+  color: #fff;
+  border-color: transparent;
+
+  &:hover {
+    background: #128c7e;
+    opacity: 1;
+  }
+`

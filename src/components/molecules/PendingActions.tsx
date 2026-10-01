@@ -11,7 +11,6 @@ import { confirmMatch, type PendingAction } from '@/app/actions/matches'
 // Legacy dialog (Tailwind) until the Dialog molecule exists.
 import { EditMatchDialog } from '@/components/matches/dialogs/EditMatchDialog'
 import type { Match } from '@/types'
-import { SAMPLE_ID_PREFIX } from '@/lib/sample-pending-actions'
 
 // Results to record come before results to confirm (stable sort keeps the original order within each group).
 const sortByKind = (actions: PendingAction[]) =>
@@ -54,8 +53,6 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
   const [reviewing, setReviewing] = useState<PendingAction | null>(null)
 
   const handleConfirm = (id: string) => {
-    // Samples only preview the "confirmed" state; they never hit the database.
-    if (id.startsWith(SAMPLE_ID_PREFIX)) return setDoneIds(prev => new Set(prev).add(id))
     setBusyId(id)
     startTransition(async () => {
       try {
@@ -103,7 +100,7 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
                 </Button>
               )
             ) : (
-              <Button $variant="accent" $size="lg" onClick={() => a.id.startsWith(SAMPLE_ID_PREFIX) ? toast.info('Tarjeta de ejemplo: no hace nada') : setRecording({ action: a, mode: 'record' })}>
+              <Button $variant="accent" $size="lg" onClick={() => setRecording({ action: a, mode: 'record' })}>
                 <Pencil />
                 Introducir resultado
               </Button>
@@ -127,7 +124,6 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
           onCorrect={() => {
             const action = reviewing
             setReviewing(null)
-            if (action.id.startsWith(SAMPLE_ID_PREFIX)) return toast.info('Tarjeta de ejemplo: no hace nada')
             setRecording({ action, mode: 'correct' })
           }}
         />
