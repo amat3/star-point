@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button'
 import Header from '@/components/molecules/Header'
 import TabBar from '@/components/molecules/TabBar'
 import EventOpenView from '@/components/organisms/EventOpenView'
-import { formatEventDate, formatEventTime, formatLevel, toTitleCase } from '@/lib/utils'
+import EventDrawView from '@/components/organisms/EventDrawView'
+import { getEventDraw } from '@/lib/event-draw'
+import { formatEventChip, formatEventDate, formatEventTime, formatEventWeekday, formatLevel, toTitleCase } from '@/lib/utils'
 
 interface EventPageProps {
   params: Promise<{ id: string }>
@@ -28,7 +30,7 @@ export default async function EventPage(props: EventPageProps) {
   // 1. Fetch Event
   const { data: event, error } = await supabase
     .from('events')
-    .select('*')
+    .select('*, club:clubs(name)')
     .eq('id', params.id)
     .single()
 
@@ -50,14 +52,14 @@ export default async function EventPage(props: EventPageProps) {
        .order('joined_at', { ascending: true })
 
   // 3. Fetch Profiles for Participants
-  type EventProfile = { id: string; full_name?: string | null; avatar_url?: string | null; is_guest?: boolean | null; rating?: number | null }
+  type EventProfile = { id: string; full_name?: string | null; avatar_url?: string | null; is_guest?: boolean | null; rating?: number | null; court_position?: 'reves' | 'drive' | 'ambos' | null }
   const userIds = rawParticipants?.map((p) => p.user_id) || []
   const profilesMap: Record<string, EventProfile> = {}
 
   if (userIds.length > 0) {
         const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, avatar_url, is_guest, rating')
+            .select('id, full_name, avatar_url, is_guest, rating, court_position')
             .in('id', userIds)
 
         profiles?.forEach((p) => {
@@ -73,6 +75,7 @@ export default async function EventPage(props: EventPageProps) {
         avatar_url: profilesMap[p.user_id]?.avatar_url,
         is_guest: profilesMap[p.user_id]?.is_guest ?? false,
         rating: profilesMap[p.user_id]?.rating ?? null,
+        court_position: profilesMap[p.user_id]?.court_position ?? null,
     })) || []
 
   // 4. Build MixingEvent object
@@ -81,7 +84,13 @@ export default async function EventPage(props: EventPageProps) {
         rounds: event.rounds || 1,
         duration_minutes: event.duration_minutes || 90,
         participants_count: rawParticipants?.length || 0,
-        participants: formattedParticipants,
+        // Levels never travel to the browser inside the event object.
+        participants: formattedParticipants.map(p => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          avatar_url: p.avatar_url ?? undefined,
+          is_guest: p.is_guest,
+        })),
         is_joined: isJoined
   }
 
@@ -101,7 +110,8 @@ export default async function EventPage(props: EventPageProps) {
       userId: p.user_id,
       name: toTitleCase(p.full_name),
       avatarUrl: p.avatar_url ?? null,
-      level: formatLevel(p.rating),
+      hand: p.court_position,
+      ...(userRole === 'admin' ? { level: formatLevel(p.rating) } : {}),
       isGuest: p.is_guest,
       status: index < total ? 'Plaza confirmada' : `Reserva ${index - total + 1}`,
     }))
@@ -121,6 +131,33 @@ export default async function EventPage(props: EventPageProps) {
           startsAt={formatEventTime(fullEvent.start_time)}
           players={players}
           userRole={userRole}
+        />
+        <TabBar loggedIn />
+      </>
+    )
+  }
+
+  if (fullEvent.status === 'in_progress') {
+    const isAdmin = userRole === 'admin'
+    const rounds = await getEventDraw(supabase, fullEvent.id, user.id, isAdmin)
+    const club = Array.isArray(event.club) ? event.club[0] : event.club
+    const playing = Math.min(formattedParticipants.length, fullEvent.max_spots)
+
+    return (
+      <>
+        <RealtimeRefresher />
+        <NotificationListener userId={user.id} />
+        <Header
+          profile={profile}
+          userName={profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'}
+        />
+        <EventDrawView
+          eyebrow={[club?.name, formatEventWeekday(fullEvent.start_time)].filter(Boolean).join(' · ')}
+          chip={formatEventChip(fullEvent.start_time)}
+          title="El sorteo está listo."
+          summary={`${fullEvent.rounds} ${fullEvent.rounds === 1 ? 'ronda' : 'rondas'} · ${playing} jugadores`}
+          rounds={rounds}
+          isAdmin={isAdmin}
         />
         <TabBar loggedIn />
       </>

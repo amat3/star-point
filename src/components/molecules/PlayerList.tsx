@@ -4,12 +4,15 @@ import { useState } from 'react'
 import styled from '@emotion/styled'
 import { X } from 'lucide-react'
 import Avatar from '../atoms/Avatar'
+import HandTag, { type Hand } from '../atoms/HandTag'
 
 export interface PlayerListItem {
   userId: string
   name: string
   avatarUrl: string | null
-  level: string
+  hand: Hand | null
+  // Only sent to admins
+  level?: string
   isGuest: boolean
   // "Plaza confirmada" or "Reserva 1"
   status: string
@@ -17,6 +20,8 @@ export interface PlayerListItem {
 
 interface PlayerListProps {
   title: string
+  // Shown next to the title (e.g. the count of players per side)
+  headerExtra?: React.ReactNode
   players: PlayerListItem[]
   // Rows shown before the "+N jugadores" toggle
   collapsedCount?: number
@@ -24,14 +29,17 @@ interface PlayerListProps {
   onRemove?: (userId: string) => void
 }
 
-function PlayerList({ title, players, collapsedCount = 3, onSelect, onRemove }: PlayerListProps) {
+function PlayerList({ title, headerExtra, players, collapsedCount = 3, onSelect, onRemove }: PlayerListProps) {
   const [expanded, setExpanded] = useState(false)
   const visible = expanded ? players : players.slice(0, collapsedCount)
   const hidden = players.length - visible.length
 
   return (
     <section>
-      <Title>{title}</Title>
+      <Header>
+        <Title>{title}</Title>
+        {headerExtra}
+      </Header>
       {players.length === 0 ? (
         <Empty>Todavía no se ha apuntado nadie. ¡Sé el primero!</Empty>
       ) : (
@@ -47,7 +55,10 @@ function PlayerList({ title, players, collapsedCount = 3, onSelect, onRemove }: 
                   </Name>
                   <Status>{player.status}</Status>
                 </Info>
-                <Level>Niv. {player.level}</Level>
+                <Tags>
+                  <HandTag hand={player.hand} />
+                  {player.level && <Level>Niv. {player.level}</Level>}
+                </Tags>
               </Main>
               {onRemove && (
                 <Remove type="button" aria-label={`Eliminar a ${player.name}`} onClick={() => onRemove(player.userId)}>
@@ -67,8 +78,24 @@ function PlayerList({ title, players, collapsedCount = 3, onSelect, onRemove }: 
   )
 }
 
+const Header = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+`
+
+const Tags = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+`
+
 const Title = styled.h2`
-  margin: 0 0 0.75rem;
+  margin: 0;
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};

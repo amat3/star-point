@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { toTitleCase, formatRelativeDay } from '@/lib/utils'
+import { toTitleCase, formatRelativeDay, totalGames } from '@/lib/utils'
 import { applyMatchConfirmation, parseGames, type ConfirmableMatch } from '@/lib/confirm-match'
 
 export async function getPlayerGameStats(userId: string) {
@@ -221,19 +221,6 @@ export async function getUserMatches(userId: string, limit: number, page: number
   // Transform data to flat structure if needed, or keep as is.
   // We'll keep it as is but careful with types in the client component.
   return { matches: data, totalCount: count || 0, error: null }
-}
-
-// Only total games count (no sets): sums every "a-b" part, oriented to the user's team.
-function totalGames(scoreDetails: string | null, inTeamA: boolean) {
-  const parts = (scoreDetails ?? '').split(' ').map(part => part.split('-').map(Number))
-  let mine = 0
-  let theirs = 0
-  for (const [a, b] of parts) {
-    if (isNaN(a) || isNaN(b)) continue
-    mine += inTeamA ? a : b
-    theirs += inTeamA ? b : a
-  }
-  return { mine, theirs }
 }
 
 export type LastMatch = {

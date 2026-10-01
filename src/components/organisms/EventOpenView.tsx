@@ -10,6 +10,7 @@ import EventHeroCard from '../molecules/EventHeroCard'
 import GroupProgress from '../molecules/GroupProgress'
 import PlayerList, { type PlayerListItem } from '../molecules/PlayerList'
 import WaitlistNote from '../molecules/WaitlistNote'
+import HandSummary, { type HandCounts } from '../molecules/HandSummary'
 import JoinBar from '../molecules/JoinBar'
 import Content from '../molecules/Content'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, addGuestToEvent } from '@/app/actions/events'
@@ -47,6 +48,11 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
   const confirmed = Math.min(count, total)
   const reserves = Math.max(0, count - total)
   const free = total - confirmed
+  // Side counts of the confirmed players only: those are the ones to pair up
+  const handCounts = players.slice(0, total).reduce<HandCounts>(
+    (counts, p) => (p.hand ? { ...counts, [p.hand]: counts[p.hand] + 1 } : counts),
+    { drive: 0, reves: 0, ambos: 0 }
+  )
   const isJoined = event.is_joined
   const isFull = count >= total + MAX_RESERVES
 
@@ -149,6 +155,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
 
         <PlayerList
           title="Ya vienen"
+          headerExtra={<HandSummary counts={handCounts} />}
           players={players}
           onSelect={setSelectedProfileId}
           onRemove={isAdmin ? handleRemove : undefined}

@@ -130,3 +130,30 @@ export function formatRelativeDay(dateStr: string, now = new Date()) {
 export function formatLevel(rating: number | null | undefined) {
   return (rating ?? 0).toFixed(1).replace('.', ',')
 }
+
+/**
+ * Juegos totales de cada lado de un marcador ("8-5" o, en datos antiguos, "6-4 6-2"),
+ * desde el punto de vista del equipo indicado (A si `inTeamA`, B si no).
+ * Solo cuentan juegos, no sets.
+ */
+export function totalGames(scoreDetails: string | null | undefined, inTeamA: boolean) {
+  let mine = 0
+  let theirs = 0
+  for (const part of (scoreDetails ?? '').split(' ')) {
+    const [a, b] = part.split('-').map(Number)
+    if (isNaN(a) || isNaN(b)) continue
+    mine += inTeamA ? a : b
+    theirs += inTeamA ? b : a
+  }
+  return { mine, theirs }
+}
+
+/** Día de la semana en singular, p. ej. "miércoles" (hora de Madrid). */
+export function formatEventWeekday(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'Europe/Madrid' })
+}
+
+/** Chip de fecha y hora: "7 OCT · 20:00". */
+export function formatEventChip(dateStr: string) {
+  return `${Number(formatEventDay(dateStr))} ${formatEventMonth(dateStr).toUpperCase()} · ${formatEventTime(dateStr)}`
+}
