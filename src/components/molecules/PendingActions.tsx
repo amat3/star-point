@@ -6,6 +6,7 @@ import { Check, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../atoms/Button'
 import PendingActionCard from './PendingActionCard'
+import ResultReviewDialog from './ResultReviewDialog'
 import { confirmMatch, type PendingAction } from '@/app/actions/matches'
 // Legacy dialog (Tailwind) until the Dialog molecule exists.
 import { EditMatchDialog } from '@/components/matches/dialogs/EditMatchDialog'
@@ -48,7 +49,9 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
   const [isPending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set())
-  const [recording, setRecording] = useState<PendingAction | null>(null)
+  const [recording, setRecording] = useState<{ action: PendingAction; mode: 'record' | 'correct' } | null>(null)
+  // The confirm button opens a review step first: confirming cannot be undone
+  const [reviewing, setReviewing] = useState<PendingAction | null>(null)
 
   const handleConfirm = (id: string) => {
     // Samples only preview the "confirmed" state; they never hit the database.
@@ -94,13 +97,13 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
                   Confirmado
                 </Button>
               ) : (
-                <Button $variant="accent" $size="lg" disabled={isPending && busyId === a.id} onClick={() => handleConfirm(a.id)}>
+                <Button $variant="accent" $size="lg" disabled={isPending && busyId === a.id} onClick={() => setReviewing(a)}>
                   <Check />
                   {isPending && busyId === a.id ? 'Confirmando…' : 'Confirmar resultado'}
                 </Button>
               )
             ) : (
-              <Button $variant="accent" $size="lg" onClick={() => a.id.startsWith(SAMPLE_ID_PREFIX) ? toast.info('Tarjeta de ejemplo: no hace nada') : setRecording(a)}>
+              <Button $variant="accent" $size="lg" onClick={() => a.id.startsWith(SAMPLE_ID_PREFIX) ? toast.info('Tarjeta de ejemplo: no hace nada') : setRecording({ action: a, mode: 'record' })}>
                 <Pencil />
                 Introducir resultado
               </Button>
@@ -109,9 +112,31 @@ function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
         />
       ))}
 
+      {reviewing && reviewing.games && (
+        <ResultReviewDialog
+          open
+          onOpenChange={(open) => { if (!open) setReviewing(null) }}
+          myTeam={reviewing.myTeam}
+          opponents={reviewing.opponents}
+          games={reviewing.games}
+          onConfirm={() => {
+            const id = reviewing.id
+            setReviewing(null)
+            handleConfirm(id)
+          }}
+          onCorrect={() => {
+            const action = reviewing
+            setReviewing(null)
+            if (action.id.startsWith(SAMPLE_ID_PREFIX)) return toast.info('Tarjeta de ejemplo: no hace nada')
+            setRecording({ action, mode: 'correct' })
+          }}
+        />
+      )}
+
       {recording && (
         <EditMatchDialog
-          match={recording.match as unknown as Match}
+          match={recording.action.match as unknown as Match}
+          mode={recording.mode}
           open
           onOpenChange={(open) => {
             if (!open) {

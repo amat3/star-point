@@ -4,7 +4,7 @@ import styled from '@emotion/styled'
 import Link from 'next/link'
 import type { Theme } from '@/theme'
 
-export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost' | 'danger' | 'link'
+export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost' | 'danger' | 'warn' | 'link'
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 const variants = (t: Theme): Record<ButtonVariant, string> => ({
@@ -13,6 +13,8 @@ const variants = (t: Theme): Record<ButtonVariant, string> => ({
   outline: `background: transparent; color: ${t.colors.ink}; border-color: ${t.colors.fieldBorder};`,
   ghost: `background: transparent; color: ${t.colors.ink}; border-color: transparent;`,
   danger: `background: ${t.colors.danger}; color: ${t.colors.onDanger}; border-color: transparent;`,
+  // Soft red: a warning action that should not compete with the main one
+  warn: `background: ${t.colors.coralTint}; color: ${t.colors.danger}; border-color: ${t.colors.coral};`,
   link: `background: transparent; color: ${t.colors.forest}; border-color: transparent; text-decoration: underline; text-underline-offset: 4px;`,
 })
 
