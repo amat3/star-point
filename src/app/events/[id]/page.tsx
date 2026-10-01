@@ -8,6 +8,8 @@ import Header from '@/components/molecules/Header'
 import TabBar from '@/components/molecules/TabBar'
 import EventOpenView from '@/components/organisms/EventOpenView'
 import EventDrawView from '@/components/organisms/EventDrawView'
+import MatchEventView from '@/components/organisms/MatchEventView'
+import { isMatchExpired } from '@/lib/match-events'
 import { getEventDraw } from '@/lib/event-draw'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventChip, formatEventDate, formatEventTime, formatEventWeekday, formatLevel, toTitleCase } from '@/lib/utils'
@@ -101,6 +103,50 @@ export default async function EventPage(props: EventPageProps) {
   // Admins see the admin tools only in the admin view (they start in the player view)
   const adminView = await isAdminView(realRole)
   const userRole = adminView ? 'admin' : 'player'
+
+  // A published match (a player looking for players): no draw and no results
+  if (fullEvent.kind === 'match') {
+    if (isMatchExpired(fullEvent.start_time)) redirect('/')
+
+    const club = Array.isArray(event.club) ? event.club[0] : event.club
+    const isOrganizer = fullEvent.created_by === user.id
+    const players = formattedParticipants.map(p => ({
+      userId: p.user_id,
+      name: toTitleCase(p.full_name),
+      avatarUrl: p.avatar_url ?? null,
+      hand: null,
+      isGuest: p.is_guest,
+      status: p.user_id === fullEvent.created_by ? 'Organiza' : 'Apuntado',
+    }))
+
+    return (
+      <>
+        <RealtimeRefresher />
+        <NotificationListener userId={user.id} />
+        <Header
+          profile={profile}
+          userName={profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'}
+          isAdmin={realRole === 'admin'}
+          adminView={adminView}
+        />
+        <MatchEventView
+          eventId={fullEvent.id}
+          startTime={fullEvent.start_time}
+          clubId={fullEvent.club_id ?? null}
+          clubName={club?.name ?? null}
+          maxSpots={fullEvent.max_spots}
+          heroTitle={formatEventDate(fullEvent.start_time)}
+          startsAt={formatEventTime(fullEvent.start_time)}
+          players={players}
+          isJoined={!!fullEvent.is_joined}
+          isOrganizer={isOrganizer}
+          canManage={isOrganizer || userRole === 'admin'}
+          userRole={userRole}
+        />
+        <TabBar loggedIn />
+      </>
+    )
+  }
 
   // Open events (sign-up phase) use the new design; later phases keep the legacy view for now.
   if (fullEvent.status === 'open') {

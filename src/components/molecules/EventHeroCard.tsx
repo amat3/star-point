@@ -13,10 +13,12 @@ interface EventHeroCardProps {
   durationMinutes: number
   courts: number
   players: string
+  // Club name, shown next to the time
+  venue?: string | null
   action?: { label: string; href: string }
 }
 
-function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, players, action }: EventHeroCardProps) {
+function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, players, venue, action }: EventHeroCardProps) {
   return (
     <HeroCard>
       <Top>
@@ -25,7 +27,7 @@ function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, 
         </IconBox>
         <Info>
           <Title>{title}</Title>
-          <Subtitle>A partir de las {startsAt}</Subtitle>
+          <Subtitle>A partir de las {startsAt}{venue ? ` · ${venue}` : ''}</Subtitle>
         </Info>
         <Badge $variant="accent">{statusLabel}</Badge>
       </Top>

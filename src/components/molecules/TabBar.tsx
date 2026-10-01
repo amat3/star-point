@@ -5,14 +5,14 @@ import { css } from '@emotion/react'
 import type { Theme } from '@/theme'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, CircleUserRound, Home, LogIn, Trophy } from 'lucide-react'
+import { Activity, CircleUserRound, Home, LogIn, Plus } from 'lucide-react'
 
 // Tabs without an href are placeholders until their page exists.
 const TABS = [
   { label: 'Inicio', icon: Home, href: '/' },
   // Event pages belong to the Mixing section, so the tab stays active there
   { label: 'Mixing', icon: Activity, href: '/mixing', alsoActiveOn: ['/events'] },
-  { label: 'Ranking', icon: Trophy, href: undefined },
+  { label: 'Partido', icon: Plus, href: '/partido' },
   { label: 'Perfil', icon: CircleUserRound, href: '/profile' },
 ]
 

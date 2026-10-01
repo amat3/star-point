@@ -5,6 +5,7 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
+import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
 const MAX_RESERVES = 6
 
@@ -23,7 +24,7 @@ function firstClub(club: unknown): { name: string } | null {
   return c ? { name: (c as { name: string }).name } : null
 }
 
-export type PublicEvent = Pick<MixingEvent, 'id' | 'title' | 'club' | 'start_time' | 'max_spots' | 'duration_minutes' | 'status'> & {
+export type PublicEvent = Pick<MixingEvent, 'id' | 'title' | 'club' | 'start_time' | 'max_spots' | 'duration_minutes' | 'status' | 'kind'> & {
   participants_count: number
 }
 
@@ -34,7 +35,7 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
 
   const { data: events, error } = await supabase
     .from('events')
-    .select('id, title, start_time, max_spots, duration_minutes, status, club:clubs(name)')
+    .select('id, title, start_time, max_spots, duration_minutes, status, kind, club:clubs(name)')
     .eq('status', 'open')
     .eq('is_test', false)
     .order('start_time', { ascending: true })
@@ -49,12 +50,14 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
   const counts: Record<string, number> = {}
   participants?.forEach(p => { counts[p.event_id] = (counts[p.event_id] ?? 0) + 1 })
 
-  return events.map(e => ({
-    ...e,
-    club: firstClub(e.club),
-    duration_minutes: e.duration_minutes || 90,
-    participants_count: counts[e.id] ?? 0,
-  })) as PublicEvent[]
+  return events
+    .filter(e => e.kind !== 'match' || !isMatchExpired(e.start_time))
+    .map(e => ({
+      ...e,
+      club: firstClub(e.club),
+      duration_minutes: e.duration_minutes || 90,
+      participants_count: counts[e.id] ?? 0,
+    })) as PublicEvent[]
 }
 
 export async function getOpenEvents(): Promise<MixingEvent[]> {
@@ -76,6 +79,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
         status,
         created_by,
         is_test,
+        kind,
         club_id,
         club:clubs(name)
     `)
@@ -149,7 +153,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
     return fullyConfirmed ? null : event
   }))
 
-  return visibleEvents.filter((e): e is MixingEvent => e !== null)
+  return visibleEvents.filter((e): e is MixingEvent => e !== null && (e.kind !== 'match' || !isMatchExpired(e.start_time)))
 }
 
 export async function joinEvent(eventId: string) {
@@ -159,19 +163,26 @@ export async function joinEvent(eventId: string) {
   if (!user) throw new Error("Unauthorized")
 
   // Check limits and status
-  const { data: event } = await supabase.from('events').select('max_spots, status').eq('id', eventId).single()
+  const { data: event } = await supabase.from('events').select('max_spots, status, kind, start_time').eq('id', eventId).single()
   
   if (!event || event.status !== 'open') {
     throw new Error("El evento no está disponible")
+  }
+
+  const isMatch = event.kind === 'match'
+  if (isMatch && isMatchExpired(event.start_time)) {
+    throw new Error('Este partido ya ha terminado')
   }
 
   const { count } = await supabase
       .from('event_participants')
       .select('*', { count: 'exact', head: true })
       .eq('event_id', eventId)
-  
-  if ((count || 0) >= (event.max_spots + MAX_RESERVES)) {
-    throw new Error("Evento completo (incluso reservas)")
+
+  // Matches have no waiting list: when the spots are taken, it is full
+  const limit = isMatch ? event.max_spots : event.max_spots + MAX_RESERVES
+  if ((count || 0) >= limit) {
+    throw new Error(isMatch ? 'El partido ya está completo' : 'Evento completo (incluso reservas)')
   }
 
   const { error } = await supabase
@@ -180,7 +191,23 @@ export async function joinEvent(eventId: string) {
 
   if (error) throw error instanceof Error ? error : new Error(String(error))
 
-  revalidatePath('/dashboard')
+  // Two people joining at the same moment can both pass the check above: keep the
+  // first ones by sign-up order and take this one back out if it ended up in excess.
+  if (isMatch) {
+    const { data: ordered } = await supabase
+      .from('event_participants')
+      .select('user_id')
+      .eq('event_id', eventId)
+      .order('joined_at', { ascending: true })
+    const position = (ordered ?? []).findIndex(p => p.user_id === user.id)
+    if (position >= event.max_spots) {
+      await supabase.from('event_participants').delete().eq('event_id', eventId).eq('user_id', user.id)
+      throw new Error('El partido se ha completado justo antes que tú')
+    }
+  }
+
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -190,9 +217,12 @@ export async function leaveEvent(eventId: string) {
 
   if (!user) throw new Error("Unauthorized")
 
-  const { data: event } = await supabase.from('events').select('status, is_test').eq('id', eventId).single()
+  const { data: event } = await supabase.from('events').select('status, is_test, kind, created_by').eq('id', eventId).single()
   if (!event || event.status !== 'open') {
     throw new Error('No puedes abandonar un evento que ya ha comenzado')
+  }
+  if (event.kind === 'match' && event.created_by === user.id) {
+    throw new Error('Organizas este partido: cancélalo si no vas a poder jugar')
   }
 
   const { data: promotion, error } = await supabase.rpc('leave_event_atomic', {
@@ -211,7 +241,8 @@ export async function leaveEvent(eventId: string) {
     }).catch(console.error)
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -547,4 +578,160 @@ export async function addParticipant(eventId: string, userId: string) {
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error))
   }
+}
+
+// ---------------------------------------------------------------------------
+// Partidos: events a player publishes to look for players
+// ---------------------------------------------------------------------------
+
+type MatchInput = { start_time: string; club_id: string; needed: number }
+
+function validateMatchInput(input: MatchInput) {
+  if (!Number.isInteger(input.needed) || input.needed < 1 || input.needed > MATCH_MAX_NEEDED) {
+    throw new Error('Indica cuántos jugadores buscas (1, 2 o 3)')
+  }
+  if (!input.club_id) throw new Error('Elige un club')
+  const start = new Date(input.start_time).getTime()
+  if (isNaN(start)) throw new Error('Fecha u hora no válidas')
+  if (start <= Date.now()) throw new Error('El partido tiene que ser en el futuro')
+}
+
+function formatMatchWhen(startTime: string) {
+  return new Intl.DateTimeFormat('es-ES', {
+    timeZone: 'Europe/Madrid',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(startTime))
+}
+
+/** Organizer or admin of a published match; throws otherwise. */
+async function getManageableMatch(eventId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('id, kind, status, created_by, start_time, max_spots, club_id')
+    .eq('id', eventId)
+    .single()
+  if (!event || event.kind !== 'match') throw new Error('Partido no encontrado')
+  if (event.status !== 'open') throw new Error('Este partido ya no se puede modificar')
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (event.created_by !== user.id && profile?.role !== 'admin') {
+    throw new Error('Solo quien organiza el partido (o un admin) puede hacerlo')
+  }
+  return { user, event }
+}
+
+export async function createMatchEvent(input: MatchInput) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  validateMatchInput(input)
+
+  // Players cannot insert events directly (admin-only policy): validated above, written as admin
+  const admin = getAdminClient()
+
+  const { data: club } = await admin.from('clubs').select('id, name').eq('id', input.club_id).single()
+  if (!club) throw new Error('El club no existe')
+
+  const { data: event, error } = await admin
+    .from('events')
+    .insert({
+      title: MATCH_TITLE,
+      start_time: input.start_time,
+      max_spots: spotsForNeeded(input.needed),
+      rounds: 1,
+      duration_minutes: MATCH_DURATION_MINUTES,
+      created_by: user.id,
+      status: 'open',
+      is_test: false,
+      kind: 'match',
+      club_id: club.id,
+    })
+    .select('id, start_time')
+    .single()
+  if (error || !event) throw new Error(`Error al publicar el partido: ${error?.message ?? 'desconocido'}`)
+
+  // The organizer takes the first spot
+  const { error: joinError } = await admin.from('event_participants').insert({ event_id: event.id, user_id: user.id })
+  if (joinError) {
+    await admin.from('events').delete().eq('id', event.id)
+    throw new Error(`Error al publicar el partido: ${joinError.message}`)
+  }
+
+  // Push to the whole group, except whoever published it
+  const { data: players } = await admin.from('profiles').select('id').eq('is_guest', false).neq('id', user.id)
+  sendPushToUsers((players ?? []).map(p => p.id), {
+    title: 'Nuevo partido',
+    body: `${input.needed === 1 ? 'Falta 1 jugador' : `Faltan ${input.needed} jugadores`} · ${formatMatchWhen(event.start_time)} · ${club.name}`,
+    url: `/events/${event.id}`,
+  }).catch(console.error)
+
+  revalidatePath('/')
+  return { id: event.id as string }
+}
+
+export async function updateMatchEvent(eventId: string, input: MatchInput) {
+  const { event } = await getManageableMatch(eventId)
+  validateMatchInput(input)
+
+  const admin = getAdminClient()
+
+  const { count } = await admin.from('event_participants').select('*', { count: 'exact', head: true }).eq('event_id', eventId)
+  const maxSpots = spotsForNeeded(input.needed)
+  if ((count ?? 0) > maxSpots) {
+    throw new Error(`Ya hay ${count} jugadores apuntados: no puedes buscar tan pocos`)
+  }
+
+  const { error } = await admin
+    .from('events')
+    .update({ start_time: input.start_time, club_id: input.club_id, max_spots: maxSpots })
+    .eq('id', eventId)
+  if (error) throw new Error(error.message)
+
+  // Tell the other players if when or where changed
+  const changedPlace = event.club_id !== input.club_id
+  const changedTime = new Date(event.start_time).getTime() !== new Date(input.start_time).getTime()
+  if (changedPlace || changedTime) {
+    const { data: joined } = await admin.from('event_participants').select('user_id').eq('event_id', eventId)
+    const { data: club } = await admin.from('clubs').select('name').eq('id', input.club_id).single()
+    sendPushToUsers(
+      (joined ?? []).map(p => p.user_id).filter(id => id !== event.created_by),
+      {
+        title: 'Partido actualizado',
+        body: `${formatMatchWhen(input.start_time)}${club ? ` · ${club.name}` : ''}`,
+        url: `/events/${eventId}`,
+      }
+    ).catch(console.error)
+  }
+
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
+
+export async function cancelMatchEvent(eventId: string) {
+  const { user, event } = await getManageableMatch(eventId)
+  const admin = getAdminClient()
+
+  const { data: joined } = await admin.from('event_participants').select('user_id').eq('event_id', eventId)
+
+  await admin.from('event_participants').delete().eq('event_id', eventId)
+  const { error } = await admin.from('events').delete().eq('id', eventId)
+  if (error) throw new Error(error.message)
+
+  sendPushToUsers(
+    (joined ?? []).map(p => p.user_id).filter(id => id !== user.id),
+    { title: 'Partido cancelado', body: `Se ha cancelado el partido de ${formatMatchWhen(event.start_time)}`, url: '/' }
+  ).catch(console.error)
+
+  revalidatePath('/')
+  return { success: true }
 }
