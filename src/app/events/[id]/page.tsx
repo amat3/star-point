@@ -14,6 +14,7 @@ import TabBar from '@/components/molecules/TabBar'
 import EventOpenView from '@/components/organisms/EventOpenView'
 import EventDrawView from '@/components/organisms/EventDrawView'
 import { getEventDraw } from '@/lib/event-draw'
+import { isAdminView } from '@/lib/view-mode'
 import { formatEventChip, formatEventDate, formatEventTime, formatEventWeekday, formatLevel, toTitleCase } from '@/lib/utils'
 
 interface EventPageProps {
@@ -101,7 +102,10 @@ export default async function EventPage(props: EventPageProps) {
     .eq('id', user.id)
     .single()
   
-  const userRole = profile?.role || 'player'
+  const realRole = profile?.role || 'player'
+  // Admins see the admin tools only in the admin view (they start in the player view)
+  const adminView = await isAdminView(realRole)
+  const userRole = adminView ? 'admin' : 'player'
 
   // Open events (sign-up phase) use the new design; later phases keep the legacy view for now.
   if (fullEvent.status === 'open') {
@@ -123,6 +127,8 @@ export default async function EventPage(props: EventPageProps) {
         <Header
           profile={profile}
           userName={profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'}
+          isAdmin={realRole === 'admin'}
+          adminView={adminView}
         />
         <EventOpenView
           event={fullEvent}
@@ -150,6 +156,8 @@ export default async function EventPage(props: EventPageProps) {
         <Header
           profile={profile}
           userName={profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'}
+          isAdmin={realRole === 'admin'}
+          adminView={adminView}
         />
         <EventDrawView
           eyebrow={[club?.name, formatEventWeekday(fullEvent.start_time)].filter(Boolean).join(' · ')}

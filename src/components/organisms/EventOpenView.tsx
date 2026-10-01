@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import styled from '@emotion/styled'
-import { Pencil, Shuffle, Trash2, UsersRound } from 'lucide-react'
+import { Pencil, Shuffle, Trash2, UserMinus, UserPlus, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Button, { ButtonLink } from '../atoms/Button'
 import EventIntro from '../molecules/EventIntro'
@@ -94,7 +94,8 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
     if (isJoined) {
       return {
         label: isPending ? 'Procesando…' : 'Me borro',
-        variant: 'outline' as const,
+        variant: 'danger' as const,
+        icon: <UserMinus />,
         onClick: handleLeave,
         note: undefined,
         shield: 'Tu plaza está confirmada. Si te borras, la ocupará el primero de la lista de espera.',
@@ -157,6 +158,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
           title="Ya vienen"
           headerExtra={<HandSummary counts={handCounts} />}
           players={players}
+          totalSlots={total}
           onSelect={setSelectedProfileId}
           onRemove={isAdmin ? handleRemove : undefined}
         />
@@ -164,22 +166,33 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
         {reserves > 0 && <WaitlistNote count={reserves} />}
 
         {isAdmin && (
-          <AdminBar aria-label="Administración del evento">
-            <AddParticipantDialog eventId={event.id} alreadyJoined={players.map(p => p.userId)} />
-            <Button $variant="ghost" $size="icon" title="Añadir invitado" onClick={() => run(() => addGuestToEvent(event.id), 'Invitado añadido')}>
-              <UsersRound />
-            </Button>
-            <ButtonLink href={`/admin/events/${event.id}/generate`} $variant="ghost" $size="icon" title="Generar sorteo">
-              <Shuffle />
-            </ButtonLink>
-            <Button $variant="ghost" $size="icon" title="Editar evento" onClick={() => setEditOpen(true)}>
-              <Pencil />
-            </Button>
-            <Button $variant="ghost" $size="icon" title="Anular evento" onClick={handleDelete}>
-              <Trash2 />
-            </Button>
+          <AdminPanel aria-label="Administración del evento">
+            <AdminCaption>Administrar evento</AdminCaption>
+            <AdminActions>
+              <AddParticipantDialog
+                eventId={event.id}
+                alreadyJoined={players.map(p => p.userId)}
+                trigger={
+                  <AdminButton $variant="primary" $size="icon" title="Añadir jugador">
+                    <UserPlus />
+                  </AdminButton>
+                }
+              />
+              <AdminButton $variant="primary" $size="icon" title="Añadir invitado" onClick={() => run(() => addGuestToEvent(event.id), 'Invitado añadido')}>
+                <UsersRound />
+              </AdminButton>
+              <AdminButtonLink href={`/admin/events/${event.id}/generate`} $variant="primary" $size="icon" title="Generar sorteo">
+                <Shuffle />
+              </AdminButtonLink>
+              <AdminButton $variant="primary" $size="icon" title="Editar evento" onClick={() => setEditOpen(true)}>
+                <Pencil />
+              </AdminButton>
+              <AdminButton $variant="danger" $size="icon" title="Anular evento" onClick={handleDelete}>
+                <Trash2 />
+              </AdminButton>
+            </AdminActions>
             <ShareEventButton event={event} />
-          </AdminBar>
+          </AdminPanel>
         )}
       </Body>
 
@@ -193,13 +206,47 @@ const Body = styled(Content)`
   padding-bottom: 11rem;
 `
 
-const AdminBar = styled.div`
+const AdminPanel = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.line};
+`
+
+const AdminCaption = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+`
+
+const AdminActions = styled.div`
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.line};
+  justify-content: space-evenly;
+  gap: 0.5rem;
+`
+
+// Admin actions: bigger, filled buttons so they stand out from the player-facing UI.
+const adminSize = `
+  width: 3rem;
+  height: 3rem;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`
+
+const AdminButton = styled(Button)`
+  ${adminSize}
+`
+
+const AdminButtonLink = styled(ButtonLink)`
+  ${adminSize}
 `
 
 export default EventOpenView

@@ -27,11 +27,13 @@ interface AddParticipantDialogProps {
   eventId: string
   alreadyJoined: string[]
   disabled?: boolean
+  // Custom trigger (new design system); defaults to the legacy icon button
+  trigger?: React.ReactNode
 }
 
 type Player = { id: string; full_name: string | null }
 
-export function AddParticipantDialog({ eventId, alreadyJoined, disabled }: AddParticipantDialogProps) {
+export function AddParticipantDialog({ eventId, alreadyJoined, disabled, trigger }: AddParticipantDialogProps) {
   const [open, setOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
   const [addingId, setAddingId] = useState<string | null>(null)
@@ -65,15 +67,17 @@ export function AddParticipantDialog({ eventId, alreadyJoined, disabled }: AddPa
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
-          disabled={disabled}
-          title={disabled ? 'Los partidos ya están en marcha' : 'Añadir jugador'}
-        >
-          <UserPlus className="h-4 w-4" />
-        </Button>
+        {trigger ?? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
+            disabled={disabled}
+            title={disabled ? 'Los partidos ya están en marcha' : 'Añadir jugador'}
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-sm p-0 gap-0">
         <DialogHeader className="px-4 pt-4 pb-2">

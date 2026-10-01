@@ -3,22 +3,28 @@
 import styled from '@emotion/styled'
 
 import Logo from "../atoms/Logo"
-import Avatar from '../atoms/Avatar'
+import AvatarMenu from './AvatarMenu'
 import { ButtonLink } from '../atoms/Button'
 
 interface HeaderProps {
   // Omit userName for anonymous visitors: shows a login button instead of the avatar.
   profile?: { avatar_url?: string | null } | null
   userName?: string
+  // Real role (not the current view): only admins get the view switch
+  isAdmin?: boolean
+  adminView?: boolean
 }
 
-function Header({ profile, userName }: HeaderProps) {
+function Header({ profile, userName, isAdmin = false, adminView = false }: HeaderProps) {
   return (
     <Root>
       <Logo />
       
       {userName ? (
-        <Avatar src={profile?.avatar_url} name={userName} online />
+        <Actions>
+          {adminView && <AdminPill>Admin</AdminPill>}
+          <AvatarMenu name={userName} avatarUrl={profile?.avatar_url} isAdmin={isAdmin} adminView={adminView} />
+        </Actions>
       ) : (
         <ButtonLink href="/login" $size="sm">
           Entrar
@@ -38,6 +44,24 @@ const Root = styled.div`
   padding: 0 1.5rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.hairline};
   background: ${({ theme }) => theme.colors.glass};
+`
+
+const Actions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+`
+
+// Reminder that the admin tools are on, so nobody forgets which view they are in.
+const AdminPill = styled.span`
+  padding: 0.25rem 0.625rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.lime};
+  color: ${({ theme }) => theme.colors.forestDeep};
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 `
 
 export default Header

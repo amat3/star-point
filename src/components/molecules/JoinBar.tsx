@@ -7,6 +7,8 @@ import Button, { type ButtonVariant } from '../atoms/Button'
 interface JoinBarProps {
   label: string
   variant?: ButtonVariant
+  // Leading icon; the accent button keeps its trailing arrow
+  icon?: React.ReactNode
   disabled?: boolean
   onClick?: () => void
   // Small text under the button; with `shield` it gets the guarantee icon
@@ -15,7 +17,7 @@ interface JoinBarProps {
 }
 
 // Fixed above the TabBar so the main action is always reachable.
-function JoinBar({ label, variant = 'accent', disabled, onClick, note, shield }: JoinBarProps) {
+function JoinBar({ label, icon, variant = 'accent', disabled, onClick, note, shield }: JoinBarProps) {
   return (
     <Root>
       {shield && (
@@ -25,6 +27,7 @@ function JoinBar({ label, variant = 'accent', disabled, onClick, note, shield }:
         </Shield>
       )}
       <Button $variant={variant} $size="lg" disabled={disabled} onClick={onClick}>
+        {icon}
         {label}
         {variant === 'accent' && <ArrowRight />}
       </Button>

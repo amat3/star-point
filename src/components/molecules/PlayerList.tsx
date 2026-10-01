@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import styled from '@emotion/styled'
 import { X } from 'lucide-react'
 import Avatar from '../atoms/Avatar'
@@ -23,16 +22,15 @@ interface PlayerListProps {
   // Shown next to the title (e.g. the count of players per side)
   headerExtra?: React.ReactNode
   players: PlayerListItem[]
-  // Rows shown before the "+N jugadores" toggle
-  collapsedCount?: number
+  // Number of confirmed spots: empty ones are shown as "Plaza libre" rows
+  totalSlots: number
   onSelect?: (userId: string) => void
   onRemove?: (userId: string) => void
 }
 
-function PlayerList({ title, headerExtra, players, collapsedCount = 3, onSelect, onRemove }: PlayerListProps) {
-  const [expanded, setExpanded] = useState(false)
-  const visible = expanded ? players : players.slice(0, collapsedCount)
-  const hidden = players.length - visible.length
+function PlayerList({ title, headerExtra, players, totalSlots, onSelect, onRemove }: PlayerListProps) {
+  // Confirmed spots first (filled or free), then the reserves in sign-up order.
+  const rows = Math.max(totalSlots, players.length)
 
   return (
     <section>
@@ -40,11 +38,20 @@ function PlayerList({ title, headerExtra, players, collapsedCount = 3, onSelect,
         <Title>{title}</Title>
         {headerExtra}
       </Header>
-      {players.length === 0 ? (
-        <Empty>Todavía no se ha apuntado nadie. ¡Sé el primero!</Empty>
-      ) : (
-        <Card>
-          {visible.map(player => (
+      <Card>
+        {Array.from({ length: rows }, (_, index) => {
+          const player = players[index]
+          if (!player) {
+            return (
+              <Row key={`free-${index}`}>
+                <Free>
+                  <Placeholder />
+                  <FreeLabel>Plaza libre</FreeLabel>
+                </Free>
+              </Row>
+            )
+          }
+          return (
             <Row key={player.userId}>
               <Main type="button" onClick={() => onSelect?.(player.userId)} disabled={!onSelect}>
                 <Avatar src={player.avatarUrl} name={player.name} size={40} />
@@ -66,14 +73,9 @@ function PlayerList({ title, headerExtra, players, collapsedCount = 3, onSelect,
                 </Remove>
               )}
             </Row>
-          ))}
-          {(hidden > 0 || expanded) && players.length > collapsedCount && (
-            <Toggle type="button" onClick={() => setExpanded(e => !e)}>
-              {expanded ? 'Ver menos' : `+ ${hidden} ${hidden === 1 ? 'jugador más' : 'jugadores más'}`}
-            </Toggle>
-          )}
-        </Card>
-      )}
+          )
+        })}
+      </Card>
     </section>
   )
 }
@@ -113,6 +115,10 @@ const Row = styled.div`
   display: flex;
   align-items: center;
   border-bottom: 1px solid ${({ theme }) => theme.colors.line};
+
+  &:last-child {
+    border-bottom: 0;
+  }
 `
 
 const Main = styled.button`
@@ -196,26 +202,25 @@ const Remove = styled.button`
   }
 `
 
-const Toggle = styled.button`
-  width: 100%;
+const Free = styled.div`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border: 0;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.muted};
-  font-family: inherit;
-  font-size: 0.75rem;
-  text-align: left;
-  cursor: pointer;
 `
 
-const Empty = styled.p`
-  margin: 0;
-  padding: 1.25rem 1rem;
+const Placeholder = styled.span`
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   border: 1px dashed ${({ theme }) => theme.colors.line};
-  border-radius: ${({ theme }) => theme.radii.lg};
+  border-radius: 50%;
+`
+
+const FreeLabel = styled.span`
   color: ${({ theme }) => theme.colors.muted};
   font-size: 0.875rem;
-  text-align: center;
 `
 
 export default PlayerList
