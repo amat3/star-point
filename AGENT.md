@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-**StarPoint** is a mobile-first PWA for managing padel tennis matches, mixing events, and ELO-based player rankings.
-Tagline: _"La app de Padel & Risas"_
-Version: 0.3.0 — active development.
-Language of UI and most business logic: **Spanish**.
+**StarPoint** is a mobile-only PWA for a padel group: weekly **mixing** events (a draw of partners/opponents), **partidos** (a player publishes a match to look for players), ELO-style player ratings and match history.
+Tagline: _"Tu app de Pádel"_.
+Language of the UI and business copy: **Spanish**. Code, identifiers and comments: **English**.
+Branch with the full redesign: `fix/repetitions` (see "Redesign status").
 
 ---
 
@@ -13,18 +13,18 @@ Language of UI and most business logic: **Spanish**.
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16.1.1 (App Router) |
+| Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript 5 (strict) |
 | Runtime | React 19 |
-| UI Library | Shadcn/ui (new-york style, Radix UI primitives) |
-| Styling | TailwindCSS 4 + PostCSS |
+| Styling | **Emotion** (`@emotion/styled` + `@emotion/react`), theme in `src/theme.ts`. **No Tailwind, no shadcn** (both removed) |
+| Primitives | Radix UI (`dialog`, `dropdown-menu`, `avatar`, `label`, `switch`) wrapped by our own components |
 | Icons | Lucide React |
 | Forms | react-hook-form 7 + Zod 4 |
 | Toasts | Sonner |
-| Database | Supabase (PostgreSQL) |
-| Auth | Supabase Auth (SSR pattern) |
-| Date utils | date-fns 4 |
-| Theme | next-themes |
+| Database / Auth | Supabase (PostgreSQL + Auth, SSR cookies via `@supabase/ssr`) |
+| Theme switch | next-themes (`class` on `<html>`) |
+| Push | web-push + service worker |
+| Tests | Vitest |
 
 ---
 
@@ -33,154 +33,95 @@ Language of UI and most business logic: **Spanish**.
 ```
 star-point/
 ├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── page.tsx              # Landing: redirects to /login or /dashboard
-│   │   ├── layout.tsx            # Root layout
-│   │   ├── home-client.tsx       # Animated home screen
-│   │   ├── login/                # Login + register tabs
-│   │   ├── dashboard/            # Main hub (matches, events, stats)
-│   │   ├── profile/              # User profile settings
-│   │   ├── history/              # Match history with filters
-│   │   ├── events/[id]/          # Event detail pages
-│   │   ├── reset-password/       # Password reset flow
-│   │   ├── admin/events/[id]/generate/  # Admin: mixing round generator
-│   │   └── actions/              # Server Actions (mutations)
-│   │       ├── matches.ts        # confirmMatch, createMatch, updateMatch
-│   │       ├── events.ts         # getOpenEvents, createEvent, join/leave/close
-│   │       ├── mixing-generator.ts  # getEventMixingData, saveRoundMatches
-│   │       ├── admin-matches.ts  # Admin match CRUD
-│   │       ├── users.ts          # User profile ops
-│   │       ├── dispute.ts        # Match dispute handling
-│   │       └── debug-db.ts       # Debug utilities
+│   ├── app/                         # Routes (see Routing Map) + Server Actions
+│   │   ├── actions/                 # 'use server' files: events, matches, mixing-generator,
+│   │   │                            #   admin-matches, admin-exclusions, users, push, view-mode
+│   │   └── api/cron/                # create-weekly-event, close-pending-matches
 │   ├── components/
-│   │   ├── ui/                   # Shadcn primitives (16 components)
-│   │   ├── layout/               # Footer
-│   │   ├── dashboard/            # UserMenu, LevelCard, ViewToggle, MatchHistory
-│   │   ├── events/               # CreateEventDialog, EditEventDialog, EventCard, ShareEventButton
-│   │   ├── matches/
-│   │   │   ├── dialogs/          # Match-related modals
-│   │   │   ├── forms/            # Match forms
-│   │   │   ├── lists/            # CreatedMatchesList, ValidationList
-│   │   │   └── shared/           # Shared match utilities
-│   │   └── profile/              # Profile components
-│   ├── lib/
-│   │   ├── config.ts             # Rating system constants
-│   │   ├── rating-logic.ts       # ELO calculation engine
-│   │   ├── mixing-algorithm.ts   # Auto-pairing algorithm
-│   │   ├── match-utils.ts        # Score parsing utilities
-│   │   └── utils.ts              # cn() and general helpers
-│   ├── types/
-│   │   ├── index.ts              # Profile, Match, Player
-│   │   └── events.ts             # MixingEvent, EventParticipant
-│   └── utils/supabase/
-│       ├── client.ts             # Browser Supabase client
-│       └── server.ts             # Server Supabase client (cookie-based)
-├── public/                       # Static assets
-├── next.config.ts
-├── tsconfig.json                 # Path alias: @/* → ./src/*
-├── components.json               # Shadcn config
-└── supabase_migration_matches_event_id.sql
+│   │   ├── atoms/                   # Avatar, Badge, Button(+ButtonLink), Card, HandTag, HeroCard,
+│   │   │                            #   Input, Label, Logo, PulsatingDot, Select, Switch
+│   │   ├── molecules/               # Header, TabBar, AvatarMenu, Dialog, ConfirmDialog, Field,
+│   │   │                            #   PlayerList, CourtCard, EventListItem, StatsRow, ... (stateless/light)
+│   │   ├── organisms/               # Screens' main blocks with state/actions: EventOpenView,
+│   │   │                            #   EventDrawView, EventGenerator, MatchEventView, AdminMatchesList,
+│   │   │                            #   HistoryList, ExclusionsManager, PlayersAdminList
+│   │   ├── events/ profile/ dashboard/ layout/   # Feature components (forms, dialogs, listeners)
+│   │   └── providers/               # EmotionProvider (cache + theme), GlobalStyles
+│   ├── lib/                         # Pure logic and server helpers (see below)
+│   ├── types/                       # index.ts, events.ts, draw.ts
+│   ├── theme.ts                     # light/dark design tokens (+ emotion.d.ts typing)
+│   └── utils/supabase/              # client.ts, server.ts, admin.ts (service role)
+├── supabase_*.sql                   # Migrations/jobs, applied by hand (see Database)
+├── vercel.json                      # Weekly-event cron
+└── AGENT.md
 ```
+
+Key `lib/` files: `rating-logic.ts` + `config.ts` (ELO), `mixing-algorithm.ts` (draw), `confirm-match.ts`
+(rating + confirmation core), `event-draw.ts` / `admin-pending.ts` (server-built DTOs), `match-events.ts`
+(partidos rules), `view-mode.ts` (admin/player view), `admin.ts` (`requireAdmin`), `emotion-registry.tsx`
+(SSR style cache), `utils.ts` (dates in Madrid time, helpers).
 
 ---
 
 ## Routing Map
 
-| Route | Purpose | Auth |
+| Route | Purpose | Access |
 |---|---|---|
-| `/` | Redirects to `/login` or `/dashboard` | — |
-| `/login` | Login / (disabled) register | No |
-| `/reset-password` | Password reset | No |
-| `/dashboard` | Main hub: matches, events, stats | Yes |
-| `/profile` | Profile settings | Yes |
-| `/history` | Filterable match history | Yes |
-| `/events/[id]` | Event detail + participants | Yes |
-| `/admin/events/[id]/generate` | Run mixing algorithm | Admin |
+| `/` | Home: greeting, pending actions, "Lo que viene", stats, last match | Public (visitors see open events without names; the rest needs a session) |
+| `/login`, `/reset-password` | Auth (registration is closed) | Public |
+| `/mixing` | Mixings in progress / upcoming + the viewer's status | Session |
+| `/partido` | "+ Partido" form (publish a match) | Session |
+| `/events/[id]` | Event page: mixing sign-up, mixing draw, or partido (depends on `kind`/`status`) | Session |
+| `/history`, `/profile` | Match history, profile & settings | Session |
+| `/admin`, `/admin/events/new`, `/admin/matches`, `/admin/players`, `/admin/exclusions`, `/admin/events/[id]/generate` | Admin tools (hub from the avatar menu) | **Real** admin role (checked in `app/admin/layout.tsx`) |
+| `/dashboard` | Redirects to `/` (kept for old links/bookmarks) | — |
+| `/api/cron/*` | Cron endpoints, `Authorization: Bearer $CRON_SECRET` | Secret |
+
+Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. Guests see Inicio and Entrar.
 
 ---
 
-## Database Schema
+## Roles and the admin/player view
 
-### `profiles`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID PK | = Supabase auth user ID |
-| `full_name` | text | |
-| `email` | text | |
-| `avatar_url` | text | |
-| `rating` | float | ELO 0–7, initial 3.5 |
-| `role` | enum | `'player'` \| `'admin'` |
-| `matches_played` | int | |
-| `matches_won` | int | |
-| `win_ratio` | float | 0–1 |
-| `ranking` | int | |
-| `gender` | enum | `'masculino'` \| `'femenino'` \| `'otro'` |
-| `preferred_hand` | enum | `'diestro'` \| `'zurdo'` \| `'ambidiestro'` |
-| `court_position` | enum | `'reves'` \| `'drive'` \| `'ambos'` |
-| `updated_at` | timestamp | |
-
-### `matches`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID PK | |
-| `creator_id` | UUID FK | → profiles |
-| `match_type` | enum | `'standard'` \| `'mixing'` |
-| `status` | enum | `'pending'` \| `'confirmed'` \| `'disputed'` |
-| `event_id` | UUID FK | → events, nullable |
-| `player_a1/a2/b1/b2` | UUIDs | Team A and B |
-| `score_details` | text | e.g. `"6-4 6-2"` |
-| `sets_a`, `sets_b` | int | |
-| `rating_change` | float | |
-| `court_number` | int | |
-| `round_number` | int | |
-| `last_updated_by` | text | |
-
-### `events`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID PK | |
-| `title` | text | |
-| `start_time` | timestamp | |
-| `max_spots` | int | |
-| `rounds` | int | |
-| `duration_minutes` | int | |
-| `status` | enum | `'open'` \| `'closed'` \| `'finished'` |
-| `created_by` | UUID FK | → profiles |
-
-### `event_participants`
-| Column | Type |
-|---|---|
-| `event_id` | UUID FK |
-| `user_id` | UUID FK → profiles |
-| `joined_at` | timestamp |
-
-### `rating_history`
-| Column | Type |
-|---|---|
-| `player_id` | UUID FK |
-| `match_id` | UUID FK |
-| `rating_before` | float |
-| `rating_after` | float |
+- Real role: `profiles.role` (`player` | `admin`). Permissions are **always** checked against the real role on the server.
+- **Admin view** is a display preference stored in the `sp_view` cookie (`lib/view-mode.ts`, `setAdminView` action). Admins start in the *player view*; the avatar menu switches it. It decides what is *shown* (levels, admin tools, all matches in the draw); it never grants permissions.
+- Admin pages call `requireAdmin()`; `app/admin/layout.tsx` guards the whole `/admin` subtree.
 
 ---
 
-## Auth Pattern
+## Database (Supabase)
 
-- Provider: Supabase Auth
-- Session: SSR cookie-based (`@supabase/ssr`)
-- Server client: `src/utils/supabase/server.ts` — `createServerClient()` with cookie helpers
-- Browser client: `src/utils/supabase/client.ts` — `createBrowserClient()`
-- Route protection: each page server component calls `supabase.auth.getUser()` and redirects to `/login` if unauthenticated
-- Admin check: compare `profile.role === 'admin'`
+Migrations/jobs live at the repo root as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
+Applied: `clubs_courts`, `matches_auto_close`, `events_kind`. **Not applied yet** (wait for the deploy): `supabase_migration_security_hardening.sql`, `supabase_migration_court_names.sql`, `supabase_cron_close_pending_matches.sql` (needs the user's `CRON_SECRET`).
+
+### Tables (public)
+- `profiles`: `id` (= auth user), `full_name`, `email`, `avatar_url`, `rating`, `role`, `matches_played`, `matches_won`, `win_ratio`, `gender`, `preferred_hand`, `court_position` (`reves|drive|ambos`), `is_guest`.
+- `events`: `title`, `start_time` (timestamptz), `max_spots`, `rounds`, `duration_minutes`, `status` (`open|in_progress`), `created_by`, `is_test`, `club_id` (nullable), **`kind`** (`mixing` default | `match`).
+- `event_participants`: `event_id`, `user_id`, `joined_at` (order = sign-up order; positions beyond `max_spots` are reserves).
+- `matches`: `creator_id`, `match_type` (`match|mixing`), `status` (`pending|confirmed|disputed|expired`), `event_id`, `player_a1/a2/b1/b2`, `score_details`, `rating_change`, `court_number`, `court_id` (→ courts), `court_name` (legacy text), `round_number`, `last_updated_by`, **`result_updated_at`** (set by trigger when the score changes).
+- `clubs` / `courts` (`club_id`, `name`, `position`): 8 clubs in Jaén seeded; non-Indoor courts are generic "Pista N" until named. Public read, admin write.
+- `rating_history`, `notifications`, `push_subscriptions`, `mixing_exclusions` (`no_partner|no_opponent|no_contact`), `mixing_incentives` (unused by the UI).
+- RPCs (SECURITY DEFINER): `confirm_match_atomic` (the only writer of ratings/stats), `leave_event_atomic` (also promotes the first reserve).
+
+### Security notes (important)
+- RLS: events/clubs/courts/event_participants are publicly readable (the public home needs counts). **Known issues pending the hardening migration**: anon can execute the two RPCs and, because `auth.uid()` is NULL for anon, their authorization checks are bypassed; `profiles` (with emails), `matches` and `rating_history` have public SELECT policies. The migration also allows the service role explicitly (cron/auto-close run with `auth.uid()` NULL).
+- `matches` UPDATE policy lets any participant update any column of their match (including `status`). Not fixed.
+- Never trust ids coming from the client in Server Actions: derive the user from the session (see `getMatchHistory`, which ignores any id).
+- Files with `'use server'` may **only export async functions** (types are fine). Put constants/helpers in a plain module (e.g. `lib/match-events.ts`).
+- Use the service-role client (`utils/supabase/admin.ts`) only after authorizing the caller (players cannot insert events directly: `createMatchEvent` validates and then writes as admin).
 
 ---
 
 ## Environment Variables
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL        # Public Supabase API URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY   # Public anon key (client-side)
-SUPABASE_SERVICE_ROLE_KEY       # Admin key (server-side only, never expose)
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY        # server only
+CRON_SECRET                      # protects /api/cron/*
+NEXT_PUBLIC_VAPID_PUBLIC_KEY     # push
+VAPID_PRIVATE_KEY
+VAPID_SUBJECT
 ```
 
 ---
@@ -204,153 +145,148 @@ INITIAL_RATING: 3.5
 BASE_SCORE_MULTIPLIER: 0.9
 SCORE_RATIO_WEIGHT: 0.2
 ```
+`src/lib/config.ts` is the source of truth; don't trust numbers you may recall.
 
-### Calculation flow (`src/lib/rating-logic.ts`)
+### Calculation flow (`src/lib/rating-logic.ts`, applied by `lib/confirm-match.ts`)
 1. Get 4 players' ratings + match counts
 2. Assign K-factor (provisional vs established)
 3. Parse score → intensity multiplier weighted by `MATCH_WEIGHT`
 4. Apply disparity filter: linear falloff between `DISPARITY_FULL` and `DISPARITY_ZERO` team gap
 5. Apply dampening for high-rated players between `DAMPENING_START` and `DAMPENING_END`
 6. Clamp result to `[MIN_RATING, MAX_RATING]`
-7. On confirmation: the Postgres RPC `confirm_match_atomic` is the **only** place that writes `profiles.rating`, `matches_played`, `matches_won`, `win_ratio` and inserts into `rating_history` — atomic transaction with a `FOR UPDATE` lock + `ALREADY_CONFIRMED` guard. If the match's event has `is_test = true`, this RPC writes nothing, which is how end-to-end tests avoid touching real rankings.
+7. On confirmation: the Postgres RPC `confirm_match_atomic` is the **only** place that writes `profiles.rating`, `matches_played`, `matches_won`, `win_ratio` and inserts into `rating_history` — atomic transaction with a `FOR UPDATE` lock + `ALREADY_CONFIRMED` guard. If the match's event has `is_test = true`, nothing is written to ratings (use `is_test` events for end-to-end tests).
+
+`applyMatchConfirmation` (`lib/confirm-match.ts`) holds steps 1–7 and is shared by the user action `confirmMatch` (which checks permissions) and the auto-close cron (service role). It is a plain module, not a Server Action, so clients cannot call it.
+
+### Scores
+Only **total games** are stored/shown (`"8-5"`), never sets. Older rows with several sets (`"6-4 6-2"`) are summed (`totalGames` in `lib/utils.ts`).
 
 ### Rating tuning history
-- `MATCH_WEIGHT` was raised 0.40 → 0.70 on 2026-07-16 after ~3 weeks of real usage showed ratings barely differentiating players (stddev ~0.19 on a 0–7 scale after 9 matches/player) despite very different win/loss records. Candidates were compared by simulating both rating spread *and* actual pairing quality (running the real `generateMixingRound` hundreds of times per candidate), not just spread.
-- The change was applied **retroactively** (recomputing all of `rating_history` in chronological order) via `src/scripts/retroactive-match-weight.ts` — a standalone script that imports the real `calculateNewRating`, dry-runs by default, and only writes with an explicit `--apply` flag. Kept committed as the reference pattern for any future retroactive rating-config change: simulate with real data → show the resulting listing to the user → apply only after explicit confirmation.
+- `MATCH_WEIGHT` was raised 0.40 → 0.70 on 2026-07-16 after ~3 weeks of real usage showed ratings barely differentiating players. Candidates were compared by simulating both rating spread *and* actual pairing quality (running the real `generateMixingRound` hundreds of times), not just spread.
+- Applied **retroactively** (recomputing `rating_history` chronologically) via `src/scripts/retroactive-match-weight.ts`: dry-run by default, writes only with `--apply`. Reference pattern for any future retroactive rating change: simulate with real data → show the result to the user → apply only after explicit confirmation.
 
 ---
 
 ## Mixing Algorithm (`src/lib/mixing-algorithm.ts`)
 
-Auto-pairs players for round-robin mixing events.
+Two layers: (1) plan groups of 4 per round (random start + local search over swaps, several restarts); (2) pick the pairing inside each group (3 possible splits).
 
-### Config options
-- `genderMode` — balance genders or ignore
-- `balanceStrategy` — rating-balanced vs random
-- `avoidRepetition` — penalize past partners/opponents
-- `forcePosition` — require Drive + Revés per court
+**Cost hierarchy** (most to least important):
+1. HARD: exclusions (by type) and a **partner repeated within this event**. Only counted when *no* pairing of the group can avoid it (two ex-partners may share a court as rivals).
+2. STRONG: meeting again on a court **within this event** (`session_encounter_counts`).
+3. SOFT: level (balanced pairs + similar court averages) — outweighs repeating things from the **previous event**.
+4. SOFT, lower: meeting / partnering as in the previous event (`encounter_counts`, `partner_history`).
+5. Tie-break: court position (drive + revés).
 
-### Flow per round
-1. Sort participants by rating (with optional jitter)
-2. Chunk into groups of 4 (one group = one court)
-3. Try 3 team permutations per group:
-   - Case A: (1st+2nd) vs (3rd+4th)
-   - Case B: (1st+3rd) vs (2nd+4th) ← usually most balanced
-   - Case C: (1st+4th) vs (2nd+3rd)
-4. Score each permutation: rating balance + repetition penalties + position fit
-5. Pick best → `MatchProposal`; leftovers noted
+- Data model: `partner_history` = partners in the *previous* event (soft); `session_partner_history` = partners in *this* event (hard); built in `getEventMixingData` (`app/actions/mixing-generator.ts`, admin only).
+- Level and position are always on (`CONFIG` in `EventGenerator`); there are no switches. `genderMode` is unused.
+- Warnings are only about repeats **within this event** (and forced exclusions/partner repeats); never about the previous event.
+- Math to keep in mind: with groups of 4, 12 players / 3 rounds cannot avoid repeats (minimum 9 re-meetings); 16 players can reach 0 for up to 5 rounds. Typical event: 12 players, 3 rounds, 90 min.
+- Simulation workflow used to tune it: build a throwaway `*.test.ts` that runs the real algorithm many times with a prior event's history, writes metrics to a file, then delete it. Tests in `mixing-algorithm.test.ts` fix the guarantees (no partner repeats; 12/3 ≤ 10 re-meetings; 16/3 ~0).
+- Admin flow (`EventGenerator`): "Pistas de hoy" (courts of the event's club, first N preselected) → generate / regenerate → summary (`summarizeRounds`) → publish (`saveAllRounds`: admin only, status must be `open`, refuses a second draw, validates the courts belong to the club, saves `court_id`+`court_name`, pushes "¡Sorteo listo!").
+- The manual player swap was removed (recoverable from git, commit `00c9018`); if ever revived it must be restricted to the same court.
 
 ---
 
-## Core User Flows
+## Events: mixing and partido
 
-### Player
-1. Login → see dashboard (stats, upcoming events, pending matches)
-2. Join mixing event → wait for admin to generate rounds
-3. Register match result (as creator)
-4. Validate matches you participated in
-5. Dispute incorrect results
-6. View rating history and match history
+- **Mixing** (`kind = 'mixing'`): created by the weekly cron or by an admin (`/admin/events/new`, with club). Lifecycle: `open` (sign-up, reserves up to `max_spots + 6`) → admin generates and publishes the draw → `in_progress` → hidden once all its matches are confirmed (`isEventFullyConfirmed`; there is no `finished` status).
+- **Partido** (`kind = 'match'`, `lib/match-events.ts`): any player publishes club + date + time + how many players are missing (1–3). Always 90 min, 4 players, title "Partido". `max_spots = organizer + needed`, **no reserves**, no draw, no results. Shown in "Lo que viene" (also to visitors, no names), hidden after start + 90 min, not listed in `/mixing`. The organizer can edit/cancel (not leave without cancelling); an admin can cancel too. Publishing pushes the whole group. Actions: `createMatchEvent`, `updateMatchEvent`, `cancelMatchEvent`.
+- Weekly cron (`vercel.json`, Wednesdays 20:00 and 21:00 UTC; the route only acts when it is 22:xx in Madrid, covering DST) creates next Wednesday's event "El plan de los miércoles" at **Padel Indoor** (club looked up by name) at 20:00; it refuses to create a duplicate.
+- Round times are **derived**: the event duration is split evenly between its rounds (`roundStartsAt` / `roundEndsAt` in `lib/utils.ts`).
 
-### Admin
-1. Create mixing event (title, date, max_spots, rounds)
-2. Close registration → run mixing algorithm
-3. Generate rounds → saves matches to DB
-4. Edit/delete any match
-5. View all pending matches and confirm them
-6. Share event via WhatsApp-friendly text
-7. Rename a guest player's display name (`renameGuest`, from `PlayerProfileDialog`), for easier identification when filling an event with guests
-8. Rotate the 4 players of an **already-published** match when they agree to swap partners courtside (see "Rotate players in a published match" below)
+---
 
-### Match lifecycle
+## Match lifecycle
+
 ```
-Created (pending) → Confirmed (ratings calculated) → Audit in rating_history
-                 ↘ Disputed
+pending (0-0)  →  someone enters the score  →  pending (score)  →  confirmed (ratings applied)
+                                                 ↘ rival corrects the score → back to pending for the other side
+                                                 ↘ no answer for 24 h → auto-confirmed (silence = agreement)
+pending without score, 24 h after the event ended → expired (no ratings)
+disputed = legacy/admin state; players have no UI to dispute anymore
 ```
+- Player UI: Home "pending action" cards. "Introducir resultado" cards appear when the round **ends**; "Confirmar" cards appear as soon as another player enters a score. Confirming opens a **review sheet** (`ResultReviewDialog`): confirm, or "Hay un error en el marcador" → correct the score (the rival must confirm), no admin involved.
+- Auto-close: `/api/cron/close-pending-matches` (hourly via **pg_cron + pg_net**, not scheduled yet) confirms scored pending matches 24 h after `result_updated_at` and expires 0-0 ones 24 h after the event ended. Disputed matches are left alone.
+- Admin: `/admin/matches` lists every pending match (confirm, edit result, rotate partners, change court, delete). `rotateMatchPlayers` rotates `a2 → b1 → b2` keeping `a1` fixed and is blocked once a result exists.
 
-### Rotate players in a published match
-- Once an event's rounds are published (`saveAllRounds`, event → `in_progress`), players sometimes agree on-court to swap who partners whom in a given round/court. The player's decision takes priority even though it affects ELO.
-- `rotateMatchPlayers(matchId)` in `src/app/actions/matches.ts`: admin-only, keeps `player_a1` fixed and cyclically rotates `a2 → b1 → b2 → a2` on the same `matches` row (never moves a player to a different court/match). One click = one rotation through the 3 possible pairings.
-- Blocked when `status === 'confirmed'` or when `score_details !== '0-0'` (a result was already entered) — before that point nothing has been written to ELO yet, so it's safe.
-- UI: a single 🔀 (`Shuffle` from lucide-react) icon on the existing match card in `ValidationList.tsx`, next to the court-name editor. **There is no dedicated screen for this** — an earlier design built a whole new admin page with a 2-player-click-to-select swap UI, which was scrapped in favor of the single-icon rotation because it's simpler and matches exactly how the interaction happens in real life (quick, in-situ, courtside). Lesson: before building a new screen/flow, check whether the desired outcome fits as a simpler interaction on the existing UI — especially when the user describes the interaction with a concrete step-by-step example (take it as literal spec, not inspiration).
-- Verified end-to-end (with disposable `is_test` event/match/guest profiles, deleted afterward) that ELO is applied based on the player's **current/rotated** position, not their original one.
+---
+
+## Privacy rules (enforced on the server)
+
+- **Players never see other players' levels (ratings).** They see each player's *hand* (`court_position`). Admins (in admin view) see levels. Strip data on the server (`lib/event-draw.ts`, `app/events/[id]/page.tsx`); hiding in the UI is not enough — check the network tab.
+- In the draw, a player only receives **their own match**; admins receive all.
+- Visitors only get non-sensitive event data (`getPublicEvents`: no names, only counts).
 
 ---
 
 ## Design System
 
-### Theme: "Padel Soul"
-- **Light**: Background `hsl(43 19% 93%)` (Cloud Dancer), Primary `hsl(222 83% 16%)` (Deep Navy)
-- **Dark**: Background Deep Navy, Primary `hsl(84 100% 59%)` (Fluor Green)
-
-### Conventions
-- Border radius base: `1rem`, buttons: `rounded-2xl`
-- Mobile-first, hidden scrollbars
-- Shadcn components with `new-york` style and `slate` base color
-- Path alias: `@/` → `src/`
-- Tailwind class merging: `cn()` from `src/lib/utils.ts`
+- Mobile only: one fixed column of **30rem** (`theme.layout.maxWidth`), **no breakpoints**. `AppShell` wraps every page.
+- Tokens in `src/theme.ts` (`lightTheme`/`darkTheme`, brand: forest green + lime). Use `theme.colors.*`, `theme.radii.*`, `theme.shadows.*`, `theme.fonts.*`, `theme.layout.*`; avoid hardcoded colors. Check contrast when adding tokens (inputs use `field`/`fieldBorder`, ≥3:1).
+- `EmotionProvider` = SSR style cache (`lib/emotion-registry.tsx`) + theme from next-themes. `GlobalStyles` sets the reset and colors through CSS variables switched by the `.dark` class, so there is no light→dark flash. Emotion `theme` itself starts light until mounted.
+- Fonts: DM Sans (body) and Space Grotesk (titles) via `next/font`.
+- Conventions: styled components with transient props (`$variant`, `$size`) + `shouldForwardProp` for custom props; `Button` variants: primary, accent, outline, ghost, danger, warn, link (`ButtonLink` for links); `Dialog` is a bottom sheet; page shells follow `Header` → `PageIntro`/intro → `Content` → `TabBar`. `Content` reserves room for the fixed TabBar (pages that render something after it opt out with `$clearTabBar={false}`).
+- The footer is shown **only on the home**.
+- UI text in Spanish; the user dislikes filler copy — keep texts short and useful, and don't repeat information (e.g. a pill that repeats the title).
+- Atoms → molecules → organisms: put stateless/presentational pieces in `molecules`, screen blocks that own state/actions in `organisms`; server pages build DTOs and pass plain props.
 
 ---
 
 ## Scripts
 
 ```bash
-npm run dev      # Dev server (port 3000)
-npm run build    # Production build
-npm start        # Production server
-npm run lint     # ESLint
+npm run dev       # Dev server (port 3000)
+npm run build     # Production build
+npm run lint
+npm run test      # vitest run
 ```
 
 ---
 
 ## Known Constraints & Notes
 
-- Registration is **disabled** in the UI — new users must be created manually or via admin
-- Disparity/dampening rules on ratings — see "Rating System" above for current values (don't trust older numbers you may recall; `src/lib/config.ts` is the source of truth)
-- `force-dynamic` + `revalidate: 0` on dashboard, history, profile — always fresh data
-- Test suite: **Vitest** (see "Testing & CI" below) — TypeScript + ESLint alone is no longer accurate
-- All UI text is in **Spanish**; code, identifiers and comments in **English**
-- Deployment target: **Vercel** + Supabase
+- Registration is closed in the UI. **Also disable "Allow new users to sign up" in the Supabase dashboard** (hiding the form does not stop API sign-ups).
+- Pages are `force-dynamic`; `/dashboard` is only a redirect.
+- Guests (`is_guest`) are profiles created by an admin to fill events; they can't log in.
+- The Supabase advisors flag the issues in "Security notes"; run `get_advisors` after DB changes.
 
 ---
 
 ## Workflow
 
-- **Branches**: non-trivial features go on a branch (`feature/...`, `tune/...`), merged `--no-ff` into `main`. Small fixes go straight to `main`.
-- **Before considering any change done**, run in order:
-  ```bash
-  npx tsc --noEmit
-  npm run lint
-  npm run test        # vitest run
-  npm run build
-  ```
-- **Deploy**: manual, `vercel --prod --yes` after pushing to `main`. Vercel's auto-deploy is not relied on as the sole mechanism.
-- **CI**: `.github/workflows/ci.yml` runs the same 4 steps on every push to `main` and every PR (Node 22; build step uses placeholder Supabase env vars since it never makes a real network call).
+- Branch: all redesign work is on `fix/repetitions`. Conventional commit messages in Spanish (`feat(...)`, `fix(...)`, `chore:`), ending with the Co-Authored-By line given by the harness.
+- **Only commit/push when the user asks** ("ok/sí" to "¿hago commit y push?"). Stage files explicitly when something must stay out (e.g. `supabase_migration_security_hardening.sql` is intentionally uncommitted until deploy).
+- **Before considering a change done**, run: `npx tsc --noEmit`, `npm run lint`, `npm run test`, and `npm run build` for larger changes. State plainly what was and wasn't verified (most screens need a logged-in session, which the agent does not have).
+- **Deploy**: manual, `vercel --prod --yes`. It publishes **everything** in the working tree; ask first.
+- **Deploy checklist** (not done yet): QA the UI → apply `security_hardening` and `court_names` → schedule `pg_cron` for the auto-close with the user's `CRON_SECRET` → disable public sign-ups in Supabase → check `CRON_SECRET` in Vercel → deploy.
+- CI (`.github/workflows/ci.yml`) runs the same steps on push to `main` and PRs.
 
-## Testing & CI
+## Testing
 
-- `vitest.config.ts`: `environment: 'node'`, alias `@` → `./src`, matches `src/**/*.test.ts`.
-- Current coverage is deliberately narrow — only high-risk pure logic: `rating-logic.test.ts` (ELO), `mixing-algorithm.test.ts` (pairing algorithm), `utils.test.ts` (timezone helpers). **No E2E tests, no server-action tests that talk to Supabase** — an explicit scope decision, not an oversight.
-- These tests already caught one real production bug the same day they were written (see Timezone section below) — worth extending when touching similar pure logic.
+- Vitest, `environment: 'node'`, alias `@` → `src`, files `src/**/*.test.ts`. Covered: ELO (`rating-logic`), the mixing algorithm, and date helpers (`utils`: Madrid timezone, round start/end).
+- No E2E and no tests that talk to Supabase (explicit scope decision). Random algorithms: assert invariants over several runs, never exact outputs, and run the suite a few times to catch flakiness.
 
 ## Timezone (Europe/Madrid)
 
-`src/lib/utils.ts` (`getMadridOffsetHoursForDate`) computes Madrid's UTC offset with:
-```ts
-Intl.DateTimeFormat(..., { timeZoneName: 'shortOffset' }).formatToParts(date)
-```
-Do **not** reinterpret a Madrid-formatted date string as if it were the runtime's local time — that trick fails silently (offset=0) precisely when the runtime's own timezone already *is* `Europe/Madrid` (the most likely case for the admin's own device/dev machine). This was a real bug caught by the Vitest suite the same day it was added. The weekly-event cron (`src/app/api/cron/create-weekly-event/route.ts`) uses the same robust technique.
+All displayed dates/times are formatted with `timeZone: 'Europe/Madrid'` on the server (Vercel runs in UTC) — never rely on the browser's zone (see `ShareEventButton`). `start_time` is a `timestamptz`, so arithmetic on it (round ends, 90-minute expiry) is timezone-independent.
+`getMadridOffsetHoursForDate` in `src/lib/utils.ts` computes the offset with `Intl.DateTimeFormat(..., { timeZoneName: 'shortOffset' }).formatToParts(date)`. Do **not** reinterpret a Madrid-formatted string as local time — it silently gives offset 0 when the runtime is already in Madrid (a real bug caught by the tests). The weekly cron uses the same technique.
 
 ## Guest players
 
-- Create: `supabase.auth.admin.createUser({ email: 'x@guest.local', password: randomUUID(), email_confirm: true })`, then update the auto-created `profiles` row (`full_name`, `rating: 3.5`, `role: 'player'`, `is_guest: true`, `matches_played/won/win_ratio: 0`).
-- Delete: `supabase.auth.admin.deleteUser(id)` — cascades to `profiles`. Same pattern for both real event guests and disposable test-only profiles.
-- Admin can rename a guest from `PlayerProfileDialog` (`renameGuest` in `src/app/actions/events.ts`).
+- Create: `supabase.auth.admin.createUser({ email: 'x@guest.local', password: randomUUID(), email_confirm: true })`, then update the auto-created `profiles` row (`full_name`, `rating: 3.5`, `role: 'player'`, `is_guest: true`, stats zeroed).
+- Delete: `supabase.auth.admin.deleteUser(id)` (cascades to `profiles`).
+- Admin can rename a guest from `PlayerProfileDialog` (`renameGuest`).
 
 ## Safety when operating locally / maintenance scripts
 
-- **Never `pkill` with broad patterns.** To kill a process on a port: `lsof -ti:PORT` then `kill <PID>` on the exact PIDs.
-- **Be careful with `rm -rf .next`** if a `next dev` may be running live — it can hang. If it happens, kill only the exact PIDs (`lsof -ti:3000`) and restart `npm run dev`.
-- `src/scripts/` is the established home for one-off maintenance/migration scripts (ESLint-ignored). Disposable, non-reusable test scripts live outside git at the repo root with a `.tmp-` prefix and get deleted at the end, along with any rows/users they created.
-- Never touch the real production event when testing. Always use events with `is_test = true` and fully clean up everything created (matches → participants → event → guests) afterward, verifying nothing is left over.
-- Before any irreversible production data migration: take a Supabase backup (`pg_dump` of the `public` schema + `auth.users` data).
+- **Never `pkill` with broad patterns.** To free a port: `lsof -ti:PORT` then `kill <PID>` on the exact PIDs.
+- Be careful with `rm -rf .next` while `next dev` may be running; a `next build` next to a running dev server is fine.
+- `src/scripts/` holds one-off maintenance scripts (ESLint-ignored). Disposable test scripts live outside git with a `.tmp-` prefix and are deleted afterwards, along with any rows they created.
+- Never touch the real production event when testing: use `is_test = true` events and clean up everything created (matches → participants → event → guests).
+- Before any irreversible production data migration take a Supabase backup (`pg_dump` of `public` + `auth.users`).
+- zsh gotcha: `env $VAR_STRING cmd` does not word-split; use `bash -c "export A=1 B=2; cmd"` when sweeping parameters.
+
+## Redesign status (2026-10-02)
+
+Done on `fix/repetitions`: Emotion design system, every screen migrated, Tailwind/shadcn removed, partidos, auto-close of pending matches, clubs/courts, admin hub. **Not yet verified with a logged-in session** — manual QA is the next step. Replaced/removed on purpose: the old dashboard UI, `ValidationList`, `EventCard`, `CreateEventDialog`, the old "new result" form (`NewMixingForm`, see git history `1f87763^`), `PlayerRankingPanel`, the manual swap in the generator.

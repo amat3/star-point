@@ -1,55 +1,38 @@
 # StarPoint 🎾
 
-**StarPoint** es una PWA para gestionar mixings de pádel: convocatorias, emparejamientos automáticos, ranking ELO y validación de resultados. Construida con **Next.js 16**, **Supabase** y **Tailwind CSS v4**.
+**StarPoint** es una PWA para un grupo de pádel: mixings semanales con sorteo de parejas, partidos publicados para buscar jugadores, ranking ELO y validación de resultados. Construida con **Next.js 16**, **Supabase** y **Emotion**, pensada solo para móvil.
 
 ---
 
 ## ✨ Características
 
-### 🔄 Mixing automatizado
-- Convocatorias con fecha, hora, pistas y número de rondas
-- Algoritmo de emparejamiento con tres estrategias: **niveles similares**, **Pro-Am** (mejor + peor de cada pista) y variante **abierta**
-- Evitación de repetición de compañeros y rivales entre rondas
-- Priorización de parejas Drive + Revés
-- Lista de espera automática (titulares vs. reservas por orden de inscripción)
-- Guardado atómico de todas las rondas en una sola operación de BD
-- Los jugadores ven los cambios en tiempo real sin recargar la página
-- **Cron automático**: cada miércoles a las 22:00 (hora España) se crea la convocatoria de la semana siguiente vía Vercel Cron, con manejo correcto de cambio de hora verano/invierno
+### 🔄 Mixing semanal
+- Convocatorias con club, fecha, hora, pistas y rondas; inscripción con lista de espera (titulares y reservas por orden de inscripción).
+- **Sorteo** de parejas y rivales para todas las rondas del evento, con un algoritmo que prioriza, por este orden: respetar las exclusiones, no repetir pareja ni pista dentro del evento, igualar el nivel de los partidos y, por último, no repetir lo del evento anterior. Las posiciones drive y revés sirven de desempate.
+- El admin elige las pistas del club que se usan ese día, genera (o vuelve a generar) el sorteo, revisa un resumen de reencuentros y avisos, y lo publica de una vez.
+- **Cron semanal**: cada miércoles a las 22:00 (hora de España) se crea el evento de la semana siguiente en Padel Indoor, con manejo del cambio de hora verano/invierno.
+- Los jugadores ven los cambios en tiempo real, sin recargar.
 
-### 🏆 Ranking ELO adaptado a pádel dobles
-- **K-factor dinámico**: `K=0.40` para nuevos jugadores (< 10 partidos), `K=0.15` para veteranos
-- **Multiplicador de intensidad** (`MATCH_WEIGHT = 0.70`): el margen del resultado pondera el cambio de nivel — ajustado tras 3 semanas de uso real para lograr un ranking con más distanciamiento entre jugadores y mejores emparejamientos automáticos
-- **Filtro de disparidad**: partidos desequilibrados (>2.5 puntos de diferencia entre equipos) no afectan al ranking
-- **Amortiguación en el extremo superior**: la volatilidad se reduce progresivamente a partir de nivel 4.5
-- Actualización atómica de los 4 perfiles + historial + estado del partido en una única transacción PostgreSQL (RPC `confirm_match_atomic`)
-- Solo los partidos de tipo **mixing** puntúan
-- Cambios en los parámetros de rating pueden recalcularse con carácter retroactivo sobre todo el historial (`src/scripts/retroactive-match-weight.ts`, dry-run por defecto)
+### ➕ Partidos
+Cualquier jugador puede publicar un **partido** (club, fecha, hora y cuántos jugadores busca, de 1 a 3) para completar sus 4 jugadores y 90 minutos. Se avisa al grupo por notificación push, aparece en "Lo que viene" y los demás se apuntan o se borran. Sin sorteo ni resultados. El organizador puede editarlo o cancelarlo; desaparece al terminar.
 
-### ⚔️ Validación de partidos
-- Un partido requiere confirmación antes de aplicar ELO
-- Protección contra doble confirmación concurrente (`FOR UPDATE` lock en la transacción)
-- Mecanismo de impugnación para resultados incorrectos
-- Historial paginado con filtros
-- **Reorganizar parejas en un partido ya publicado** (🔀, solo admin): permite rotar cíclicamente a los 4 jugadores de un partido cuando lo acuerdan sobre la pista, sin necesidad de volver a generar rondas. Bloqueado en cuanto el partido tiene resultado o está confirmado, para no afectar al ELO ya aplicado
-
-### 🔒 Seguridad
-- **Row Level Security** habilitado en `profiles` y `rating_history`
-- La función `confirm_match_atomic` usa `SECURITY DEFINER` y bloquea filas atómicamente
-- Todas las operaciones destructivas verifican el rol de admin en BD
-- Políticas RLS mínimas: SELECT público en perfiles, UPDATE solo del propio perfil
-
-### ⚡ Tiempo real
-- **Supabase Realtime** habilitado en `events`, `matches` y `event_participants`
-- El componente `RealtimeRefresher` detecta cambios en BD y llama a `router.refresh()` automáticamente
-- Los players ven nuevas convocatorias, inscripciones, rondas generadas y resultados sin recargar
+### ⚔️ Resultados y ranking
+- Cada jugador ve **solo su partido** del sorteo. El resultado se guarda como **juegos totales** (sin sets).
+- Un jugador introduce el marcador, el rival lo confirma o lo corrige ("Hay un error en el marcador"). Si pasan 24 horas sin respuesta se confirma el último marcador; los partidos sin resultado caducan sin puntuar.
+- **ELO adaptado a pádel dobles**: K dinámico (nuevos jugadores frente a veteranos), peso del margen del resultado, filtro de disparidad y amortiguación en el extremo superior (parámetros en `src/lib/config.ts`). El cálculo y la actualización de los 4 perfiles, el historial y el estado del partido ocurren en una única transacción de PostgreSQL (`confirm_match_atomic`).
+- Historial con estadísticas y partidos coloreados por resultado.
+- Los niveles de los demás **solo los ve el admin**: los jugadores ven la mano (revés, drive o ambos) de cada uno.
 
 ### 🛠️ Roles
 | Rol | Capacidades |
 |---|---|
-| **Jugador** | Inscribirse a mixings, validar partidos, ver historial y ranking |
-| **Admin** | Todo lo anterior + crear/editar/eliminar eventos, generar rondas de mixing, gestionar participantes, añadir/renombrar invitados para completar eventos, reorganizar parejas en partidos ya publicados, vista de ranking completo |
+| **Jugador** | Inscribirse a mixings y partidos, publicar partidos, introducir y confirmar resultados, ver su historial |
+| **Admin** | Todo lo anterior, más: crear y editar eventos, gestionar participantes e invitados, sorteo, partidos pendientes de todo el grupo, exclusiones y jugadores |
 
-> El registro de nuevos usuarios es solo por invitación (gestión vía admin).
+Un admin empieza en la **vista de jugador** y cambia a la de administración desde el menú del avatar. El registro de usuarios está cerrado: solo existen cuentas creadas por un admin.
+
+### ⚡ Tiempo real y PWA
+Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; instalable en pantalla de inicio.
 
 ---
 
@@ -58,9 +41,9 @@
 | Capa | Tecnología |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19 |
-| Estilos | Tailwind CSS v4, shadcn/ui |
+| Estilos | Emotion (tema claro y oscuro en `src/theme.ts`) |
 | Backend / BD | Supabase (PostgreSQL, Auth, Realtime, RLS) |
-| Despliegue | Vercel |
+| Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre automático |
 | Formularios | React Hook Form + Zod v4 |
 | Iconos | Lucide React |
 
@@ -70,23 +53,18 @@
 
 ```
 src/
-├── app/
-│   ├── actions/          # Server Actions (events, matches, mixing-generator, users)
-│   ├── admin/            # Generador de rondas de mixing
-│   ├── dashboard/        # Vista principal del jugador
-│   ├── events/           # Detalle de convocatoria
-│   ├── history/          # Historial de partidos
-│   └── profile/          # Perfil y cambio de contraseña
+├── app/                  # Rutas: / · /mixing · /partido · /events/[id] · /history · /profile · /admin/*
+│   ├── actions/          # Server Actions (events, matches, mixing-generator, admin-*, users…)
+│   └── api/cron/         # create-weekly-event, close-pending-matches
 ├── components/
-│   ├── dashboard/        # MotivationalCard, MatchHistory, PlayerRankingPanel, RealtimeRefresher
-│   ├── events/           # EventCard, CreateEventDialog, EditEventDialog, ShareEventButton
-│   ├── matches/          # ValidationList, EditMatchDialog
-│   └── ui/               # Componentes base (shadcn + ConfirmDialog)
-└── lib/
-    ├── rating-logic.ts   # Algoritmo ELO
-    ├── mixing-algorithm.ts # Generador de emparejamientos
-    └── config.ts         # Parámetros del sistema de rating
+│   ├── atoms/            # Button, Input, Avatar, Select, Switch…
+│   ├── molecules/        # Header, TabBar, Dialog, PlayerList, CourtCard…
+│   └── organisms/        # EventOpenView, EventDrawView, EventGenerator, MatchEventView…
+├── lib/                  # rating-logic, mixing-algorithm, confirm-match, event-draw, match-events…
+└── theme.ts              # Tokens de diseño
 ```
+
+Más contexto técnico (reglas de privacidad, base de datos, convenciones y flujo de trabajo) en [AGENT.md](AGENT.md).
 
 ---
 
@@ -100,9 +78,7 @@ cd star-point
 # 2. Instalar dependencias
 npm install
 
-# 3. Variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tus claves de Supabase
+# 3. Variables de entorno: crea .env.local con las claves de abajo
 
 # 4. Desarrollo
 npm run dev
@@ -113,14 +89,21 @@ npm run dev
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...   # Solo para operaciones de admin
+SUPABASE_SERVICE_ROLE_KEY=eyJ...      # solo servidor: operaciones de admin y cron
+CRON_SECRET=...                       # protege /api/cron/*
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...      # notificaciones push
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:...
 ```
+
+### Base de datos
+Las migraciones están en la raíz del repositorio (`supabase_*.sql`) y se aplican a mano en Supabase, en el orden de su fecha de creación. Algunas están pendientes de aplicar en producción; consulta [AGENT.md](AGENT.md).
 
 ---
 
 ## ✅ Tests y CI
 
-- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de emparejamiento (`mixing-algorithm.test.ts`) y utilidades de zona horaria (`utils.test.ts`).
+- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de sorteo (`mixing-algorithm.test.ts`) y utilidades de fechas y rondas (`utils.test.ts`).
 - `npm run test` (una vez) / `npm run test:watch` (modo watch).
 - **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
 - Fuera de alcance por ahora: tests E2E y de server actions que hablan con Supabase.
@@ -144,6 +127,8 @@ MIN_RATING: 0
 MAX_RATING: 7
 INITIAL_RATING: 3.5
 ```
+
+Un cambio de parámetros puede recalcularse con carácter retroactivo sobre todo el historial con `src/scripts/retroactive-match-weight.ts` (dry-run por defecto).
 
 ---
 
