@@ -22,11 +22,13 @@ export default async function GeneratePage(props: GeneratePageProps) {
 
   const { data: event } = await supabase
     .from('events')
-    .select('title, start_time, status, club_id, club:clubs(name)')
+    .select('title, start_time, status, kind, club_id, club:clubs(name)')
     .eq('id', id)
     .single()
 
   if (!event) notFound()
+  // Published matches have no draw
+  if (event.kind === 'match') redirect(`/events/${id}`)
   // Once the draw is published there is nothing left to generate
   if (event.status !== 'open') redirect(`/events/${id}`)
 

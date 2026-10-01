@@ -13,9 +13,11 @@ import StatsRow from '@/components/molecules/StatsRow'
 import SectionHeader from '@/components/molecules/SectionHeader'
 import Greeting from '@/components/molecules/Greeting'
 import Header from '@/components/molecules/Header'
+import { Footer } from '@/components/layout/Footer'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
+import { missingLabel } from '@/lib/match-events'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
 
@@ -50,7 +52,7 @@ export default async function HomePage() {
         date={formatTodayLong()}
         name={userName ? toTitleCase(userName.split(' ')[0]) : undefined}
       />
-      <Content>
+      <Content $clearTabBar={false}>
         <PendingActions actions={pendingActions} nextRevealAt={nextRevealAt} />
         <SectionHeader title="Lo que viene" />
         {events.length === 0 && <EmptyState>Aún no hay mixings abiertos.</EmptyState>}
@@ -70,9 +72,11 @@ export default async function HomePage() {
               availability={
                 event.status === 'in_progress'
                   ? 'En juego'
-                  : spotsLeft > 0
-                    ? `${spotsLeft} ${spotsLeft === 1 ? 'plaza disponible' : 'plazas disponibles'}`
-                    : 'Completo'
+                  : spotsLeft <= 0
+                    ? 'Completo'
+                    : event.kind === 'match'
+                      ? missingLabel(spotsLeft)
+                      : `${spotsLeft} ${spotsLeft === 1 ? 'plaza disponible' : 'plazas disponibles'}`
               }
               full={event.status === 'open' && spotsLeft <= 0}
             />
@@ -97,6 +101,7 @@ export default async function HomePage() {
           </>
         )}
       </Content>
+      <Footer />
       <TabBar loggedIn={!!user} />
     </>
   )

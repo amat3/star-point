@@ -39,7 +39,8 @@ export default async function MixingPage() {
   const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
   const adminView = await isAdminView(profile?.role)
 
-  const events = await getOpenEvents()
+  // Published matches (kind 'match') live on the home list, not in the Mixing section
+  const events = (await getOpenEvents()).filter(e => e.kind !== 'match')
   const inProgress = events.filter(e => e.status === 'in_progress')
   const upcoming = events.filter(e => e.status === 'open')
 

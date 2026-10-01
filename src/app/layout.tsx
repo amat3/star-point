@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
-import { Footer } from "@/components/layout/Footer";
 import { InstallBanner } from "@/components/layout/InstallBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import AppShell from "@/components/molecules/AppShell";
@@ -53,7 +52,6 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <EmotionProvider>
             <AppShell>{children}</AppShell>
-            <Footer />
             <InstallBanner />
             <ServiceWorkerRegister />
             <Toaster richColors position="top-center" />

@@ -9,6 +9,8 @@ export interface MixingEvent {
   status: 'open' | 'in_progress'
   created_by: string
   is_test: boolean
+  // 'match': a player-published match looking for players (no draw, no results)
+  kind?: 'mixing' | 'match'
   club_id: string | null
   club?: { name: string } | null
 

@@ -196,9 +196,7 @@ const Summary = styled.p`
   font-size: 0.875rem;
 `
 
-const Body = styled(Content)`
-  padding-bottom: 1.5rem;
-`
+const Body = Content
 
 const Status = styled.p`
   display: flex;
