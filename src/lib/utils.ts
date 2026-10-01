@@ -81,3 +81,58 @@ export function utcToMadridDateTime(isoString: string): { date: string, time: st
   const time = new Intl.DateTimeFormat('es-ES', { timeZone: MADRID_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(dt)
   return { date, time }
 }
+
+/** Fecha larga en español para el saludo, p. ej. "viernes, 2 de octubre" (hora de Madrid). */
+export function formatTodayLong(now = new Date()) {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Madrid',
+  }).format(now)
+}
+
+/** "Viernes, 2 de octubre" (hora de Madrid). */
+export function formatEventDate(dateStr: string) {
+  const date = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' })
+  return date.charAt(0).toUpperCase() + date.slice(1)
+}
+
+/** "18:30" (hora de Madrid). */
+export function formatEventTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' })
+}
+
+/** Día del mes en hora de Madrid, con dos dígitos: "02". */
+export function formatEventDay(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', timeZone: 'Europe/Madrid' })
+}
+
+/** Mes abreviado en hora de Madrid: "oct". */
+export function formatEventMonth(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', { month: 'short', timeZone: 'Europe/Madrid' }).replace('.', '')
+}
+
+/** "Hoy", "Ayer", "Hace 3 días" o "12 sep" (por día natural en Madrid). */
+export function formatRelativeDay(dateStr: string, now = new Date()) {
+  const toDay = (d: Date) =>
+    new Date(d.toLocaleDateString('en-CA', { timeZone: 'Europe/Madrid' })).getTime()
+  const days = Math.round((toDay(now) - toDay(new Date(dateStr))) / 86_400_000)
+  if (days <= 0) return 'Hoy'
+  if (days === 1) return 'Ayer'
+  if (days < 7) return `Hace ${days} días`
+  return new Date(dateStr)
+    .toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' })
+    .replace('.', '')
+}
+
+/** Nivel mostrado al usuario a partir del rating: 3.24 → "3,2". */
+export function formatLevel(rating: number | null | undefined) {
+  return (rating ?? 0).toFixed(1).replace('.', ',')
+}
+
+/** Día de la semana en plural para "El plan de los viernes" (hora de Madrid). */
+export function formatWeekdayPlural(dateStr: string) {
+  const day = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'Europe/Madrid' })
+  return day.endsWith('s') ? day : `${day}s`
+}

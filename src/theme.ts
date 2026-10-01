@@ -1,0 +1,70 @@
+export const lightTheme = {
+  colors: {
+    background: '#fbfaf6',
+    surface: '#edf0e7',    
+    forest: '#123d32',
+    forestDeep: '#0b2b24',
+    lime: '#d9f36a',
+    ink: '#17221e',
+    muted: '#7c8780',
+    line: '#e6e9e1',
+    coral: '#f2795b',
+    online: '#70bb6a',
+    alert: '#ef5d4a',
+    coralTint: 'rgba(242, 121, 91, 0.14)',
+    hero: '#123d32',
+    heroTint: 'rgba(217, 243, 106, 0.07)',
+    onForest: '#fbfaf6',
+    tabInactive: '#929a93',
+    glass: 'rgba(251, 250, 246, 0.96)',
+    hairline: 'rgba(18, 61, 50, 0.08)',
+  },
+  fonts: {
+    body: 'var(--font-dm-sans), sans-serif',
+    display: 'var(--font-space-grotesk), sans-serif',
+  },
+  shadows: {
+    sm: '0 1px 2px rgba(18, 61, 50, 0.08)',
+    md: '0 6px 20px rgba(18, 61, 50, 0.10)',
+  },
+  radii: {
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    pill: '999px',
+  },
+  layout: {
+    maxWidth: '30rem',
+    headerHeight: '4.25rem',
+    tabBarHeight: '4.5rem',
+  },
+  motion: {
+    enter: '520ms cubic-bezier(0.2, 0.75, 0.25, 1)',
+  },
+}
+
+export type Theme = typeof lightTheme
+
+export const darkTheme: Theme = {
+  ...lightTheme,
+  colors: {
+    background: '#0b1512',
+    surface: '#142019',
+    forest: '#2f7a62',
+    forestDeep: '#1f5745',
+    lime: '#e3ff7a',
+    ink: '#f3f5ef',
+    muted: '#8fa39a',
+    line: '#24332c',
+    coral: '#ff8a68',
+    online: '#7fd078',
+    alert: '#ff6a55',
+    coralTint: 'rgba(255, 138, 104, 0.16)',
+    hero: '#17493b',
+    heroTint: 'rgba(227, 255, 122, 0.07)',
+    onForest: '#f3f5ef',
+    tabInactive: '#6f847a',
+    glass: 'rgba(11, 21, 18, 0.96)',
+    hairline: 'rgba(243, 245, 239, 0.08)',
+  },
+}

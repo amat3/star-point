@@ -9,6 +9,8 @@ export interface MixingEvent {
   status: 'open' | 'in_progress'
   created_by: string
   is_test: boolean
+  club_id: string | null
+  club?: { name: string } | null
 
   // Virtual properties (joined columns or computed)
   participants_count?: number

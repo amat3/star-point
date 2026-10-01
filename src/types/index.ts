@@ -20,7 +20,7 @@ export interface Profile {
 
 export type PlayerOption = Pick<Profile, 'id' | 'full_name'>;
 
-export type MatchStatus = 'pending' | 'confirmed' | 'disputed';
+export type MatchStatus = 'pending' | 'confirmed' | 'disputed' | 'expired';
 export type MatchType = 'mixing';
 
 export interface Match {

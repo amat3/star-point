@@ -5,14 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 
-// 🆕 Ventana de historial: cuántos eventos recientes (incluyendo el actual,
-// si ya tiene rondas guardadas) se usan para calcular el historial de
-// rotación. Evento actual + el inmediatamente anterior.
-const HISTORY_WINDOW_EVENTS = 2
-
+// Helper to get raw data for the algorithm
 export async function getEventMixingData(eventId: string): Promise<{ participants: MixingParticipant[], max_spots: number, rounds: number, exclusions: ExclusionRule[] }> {
   const supabase = await createClient()
 
+  // 1. Fetch participants (just IDs and join time)
   const { data: participants, error: pError } = await supabase
     .from('event_participants')
     .select('user_id, joined_at')
@@ -21,6 +18,7 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
 
   if (pError) throw new Error(pError.message)
 
+  // 1b. Fetch profiles for these users manually
   type MixingProfile = { id: string; rating?: number; full_name?: string; gender?: string; court_position?: string; preferred_hand?: string; is_guest?: boolean; avatar_url?: string | null }
   const userIds = participants.map((p) => p.user_id)
   const profilesMap: Record<string, MixingProfile> = {}
@@ -36,11 +34,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
       })
   }
 
+  // Combine data
   const combinedParticipants = participants.map((p) => ({
       user_id: p.user_id,
       profiles: profilesMap[p.user_id] || {}
   }))
 
+  // 1b. Fetch event details for max_spots
   const { data: eventData, error: eError } = await supabase
     .from('events')
     .select('max_spots, rounds')
@@ -50,74 +50,103 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
   if (eError) throw new Error(eError.message)
 
   const maxSpots = eventData.max_spots
+
+  // Filter only Titulares (first maxSpots)
   const titulares = combinedParticipants.slice(0, maxSpots)
 
-  // 🆕 Ventana de rotación: los últimos HISTORY_WINDOW_EVENTS eventos por
-  // fecha de celebración (start_time). Excluimos los eventos de prueba
-  // (is_test) para que no contaminen la rotación real. Incluye el actual
-  // si ya está entre los más recientes, que es lo habitual.
-  const { data: recentEvents, error: reError } = await supabase
-    .from('events')
-    .select('id')
-    .eq('is_test', false)
-    .order('start_time', { ascending: false })
-    .limit(HISTORY_WINDOW_EVENTS)
-
-  if (reError) throw new Error(reError.message)
-
-  const windowEventIds = new Set((recentEvents ?? []).map(e => e.id))
-  windowEventIds.add(eventId) // por si acaso el evento actual no apareciera aún en la lista
-
+  // 2. Fetch matches to build history. Deliberadamente SIN filtrar por
+  // event_id: el historial de pareja/rival abarca todo el club (ver
+  // fde67a62) para evitar repetir pareja de una semana a otra como
+  // preferencia soft. Además, distinguimos aparte qué de ese historial
+  // pertenece a ESTE evento (currentEventHistoryMap / currentEventOpponentCountsMap),
+  // que se trata como restricción DURA en el algoritmo, con 2 cupos
+  // INDEPENDIENTES:
+  //   - Pareja repetida dentro del mismo evento -> nunca puede pasar (máx 1 vez).
+  //   - Rival repetido más de MAX_TIMES_AS_OPPONENT (1) veces dentro del
+  //     mismo evento -> tampoco puede pasar (ver mixing-algorithm.ts).
+  // El histórico entre eventos distintos (past_partners/past_opponents)
+  // sigue siendo solo una preferencia soft (penaliza, no bloquea).
   const { data: matches } = await supabase
     .from('matches')
     .select('event_id, player_a1, player_a2, player_b1, player_b2')
     .eq('match_type', 'mixing')
     .in('status', ['pending', 'confirmed'])
-    .in('event_id', Array.from(windowEventIds))
 
-  const priorEncounterCountsMap = new Map<string, Map<string, number>>()   // 🆕 solo evento(s) anterior(es) de la ventana
-  const sessionEncounterCountsMap = new Map<string, Map<string, number>>() // 🆕 solo el evento ACTUAL (rondas ya guardadas)
-  const partnerHistoryMap = new Map<string, Set<string>>() // sigue sin distinguir evento: pareja repetida es absoluto
+  const historyMap = new Map<string, Set<string>>()
+  const opponentsMap = new Map<string, Set<string>>()
+  const currentEventHistoryMap = new Map<string, Set<string>>()
+  const currentEventOpponentCountsMap = new Map<string, Map<string, number>>() // 🆕 hard constraint: rival, solo este evento
+
   titulares.forEach((p) => {
-    priorEncounterCountsMap.set(p.user_id, new Map())
-    sessionEncounterCountsMap.set(p.user_id, new Map())
-    partnerHistoryMap.set(p.user_id, new Set())
+      historyMap.set(p.user_id, new Set())
+      opponentsMap.set(p.user_id, new Set())
+      currentEventHistoryMap.set(p.user_id, new Set())
+      currentEventOpponentCountsMap.set(p.user_id, new Map()) // 🆕
   })
 
-  const bump = (map: Map<string, Map<string, number>>, x: string | null, y: string | null) => {
-    if (!x || !y) return
-    const m = map.get(x)
-    if (m) m.set(y, (m.get(y) || 0) + 1)
-  }
-  const markPartner = (x: string | null, y: string | null) => {
-    if (!x || !y) return
-    partnerHistoryMap.get(x)?.add(y)
-  }
-
+  // Build history (who played with whom as PARTNER and OPPONENT)
   if (matches) {
       matches.forEach((m) => {
-          // 🆕 separamos según si el partido pertenece al evento ACTUAL
-          // (session, pesa muchísimo más) o a otro evento de la ventana
-          // (prior, el anterior — se tolera antes que repetir en el actual).
-          const targetMap = m.event_id === eventId ? sessionEncounterCountsMap : priorEncounterCountsMap
-          const ids = [m.player_a1, m.player_a2, m.player_b1, m.player_b2]
-          for (let i = 0; i < ids.length; i++) {
-              for (let j = i + 1; j < ids.length; j++) {
-                  bump(targetMap, ids[i], ids[j])
-                  bump(targetMap, ids[j], ids[i])
+          const a1 = m.player_a1
+          const a2 = m.player_a2
+          const b1 = m.player_b1
+          const b2 = m.player_b2
+          const isCurrentEvent = m.event_id === eventId
+
+          // Pair A Partners
+          if (a1 && a2) {
+              historyMap.get(a1)?.add(a2)
+              historyMap.get(a2)?.add(a1)
+              if (isCurrentEvent) {
+                  currentEventHistoryMap.get(a1)?.add(a2)
+                  currentEventHistoryMap.get(a2)?.add(a1)
               }
           }
-          // Las parejas reales (no los cruces rivales) se registran aparte
-          // para el bloqueo duro de pareja repetida.
-          markPartner(m.player_a1, m.player_a2)
-          markPartner(m.player_a2, m.player_a1)
-          markPartner(m.player_b1, m.player_b2)
-          markPartner(m.player_b2, m.player_b1)
+          // Pair B Partners
+          if (b1 && b2) {
+              historyMap.get(b1)?.add(b2)
+              historyMap.get(b2)?.add(b1)
+              if (isCurrentEvent) {
+                  currentEventHistoryMap.get(b1)?.add(b2)
+                  currentEventHistoryMap.get(b2)?.add(b1)
+              }
+          }
+
+          // Opponents (A vs B) — histórico de club (soft, todo Set sí/no)
+          // A1 vs B1/B2
+          if (a1) {
+              if (b1) { opponentsMap.get(a1)?.add(b1); opponentsMap.get(b1)?.add(a1); }
+              if (b2) { opponentsMap.get(a1)?.add(b2); opponentsMap.get(b2)?.add(a1); }
+          }
+          // A2 vs B1/B2
+          if (a2) {
+              if (b1) { opponentsMap.get(a2)?.add(b1); opponentsMap.get(b1)?.add(a2); }
+              if (b2) { opponentsMap.get(a2)?.add(b2); opponentsMap.get(b2)?.add(a2); }
+          }
+
+          // 🆕 Opponent counts — SOLO de este evento (hard constraint, independiente del de pareja)
+          if (isCurrentEvent) {
+              const bump = (x: string | null, y: string | null) => {
+                  if (!x || !y) return
+                  const m = currentEventOpponentCountsMap.get(x)
+                  if (m) m.set(y, (m.get(y) || 0) + 1)
+              }
+              bump(a1, b1)
+              bump(b1, a1)
+              bump(a1, b2)
+              bump(b2, a1)
+              bump(a2, b1)
+              bump(b1, a2)
+              bump(a2, b2)
+              bump(b2, a2)
+          }
       })
   }
 
+  // Transform to serializable object (Set -> Array, Map -> Record)
   const mappedParticipants = titulares.map((p) => {
       const profile = p.profiles
+      const countsMap = currentEventOpponentCountsMap.get(p.user_id) || new Map<string, number>()
       return {
           id: p.user_id,
           rating: profile.rating || 0,
@@ -125,9 +154,10 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           gender: profile.gender || 'otro',
           court_position: profile.court_position || 'ambos',
           avatar_url: profile.avatar_url ?? null,
-          encounter_counts: Object.fromEntries(priorEncounterCountsMap.get(p.user_id) || []), // 🆕 solo evento anterior
-          session_encounter_counts: Object.fromEntries(sessionEncounterCountsMap.get(p.user_id) || []), // 🆕 solo evento actual
-          partner_history: Array.from(partnerHistoryMap.get(p.user_id) || []), // solo pareja (bloqueo duro)
+          past_partners: Array.from(historyMap.get(p.user_id) || []),
+          past_opponents: Array.from(opponentsMap.get(p.user_id) || []),
+          opponent_counts: Object.fromEntries(countsMap), // 🆕 hard constraint (rival), solo evento actual
+          current_event_partners: Array.from(currentEventHistoryMap.get(p.user_id) || []),
           is_guest: profile.is_guest ?? false
       }
   })
@@ -163,6 +193,8 @@ export async function saveAllRounds(
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
 
+  // Defensa en profundidad: el evento debe estar completo antes de generar
+  // partidos, aunque el cliente ya bloquea el botón en este mismo caso.
   const { data: eventCheck } = await supabase.from('events').select('max_spots').eq('id', eventId).single()
   if (eventCheck) {
     const { count: participantCount } = await supabase
@@ -240,6 +272,8 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
 
+    // Insert matches
+    // We map MatchProposal to DB schema
     const inserts = matches.map(m => ({
         created_at: new Date().toISOString(),
         creator_id: user.id,
@@ -262,6 +296,7 @@ export async function saveRoundMatches(eventId: string, matches: MatchProposal[]
 
     if (error) throw new Error(error.message)
 
+    // Update event status to 'in_progress' so it disappears from the "Open Events" dashboard list
     await supabase.from('events').update({ status: 'in_progress' }).eq('id', eventId)
 
     revalidatePath(`/admin/events/${eventId}`)

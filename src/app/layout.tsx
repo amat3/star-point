@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, DM_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import { Footer } from "@/components/layout/Footer";
 import { InstallBanner } from "@/components/layout/InstallBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
+import AppShell from "@/components/molecules/AppShell";
+import { EmotionProvider } from "@/components/providers/EmotionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,9 +19,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans', 
+})
+
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
+})
+
 export const metadata: Metadata = {
   title: "StarPoint",
-  description: "La app de Padel & Risas",
+  description: "Tu app de Pádel",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -47,16 +59,16 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full flex flex-col bg-background overflow-x-hidden no-scrollbar`}
+        className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${spaceGrotesk.variable} antialiased min-h-full flex flex-col bg-background overflow-x-hidden no-scrollbar`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex-1 flex flex-col w-full">
-            {children}
-          </div>
-          <Footer />
-          <InstallBanner />
-          <ServiceWorkerRegister />
-          <Toaster richColors position="top-center" />
+          <EmotionProvider>
+            <AppShell>{children}</AppShell>
+            <Footer />
+            <InstallBanner />
+            <ServiceWorkerRegister />
+            <Toaster richColors position="top-center" />
+          </EmotionProvider>
         </ThemeProvider>
       </body>
     </html>

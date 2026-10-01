@@ -17,6 +17,46 @@ export async function isEventFullyConfirmed(eventId: string): Promise<boolean> {
   return matches.every(m => m.status === 'confirmed')
 }
 
+// Supabase types an embedded to-one relation as an array; normalize to a single object.
+function firstClub(club: unknown): { name: string } | null {
+  const c = Array.isArray(club) ? club[0] : club
+  return c ? { name: (c as { name: string }).name } : null
+}
+
+export type PublicEvent = Pick<MixingEvent, 'id' | 'title' | 'club' | 'start_time' | 'max_spots' | 'duration_minutes' | 'status'> & {
+  participants_count: number
+}
+
+// Para visitantes sin sesión: solo datos no sensibles (nada de nombres ni de
+// quién está apuntado, solo cuántos). Únicamente eventos con inscripción abierta.
+export async function getPublicEvents(): Promise<PublicEvent[]> {
+  const supabase = await createClient()
+
+  const { data: events, error } = await supabase
+    .from('events')
+    .select('id, title, start_time, max_spots, duration_minutes, status, club:clubs(name)')
+    .eq('status', 'open')
+    .eq('is_test', false)
+    .order('start_time', { ascending: true })
+
+  if (error || !events || events.length === 0) return []
+
+  const { data: participants } = await supabase
+    .from('event_participants')
+    .select('event_id')
+    .in('event_id', events.map(e => e.id))
+
+  const counts: Record<string, number> = {}
+  participants?.forEach(p => { counts[p.event_id] = (counts[p.event_id] ?? 0) + 1 })
+
+  return events.map(e => ({
+    ...e,
+    club: firstClub(e.club),
+    duration_minutes: e.duration_minutes || 90,
+    participants_count: counts[e.id] ?? 0,
+  })) as PublicEvent[]
+}
+
 export async function getOpenEvents(): Promise<MixingEvent[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -35,7 +75,9 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
         duration_minutes,
         status,
         created_by,
-        is_test
+        is_test,
+        club_id,
+        club:clubs(name)
     `)
     .in('status', ['open', 'in_progress'])
     .order('start_time', { ascending: true })
@@ -90,6 +132,7 @@ export async function getOpenEvents(): Promise<MixingEvent[]> {
 
     return {
       ...event,
+      club: firstClub(event.club),
       rounds: event.rounds || 1,
       duration_minutes: event.duration_minutes || 90,
       is_test: event.is_test ?? false,
