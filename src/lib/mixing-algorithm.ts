@@ -6,17 +6,16 @@ export interface MixingParticipant {
   court_position: 'reves' | 'drive' | 'ambos'
   full_name: string
   avatar_url?: string | null
-  // 🆕 Reencuentros del EVENTO ANTERIOR únicamente (no incluye el actual).
-  // Se usa como "mal menor" cuando hay que repetir por fuerza.
+  // Reencuentros del EVENTO ANTERIOR únicamente (no incluye el actual).
+  // Coste blando: se tolera antes que desequilibrar el nivel.
   encounter_counts: Record<string, number>
-  // 🆕 Reencuentros DENTRO del evento actual (rondas ya guardadas + lo que
-  // se genera en esta sesión). Repetir aquí es mucho peor que repetir solo
-  // con el evento anterior.
+  // Reencuentros DENTRO del evento actual (rondas ya guardadas + lo que se
+  // genera en esta sesión). Repetir aquí es el peor caso.
   session_encounter_counts?: Record<string, number>
-  // 🆕 Lista aparte SOLO de con quién ya ha sido PAREJA (no rival) en esa
-  // misma ventana. Repetir pareja es un bloqueo duro; repetir rival es
-  // solo "evitar si se puede" — por eso necesitan trackearse por separado.
+  // Con quién fue PAREJA en el evento ANTERIOR. Coste blando.
   partner_history?: string[]
+  // Con quién ya ha sido PAREJA en el evento ACTUAL. Bloqueo duro.
+  session_partner_history?: string[]
   is_guest?: boolean
 }
 
@@ -28,8 +27,9 @@ export interface ExclusionRule {
 
 export interface MixingConfig {
   genderMode: 'open' | 'mixed' | 'separated'
-  // 🆕 El nivel ya no decide la agrupación — solo desempata entre opciones
-  // igual de buenas en rotación. Sustituye a balanceStrategy.
+  // Igualar el nivel: equilibra las dos parejas de cada pista y el nivel medio
+  // entre pistas. Pesa más que evitar coincidencias con el evento anterior,
+  // pero nunca que repetir pareja o pista dentro del mismo evento.
   prioritizeLevel: boolean
   forcePosition: boolean
   exclusions?: ExclusionRule[]
@@ -51,47 +51,80 @@ export interface RoundProposal {
   leftovers: MixingParticipant[]
 }
 
-const EXCLUSION_PENALTY = -100000
-
-// Pesos de la función de coste. ENCOUNTER_WEIGHT domina siempre; LEVEL_WEIGHT
-// solo entra en juego si config.prioritizeLevel === true, y su peso es bajo
-// a propósito: es un desempate, nunca debe poder justificar un reencuentro.
-const LEVEL_WEIGHT = 8
-const REPAIR_ITERATIONS = 250
-const RESTART_COUNT = 8
+// Jerarquía de la función de coste (de más a menos importante):
+//  1. DURO   — exclusiones y pareja repetida en este evento (1.000.000 por violación inevitable)
+//  2. FUERTE — volver a coincidir en pista dentro de este evento (100.000 × veces²)
+//  3. BLANDO — nivel (parejas igualadas e igual nivel medio entre pistas), y a menor
+//              peso, coincidir o ser pareja como en el evento anterior
+//  4. DESEMPATE — posición en pista (drive/revés)
+const HARD_PENALTY = 1_000_000
+const SESSION_REPEAT_WEIGHT = 100_000
+const LEVEL_PAIR_WEIGHT = 100   // por punto de diferencia entre la suma de ambas parejas
+const LEVEL_COURT_WEIGHT = 100  // por punto de diferencia entre el nivel medio de la pista y el global
+const PRIOR_MEETING_WEIGHT = 5  // por coincidencia² con el evento anterior
+const PRIOR_PARTNER_WEIGHT = 30 // por pareja repetida respecto al evento anterior
+const POSITION_WEIGHT = 0.3
+const REPAIR_ITERATIONS = 600
+const RESTART_COUNT = 12
 
 function encounterCount(a: MixingParticipant, b: MixingParticipant): number {
   return a.encounter_counts?.[b.id] ?? b.encounter_counts?.[a.id] ?? 0
 }
 
-// 🆕 Coste para la búsqueda/selección: cualquier repetición DENTRO del
-// evento actual (session) pesa muchísimo más que cualquier cantidad de
-// repeticiones que vengan solo del evento anterior (prior). Así, cuando
-// hay que repetir por fuerza, el sistema siempre prefiere "gastar" un
-// reencuentro del evento anterior antes que uno de hoy mismo.
-const SESSION_REPEAT_WEIGHT = 100_000
-const PRIOR_REPEAT_WEIGHT = 300
-
-function encounterCost(a: MixingParticipant, b: MixingParticipant): number {
-  const prior = a.encounter_counts?.[b.id] ?? b.encounter_counts?.[a.id] ?? 0
-  const session = a.session_encounter_counts?.[b.id] ?? b.session_encounter_counts?.[a.id] ?? 0
-  return session * session * SESSION_REPEAT_WEIGHT + prior * prior * PRIOR_REPEAT_WEIGHT
+function sessionCount(a: MixingParticipant, b: MixingParticipant): number {
+  return a.session_encounter_counts?.[b.id] ?? b.session_encounter_counts?.[a.id] ?? 0
 }
 
-function alreadyPartnered(a: MixingParticipant, b: MixingParticipant): boolean {
-  return (a.partner_history?.includes(b.id) ?? false) || (b.partner_history?.includes(a.id) ?? false)
+function partneredBefore(history: 'partner_history' | 'session_partner_history', a: MixingParticipant, b: MixingParticipant): boolean {
+  return (a[history]?.includes(b.id) ?? false) || (b[history]?.includes(a.id) ?? false)
 }
 
-function exclusionPenalty(a: string, b: string, exclusions: ExclusionRule[]): number {
-  for (const ex of exclusions) {
-    const match = (ex.playerA === a && ex.playerB === b) || (ex.playerA === b && ex.playerB === a)
-    if (match) return EXCLUSION_PENALTY
-  }
-  return 0
+type Pair = [MixingParticipant, MixingParticipant]
+type Pairing = [Pair, Pair]
+type Relation = 'partner' | 'rival'
+
+// Una regla solo se viola según su tipo: no_contact en cualquier relación,
+// no_partner solo si son pareja y no_opponent solo si son rivales.
+function violatesExclusion(a: MixingParticipant, b: MixingParticipant, relation: Relation, exclusions: ExclusionRule[]): boolean {
+  return exclusions.some(ex => {
+    const samePair = (ex.playerA === a.id && ex.playerB === b.id) || (ex.playerA === b.id && ex.playerB === a.id)
+    if (!samePair) return false
+    return ex.type === 'no_contact' ||
+      (ex.type === 'no_partner' && relation === 'partner') ||
+      (ex.type === 'no_opponent' && relation === 'rival')
+  })
 }
 
-function hasAnyExclusion(a: MixingParticipant, b: MixingParticipant, exclusions: ExclusionRule[]): boolean {
-  return exclusionPenalty(a.id, b.id, exclusions) < 0
+// Las 3 formas distintas de partir un grupo de 4 en dos parejas.
+function pairingsOf(group: MixingParticipant[]): Pairing[] {
+  const [p1, p2, p3, p4] = group
+  return [
+    [[p1, p2], [p3, p4]],
+    [[p1, p3], [p2, p4]],
+    [[p1, p4], [p2, p3]],
+  ]
+}
+
+function rivalPairs([pairA, pairB]: Pairing): Pair[] {
+  return [[pairA[0], pairB[0]], [pairA[0], pairB[1]], [pairA[1], pairB[0]], [pairA[1], pairB[1]]]
+}
+
+function exclusionViolations(pairing: Pairing, exclusions: ExclusionRule[]): number {
+  const [pairA, pairB] = pairing
+  let n = 0
+  for (const [x, y] of [pairA, pairB]) if (violatesExclusion(x, y, 'partner', exclusions)) n++
+  for (const [x, y] of rivalPairs(pairing)) if (violatesExclusion(x, y, 'rival', exclusions)) n++
+  return n
+}
+
+function sessionPartnerRepeats([pairA, pairB]: Pairing): number {
+  return Number(partneredBefore('session_partner_history', pairA[0], pairA[1])) +
+    Number(partneredBefore('session_partner_history', pairB[0], pairB[1]))
+}
+
+function priorPartnerRepeats([pairA, pairB]: Pairing): number {
+  return Number(partneredBefore('partner_history', pairA[0], pairA[1])) +
+    Number(partneredBefore('partner_history', pairB[0], pairB[1]))
 }
 
 function getPositionScore(a: MixingParticipant, b: MixingParticipant): number {
@@ -104,55 +137,105 @@ function getPositionScore(a: MixingParticipant, b: MixingParticipant): number {
   return 0
 }
 
+/** Coste blando de una forma concreta de emparejar un grupo (menor = mejor). */
+function pairingCost([pairA, pairB]: Pairing, config: MixingConfig): number {
+  let cost = priorPartnerRepeats([pairA, pairB]) * PRIOR_PARTNER_WEIGHT
+  if (config.prioritizeLevel) {
+    const diff = Math.abs((pairA[0].rating + pairA[1].rating) - (pairB[0].rating + pairB[1].rating))
+    cost += diff * LEVEL_PAIR_WEIGHT
+  }
+  if (config.forcePosition) {
+    cost -= (getPositionScore(pairA[0], pairA[1]) + getPositionScore(pairB[0], pairB[1])) * POSITION_WEIGHT
+  }
+  return cost
+}
+
+/**
+ * Formas de emparejar el grupo que sobreviven a los filtros duros, en cascada:
+ * exclusiones primero, pareja repetida del evento actual después. Si nada
+ * sobrevive a un filtro se mantiene el conjunto anterior (y se avisa).
+ */
+function viablePairings(group: MixingParticipant[], exclusions: ExclusionRule[]) {
+  const all = pairingsOf(group)
+  const noExclusion = all.filter(p => exclusionViolations(p, exclusions) === 0)
+  const afterExclusion = noExclusion.length > 0 ? noExclusion : all
+  const noPartnerRepeat = afterExclusion.filter(p => sessionPartnerRepeats(p) === 0)
+  const afterPartner = noPartnerRepeat.length > 0 ? noPartnerRepeat : afterExclusion
+  return {
+    pairings: afterPartner,
+    exclusionForced: noExclusion.length === 0,
+    partnerRepeatForced: noPartnerRepeat.length === 0,
+  }
+}
+
 // ============================================================================
 // CAPA 1 — Planificador de grupos: cascada estricta (rotación > nivel)
 // ============================================================================
 
 interface GroupsCost {
-  primary: number   // exclusiones + reencuentros — SIEMPRE manda
-  secondary: number // nivel — solo desempata cuando primary empata
+  primary: number   // duro + repetición dentro del evento — SIEMPRE manda
+  secondary: number // nivel + historial del evento anterior (blando)
 }
 
-function groupCost(group: MixingParticipant[], exclusions: ExclusionRule[], overallAvgRating: number): GroupsCost {
+function groupCost(
+  group: MixingParticipant[],
+  exclusions: ExclusionRule[],
+  overallAvgRating: number,
+  config: MixingConfig
+): GroupsCost {
   let primary = 0
+  let secondary = 0
+
   for (let i = 0; i < group.length; i++) {
     for (let j = i + 1; j < group.length; j++) {
-      const a = group[i]
-      const b = group[j]
-      if (hasAnyExclusion(a, b, exclusions)) primary += 1_000_000
-      // 🆕 Restricción total: si ya fueron PAREJA (evento actual o el
-      // anterior), evitar a toda costa que vuelvan a compartir pista — se
-      // trata igual que una exclusión, no solo como un reencuentro más.
-      // Así la Capa 2 casi nunca se encuentra sin alternativa limpia.
-      if (alreadyPartnered(a, b)) primary += 1_000_000
-      primary += encounterCost(a, b)
+      const session = sessionCount(group[i], group[j])
+      const prior = encounterCount(group[i], group[j])
+      primary += session * session * SESSION_REPEAT_WEIGHT
+      secondary += prior * prior * PRIOR_MEETING_WEIGHT
     }
   }
-  const groupAvg = group.reduce((s, p) => s + p.rating, 0) / group.length
-  const secondary = Math.abs(groupAvg - overallAvgRating) * LEVEL_WEIGHT
+
+  if (group.length === 4) {
+    // Se puntúa con la misma regla que luego usará la capa 2, así que el
+    // planificador sabe qué emparejamiento tendrá cada grupo. Las violaciones
+    // duras solo cuentan si NINGUNA forma de emparejar el grupo las evita.
+    const all = pairingsOf(group)
+    primary += HARD_PENALTY * Math.min(...all.map(p => exclusionViolations(p, exclusions) + sessionPartnerRepeats(p)))
+    const { pairings } = viablePairings(group, exclusions)
+    secondary += Math.min(...pairings.map(p => pairingCost(p, config)))
+  }
+
+  if (config.prioritizeLevel) {
+    const groupAvg = group.reduce((sum, p) => sum + p.rating, 0) / group.length
+    secondary += Math.abs(groupAvg - overallAvgRating) * LEVEL_COURT_WEIGHT
+  }
+
   return { primary, secondary }
 }
 
-function totalGroupsCost(groups: MixingParticipant[][], exclusions: ExclusionRule[], overallAvgRating: number): GroupsCost {
+function totalGroupsCost(
+  groups: MixingParticipant[][],
+  exclusions: ExclusionRule[],
+  overallAvgRating: number,
+  config: MixingConfig
+): GroupsCost {
   return groups.reduce(
     (sum, g) => {
-      const c = groupCost(g, exclusions, overallAvgRating)
+      const c = groupCost(g, exclusions, overallAvgRating, config)
       return { primary: sum.primary + c.primary, secondary: sum.secondary + c.secondary }
     },
     { primary: 0, secondary: 0 }
   )
 }
 
-/**
- * Compara dos costes en cascada: A es "mejor o igual" que B si tiene menor
- * rotación (primary), o si empata en rotación y tiene menor o igual nivel
- * (secondary) — nunca al revés. El nivel JAMÁS puede compensar peor rotación.
- */
-function isCostBetterOrEqual(a: GroupsCost, b: GroupsCost, prioritizeLevel: boolean): boolean {
-  if (a.primary < b.primary) return true
-  if (a.primary > b.primary) return false
-  if (!prioritizeLevel) return true
+/** A es mejor o igual que B: menos violaciones/repeticiones del evento, y a igualdad, menor coste blando. */
+function isCostBetterOrEqual(a: GroupsCost, b: GroupsCost): boolean {
+  if (a.primary !== b.primary) return a.primary < b.primary
   return a.secondary <= b.secondary
+}
+
+function averageRating(players: MixingParticipant[]): number {
+  return players.reduce((sum, p) => sum + p.rating, 0) / (players.length || 1)
 }
 
 function repairGroupsLocalSearch(
@@ -163,11 +246,10 @@ function repairGroupsLocalSearch(
 ): MixingParticipant[][] {
   if (groups.length < 2) return groups
 
-  const allPlayers = groups.flat()
-  const overallAvgRating = allPlayers.reduce((s, p) => s + p.rating, 0) / allPlayers.length
+  const overallAvgRating = averageRating(groups.flat())
 
   let current = groups.map(g => [...g])
-  let currentCost = totalGroupsCost(current, exclusions, overallAvgRating)
+  let currentCost = totalGroupsCost(current, exclusions, overallAvgRating, config)
 
   for (let iter = 0; iter < iterations; iter++) {
     const gi = Math.floor(Math.random() * current.length)
@@ -182,8 +264,8 @@ function repairGroupsLocalSearch(
     candidate[gi][pi] = candidate[gj][pj]
     candidate[gj][pj] = tmp
 
-    const candidateCost = totalGroupsCost(candidate, exclusions, overallAvgRating)
-    if (isCostBetterOrEqual(candidateCost, currentCost, config.prioritizeLevel)) {
+    const candidateCost = totalGroupsCost(candidate, exclusions, overallAvgRating, config)
+    if (isCostBetterOrEqual(candidateCost, currentCost)) {
       current = candidate
       currentCost = candidateCost
     }
@@ -197,7 +279,11 @@ function buildAndRepairOneAttempt(
   config: MixingConfig,
   exclusions: ExclusionRule[]
 ): { groups: MixingParticipant[][], leftovers: MixingParticipant[] } {
-  const shuffled = [...pool].sort(() => Math.random() - 0.5)
+  const shuffled = [...pool]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
 
   const courtCount = Math.floor(shuffled.length / 4)
   const usableCount = courtCount * 4
@@ -221,20 +307,17 @@ function planGroupsForRound(
   config: MixingConfig,
   exclusions: ExclusionRule[]
 ): { groups: MixingParticipant[][], leftovers: MixingParticipant[] } {
+  const costOf = (attempt: { groups: MixingParticipant[][] }) =>
+    totalGroupsCost(attempt.groups, exclusions, averageRating(attempt.groups.flat()), config)
+
   let best = buildAndRepairOneAttempt(pool, config, exclusions)
-  let bestCost = totalGroupsCost(
-    best.groups,
-    exclusions,
-    best.groups.flat().reduce((s, p) => s + p.rating, 0) / (best.groups.flat().length || 1)
-  )
+  let bestCost = costOf(best)
 
   for (let attempt = 1; attempt < RESTART_COUNT; attempt++) {
     const candidate = buildAndRepairOneAttempt(pool, config, exclusions)
-    const overallAvg = candidate.groups.flat().reduce((s, p) => s + p.rating, 0) / (candidate.groups.flat().length || 1)
-    const candidateCost = totalGroupsCost(candidate.groups, exclusions, overallAvg)
-    const strictlyBetter = candidateCost.primary < bestCost.primary ||
-      (config.prioritizeLevel && candidateCost.primary === bestCost.primary && candidateCost.secondary < bestCost.secondary)
-    if (strictlyBetter) {
+    const candidateCost = costOf(candidate)
+    if (candidateCost.primary < bestCost.primary ||
+        (candidateCost.primary === bestCost.primary && candidateCost.secondary < bestCost.secondary)) {
       best = candidate
       bestCost = candidateCost
     }
@@ -253,74 +336,24 @@ function resolveCourtRoles(
   config: MixingConfig,
   exclusions: ExclusionRule[]
 ): MatchProposal {
-  const [p1, p2, p3, p4] = group
+  const { pairings, exclusionForced, partnerRepeatForced } = viablePairings(group, exclusions)
 
-  const permutations: [MixingParticipant, MixingParticipant][][] = [
-    [[p1, p2], [p3, p4]],
-    [[p1, p3], [p2, p4]],
-    [[p1, p4], [p2, p3]],
-  ]
+  // Entre las formas viables, la de menor coste blando (nivel, historial, posición).
+  const costs = pairings.map(p => pairingCost(p, config))
+  const [pairA, pairB] = pairings[costs.indexOf(Math.min(...costs))]
 
-  const hasExclusionInPerm = ([pairA, pairB]: [MixingParticipant, MixingParticipant][]): boolean => {
-    const [a1, a2] = pairA
-    const [b1, b2] = pairB
-    const all: [MixingParticipant, MixingParticipant][] = [[a1, a2], [b1, b2], [a1, b1], [a1, b2], [a2, b1], [a2, b2]]
-    return all.some(([x, y]) => hasAnyExclusion(x, y, exclusions))
-  }
-  const hasPartnerRepeatInPerm = ([pairA, pairB]: [MixingParticipant, MixingParticipant][]): boolean =>
-    alreadyPartnered(pairA[0], pairA[1]) || alreadyPartnered(pairB[0], pairB[1])
-  const rotationCost = ([pairA, pairB]: [MixingParticipant, MixingParticipant][]): number => {
-    const [a1, a2] = pairA
-    const [b1, b2] = pairB
-    const all: [MixingParticipant, MixingParticipant][] = [[a1, a2], [b1, b2], [a1, b1], [a1, b2], [a2, b1], [a2, b2]]
-    return all.reduce((s, [x, y]) => s + encounterCost(x, y), 0)
-  }
-  const levelDiff = ([pairA, pairB]: [MixingParticipant, MixingParticipant][]): number =>
-    Math.abs((pairA[0].rating + pairA[1].rating) - (pairB[0].rating + pairB[1].rating))
-  const positionScore = ([pairA, pairB]: [MixingParticipant, MixingParticipant][]): number =>
-    getPositionScore(pairA[0], pairA[1]) + getPositionScore(pairB[0], pairB[1])
-
-  // 🎯 CASCADA: cada nivel filtra sobre lo que sobrevivió del anterior.
-
-  // Nivel 1: exclusiones (filtro duro)
-  const noExclusion = permutations.filter(p => !hasExclusionInPerm(p))
-  const afterExclusion = noExclusion.length > 0 ? noExclusion : permutations
-  const exclusionForced = noExclusion.length === 0
-
-  // Nivel 2: pareja repetida (filtro duro)
-  const noPartnerRepeat = afterExclusion.filter(p => !hasPartnerRepeatInPerm(p))
-  const afterPartner = noPartnerRepeat.length > 0 ? noPartnerRepeat : afterExclusion
-  const partnerRepeatForced = noPartnerRepeat.length === 0
-
-  // Nivel 3: rotación (evento actual pesa mucho más que el anterior)
-  const costs = afterPartner.map(rotationCost)
-  const minCost = Math.min(...costs)
-  let candidates = afterPartner.filter((_, i) => costs[i] === minCost)
-
-  // Nivel 4: nivel de juego (desempate opcional)
-  if (config.prioritizeLevel && candidates.length > 1) {
-    const diffs = candidates.map(levelDiff)
-    const minDiff = Math.min(...diffs)
-    candidates = candidates.filter((_, i) => diffs[i] === minDiff)
-  }
-
-  // Nivel 5: posición en pista (desempate opcional, último)
-  if (config.forcePosition && candidates.length > 1) {
-    const posScores = candidates.map(positionScore)
-    const maxPos = Math.max(...posScores)
-    candidates = candidates.filter((_, i) => posScores[i] === maxPos)
-  }
-
-  const [pairA, pairB] = candidates[0]
-
+  // Avisos: reencuentros DENTRO del evento (el peor caso) y, con menos peso,
+  // coincidencias repetidas con el evento anterior.
+  const allCrossings: Pair[] = [pairA, pairB, ...rivalPairs([pairA, pairB])]
+  const hasSessionRepeat = allCrossings.some(([x, y]) => sessionCount(x, y) >= 1)
   const REPEAT_WARNING_THRESHOLD = 2
-  const allFinalPairs: [MixingParticipant, MixingParticipant][] = [pairA, pairB, [pairA[0], pairB[0]], [pairA[0], pairB[1]], [pairA[1], pairB[0]], [pairA[1], pairB[1]]]
-  const hasRivalRepeatIssue = allFinalPairs.some(([x, y]) => encounterCount(x, y) >= REPEAT_WARNING_THRESHOLD)
+  const hasPriorRepeat = allCrossings.some(([x, y]) => encounterCount(x, y) >= REPEAT_WARNING_THRESHOLD)
 
   const warningMsgs: string[] = []
   if (exclusionForced) warningMsgs.push('No fue posible respetar todas las exclusiones en esta pista')
   if (partnerRepeatForced) warningMsgs.push('No fue posible evitar que estos jugadores repitan como PAREJA — no había ninguna alternativa disponible')
-  else if (hasRivalRepeatIssue) warningMsgs.push('Estos jugadores ya han coincidido varias veces recientemente — no fue posible evitarlo esta vez')
+  if (hasSessionRepeat) warningMsgs.push('Algunos jugadores ya han coincidido en pista en este evento — no fue posible evitarlo')
+  else if (hasPriorRepeat) warningMsgs.push('Estos jugadores ya han coincidido varias veces recientemente — no fue posible evitarlo esta vez')
 
   return {
     courtNumber,
@@ -351,7 +384,7 @@ export function generateMixingRound(
 /**
  * Actualiza el historial en memoria tras una ronda: suma +1 al contador de
  * la SESIÓN ACTUAL (session_encounter_counts) para las 6 relaciones del
- * grupo, y registra en partner_history quién ha sido PAREJA de quién esta
+ * grupo, y registra en session_partner_history quién ha sido PAREJA de quién esta
  * vez (eso es lo que activa el bloqueo duro en la siguiente ronda). El
  * contador del evento anterior (encounter_counts) no se toca aquí — se
  * carga una sola vez al inicio desde el servidor.
@@ -366,8 +399,8 @@ export function applyRoundToHistory(participants: MixingParticipant[], matches: 
   const markPartner = (pid: string, partnerId: string) => {
     const p = participants.find(cp => cp.id === pid)
     if (!p) return
-    if (!p.partner_history) p.partner_history = []
-    if (!p.partner_history.includes(partnerId)) p.partner_history.push(partnerId)
+    if (!p.session_partner_history) p.session_partner_history = []
+    if (!p.session_partner_history.includes(partnerId)) p.session_partner_history.push(partnerId)
   }
 
   matches.forEach(m => {
@@ -395,6 +428,7 @@ export function generateEventRounds(
     encounter_counts: { ...(p.encounter_counts ?? {}) },
     session_encounter_counts: { ...(p.session_encounter_counts ?? {}) },
     partner_history: [...(p.partner_history ?? [])],
+    session_partner_history: [...(p.session_partner_history ?? [])],
   }))
 
   const rounds: RoundProposal[] = []

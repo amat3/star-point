@@ -77,11 +77,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
 
   const priorEncounterCountsMap = new Map<string, Map<string, number>>()   // 🆕 solo evento(s) anterior(es) de la ventana
   const sessionEncounterCountsMap = new Map<string, Map<string, number>>() // 🆕 solo el evento ACTUAL (rondas ya guardadas)
-  const partnerHistoryMap = new Map<string, Set<string>>() // sigue sin distinguir evento: pareja repetida es absoluto
+  const priorPartnerMap = new Map<string, Set<string>>()   // parejas del evento anterior (coste blando)
+  const sessionPartnerMap = new Map<string, Set<string>>() // parejas de ESTE evento (bloqueo duro)
   titulares.forEach((p) => {
     priorEncounterCountsMap.set(p.user_id, new Map())
     sessionEncounterCountsMap.set(p.user_id, new Map())
-    partnerHistoryMap.set(p.user_id, new Set())
+    priorPartnerMap.set(p.user_id, new Set())
+    sessionPartnerMap.set(p.user_id, new Set())
   })
 
   const bump = (map: Map<string, Map<string, number>>, x: string | null, y: string | null) => {
@@ -89,9 +91,9 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
     const m = map.get(x)
     if (m) m.set(y, (m.get(y) || 0) + 1)
   }
-  const markPartner = (x: string | null, y: string | null) => {
+  const markPartner = (map: Map<string, Set<string>>, x: string | null, y: string | null) => {
     if (!x || !y) return
-    partnerHistoryMap.get(x)?.add(y)
+    map.get(x)?.add(y)
   }
 
   if (matches) {
@@ -107,12 +109,13 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
                   bump(targetMap, ids[j], ids[i])
               }
           }
-          // Las parejas reales (no los cruces rivales) se registran aparte
-          // para el bloqueo duro de pareja repetida.
-          markPartner(m.player_a1, m.player_a2)
-          markPartner(m.player_a2, m.player_a1)
-          markPartner(m.player_b1, m.player_b2)
-          markPartner(m.player_b2, m.player_b1)
+          // Las parejas reales (no los cruces rivales) se registran aparte:
+          // las de este evento bloquean (duro), las del anterior solo penalizan.
+          const partnerMap = m.event_id === eventId ? sessionPartnerMap : priorPartnerMap
+          markPartner(partnerMap, m.player_a1, m.player_a2)
+          markPartner(partnerMap, m.player_a2, m.player_a1)
+          markPartner(partnerMap, m.player_b1, m.player_b2)
+          markPartner(partnerMap, m.player_b2, m.player_b1)
       })
   }
 
@@ -127,7 +130,8 @@ export async function getEventMixingData(eventId: string): Promise<{ participant
           avatar_url: profile.avatar_url ?? null,
           encounter_counts: Object.fromEntries(priorEncounterCountsMap.get(p.user_id) || []), // 🆕 solo evento anterior
           session_encounter_counts: Object.fromEntries(sessionEncounterCountsMap.get(p.user_id) || []), // 🆕 solo evento actual
-          partner_history: Array.from(partnerHistoryMap.get(p.user_id) || []), // solo pareja (bloqueo duro)
+          partner_history: Array.from(priorPartnerMap.get(p.user_id) || []), // pareja en el evento anterior (blando)
+          session_partner_history: Array.from(sessionPartnerMap.get(p.user_id) || []), // pareja en este evento (bloqueo duro)
           is_guest: profile.is_guest ?? false
       }
   })
