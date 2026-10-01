@@ -2,18 +2,22 @@
 
 import styled from '@emotion/styled'
 import { Swords, Trophy } from 'lucide-react'
+import type { Theme } from '@/theme'
 
 interface StatsRowProps {
   matchesPlayed: number
   matchesWon: number
   // 0..1
   winRatio: number
+  // Optional second row with total games for/against
+  gamesWon?: number
+  gamesLost?: number
 }
 
-function StatsRow({ matchesPlayed, matchesWon, winRatio }: StatsRowProps) {
+function StatsRow({ matchesPlayed, matchesWon, winRatio, gamesWon, gamesLost }: StatsRowProps) {
   return (
     <Root>
-      <Tile>
+      <Tile $tone="brand">
         <Caption>
           <Swords />
           Partidos jugados
@@ -22,7 +26,7 @@ function StatsRow({ matchesPlayed, matchesWon, winRatio }: StatsRowProps) {
         <Detail>en total</Detail>
       </Tile>
 
-      <Tile>
+      <Tile $tone="win">
         <Caption>
           <Trophy />
           Ratio de victorias
@@ -35,6 +39,18 @@ function StatsRow({ matchesPlayed, matchesWon, winRatio }: StatsRowProps) {
           {matchesWon} {matchesWon === 1 ? 'victoria' : 'victorias'}
         </Detail>
       </Tile>
+      {gamesWon !== undefined && gamesLost !== undefined && (
+        <>
+          <Tile $tone="win">
+            <Caption>Juegos ganados</Caption>
+            <Value>{gamesWon}</Value>
+          </Tile>
+          <Tile $tone="loss">
+            <Caption>Juegos perdidos</Caption>
+            <Value>{gamesLost}</Value>
+          </Tile>
+        </>
+      )}
     </Root>
   )
 }
@@ -45,12 +61,20 @@ const Root = styled.section`
   gap: 0.75rem;
 `
 
-const Tile = styled.div`
+type Tone = 'brand' | 'win' | 'loss'
+
+const toneColor = (theme: Theme, tone: Tone) =>
+  ({ brand: theme.colors.forest, win: theme.colors.online, loss: theme.colors.danger })[tone]
+
+// The border carries the color: brand for totals, green for wins, red for losses.
+const Tile = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$tone',
+})<{ $tone: Tone }>`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.line};
+  border: 1.5px solid ${({ theme, $tone }) => toneColor(theme, $tone)};
   border-radius: ${({ theme }) => theme.radii.lg};
 `
 
