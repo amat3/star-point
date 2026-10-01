@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, DM_Sans, Space_Grotesk } from "next/font/google";
-import "./globals.css";
+import { DM_Sans, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import { Footer } from "@/components/layout/Footer";
@@ -8,16 +7,6 @@ import { InstallBanner } from "@/components/layout/InstallBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import AppShell from "@/components/molecules/AppShell";
 import { EmotionProvider } from "@/components/providers/EmotionProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -57,9 +46,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${spaceGrotesk.variable} antialiased min-h-full flex flex-col bg-background overflow-x-hidden no-scrollbar`}
+        className={`${dmSans.variable} ${spaceGrotesk.variable}`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <EmotionProvider>
