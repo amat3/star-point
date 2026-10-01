@@ -436,3 +436,28 @@ export function generateEventRounds(
   }
   return rounds
 }
+/**
+ * Quick quality read of a proposal: how many times two players share a court
+ * again within the event, and how many courts carry a warning.
+ */
+export function summarizeRounds(rounds: RoundProposal[]): { reMeetings: number; warnings: number } {
+  const met = new Map<string, number>()
+  let warnings = 0
+
+  for (const round of rounds) {
+    for (const m of round.matches) {
+      if (m.warning) warnings++
+      const ids = [m.player1.id, m.player2.id, m.player3.id, m.player4.id]
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const key = [ids[i], ids[j]].sort().join('|')
+          met.set(key, (met.get(key) ?? 0) + 1)
+        }
+      }
+    }
+  }
+
+  let reMeetings = 0
+  met.forEach(count => { if (count > 1) reMeetings += count - 1 })
+  return { reMeetings, warnings }
+}
