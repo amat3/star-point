@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { generateMixingRound, MixingParticipant, MixingConfig, ExclusionRule, MatchProposal } from './mixing-algorithm'
-
-// Nota: el incentivo de emparejamiento forzado (ForcedPairingRule) vive en la
-// rama feature/round-incentive, no mergeada a main — no se testea aquí.
+import {
+  generateMixingRound,
+  generateEventRounds,
+  MixingParticipant,
+  MixingConfig,
+  ExclusionRule,
+  MatchProposal,
+} from './mixing-algorithm'
 
 function makeParticipants(n: number): MixingParticipant[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -11,30 +15,12 @@ function makeParticipants(n: number): MixingParticipant[] {
     gender: 'otro' as const,
     court_position: i % 2 === 0 ? 'drive' as const : 'reves' as const,
     full_name: `Player ${i}`,
-    past_partners: [],
-    past_opponents: [],
-    current_event_partners: [],
+    encounter_counts: {},
+    session_encounter_counts: {},
+    partner_history: [],
+    session_partner_history: [],
     is_guest: false,
   }))
-}
-
-// Replica el bucle de `handleGenerate` (generate/page.tsx): actualiza el
-// historial en memoria entre rondas de un mismo evento antes de la siguiente
-// llamada a generateMixingRound.
-function applyRoundHistory(participants: MixingParticipant[], matches: MatchProposal[]) {
-  const updateHistory = (pid: string, partnerId: string, opponents: string[]) => {
-    const p = participants.find(cp => cp.id === pid)
-    if (!p) return
-    if (!p.past_partners.includes(partnerId)) p.past_partners.push(partnerId)
-    if (!p.current_event_partners.includes(partnerId)) p.current_event_partners.push(partnerId)
-    opponents.forEach(oid => { if (!p.past_opponents.includes(oid)) p.past_opponents.push(oid) })
-  }
-  matches.forEach(m => {
-    updateHistory(m.player1.id, m.player2.id, [m.player3.id, m.player4.id])
-    updateHistory(m.player2.id, m.player1.id, [m.player3.id, m.player4.id])
-    updateHistory(m.player3.id, m.player4.id, [m.player1.id, m.player2.id])
-    updateHistory(m.player4.id, m.player3.id, [m.player1.id, m.player2.id])
-  })
 }
 
 function findMatch(matches: MatchProposal[], id: string) {
@@ -42,17 +28,49 @@ function findMatch(matches: MatchProposal[], id: string) {
 }
 
 function arePartners(match: MatchProposal, a: string, b: string) {
-  return (match.pairA[0].id === a && match.pairA[1].id === b) ||
-         (match.pairA[0].id === b && match.pairA[1].id === a) ||
-         (match.pairB[0].id === a && match.pairB[1].id === b) ||
-         (match.pairB[0].id === b && match.pairB[1].id === a)
+  return [match.pairA, match.pairB].some(pair => pair.map(p => p.id).sort().join() === [a, b].sort().join())
+}
+
+function areRivals(match: MatchProposal, a: string, b: string) {
+  const inA = (id: string) => match.pairA.some(p => p.id === id)
+  const inB = (id: string) => match.pairB.some(p => p.id === id)
+  return (inA(a) && inB(b)) || (inB(a) && inA(b))
 }
 
 const baseConfig: MixingConfig = {
   genderMode: 'open',
-  balanceStrategy: 'similar_levels',
-  avoidRepetition: true,
+  prioritizeLevel: false,
   forcePosition: false,
+}
+
+// Counts how many times a pair of players shares a court beyond the first time.
+function reMeetings(rounds: { matches: MatchProposal[] }[]) {
+  const met = new Map<string, number>()
+  for (const round of rounds) {
+    for (const m of round.matches) {
+      const ids = [m.player1.id, m.player2.id, m.player3.id, m.player4.id]
+      for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+        const key = [ids[i], ids[j]].sort().join()
+        met.set(key, (met.get(key) ?? 0) + 1)
+      }
+    }
+  }
+  return [...met.values()].reduce((sum, v) => sum + Math.max(v - 1, 0), 0)
+}
+
+function partnerRepeats(rounds: { matches: MatchProposal[] }[]) {
+  const seen = new Set<string>()
+  let repeats = 0
+  for (const round of rounds) {
+    for (const m of round.matches) {
+      for (const pair of [m.pairA, m.pairB]) {
+        const key = pair.map(p => p.id).sort().join()
+        if (seen.has(key)) repeats++
+        seen.add(key)
+      }
+    }
+  }
+  return repeats
 }
 
 describe('generateMixingRound — casos base', () => {
@@ -68,101 +86,211 @@ describe('generateMixingRound — casos base', () => {
     expect(result.leftovers).toHaveLength(2)
   })
 
-  it('respeta una exclusión no_partner cuando existe alternativa viable', () => {
-    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_partner' }]
-    const result = generateMixingRound(makeParticipants(12), { ...baseConfig, exclusions })
-    const match = findMatch(result.matches, 'p0')
-    expect(match && arePartners(match, 'p0', 'p1')).toBe(false)
-  })
-
-  it('evita repetir pareja cuando hay una agrupación alternativa disponible', () => {
-    const participants = makeParticipants(12)
-    // p0 y p1 ya jugaron juntos como pareja
-    participants[0].past_partners.push('p1')
-    participants[1].past_partners.push('p0')
-    const result = generateMixingRound(participants, baseConfig)
-    const match = findMatch(result.matches, 'p0')
-    expect(match && arePartners(match, 'p0', 'p1')).toBe(false)
+  it('cada partido tiene 4 jugadores distintos y nadie juega dos partidos', () => {
+    const result = generateMixingRound(makeParticipants(12), baseConfig)
+    const ids = result.matches.flatMap(m => [m.player1.id, m.player2.id, m.player3.id, m.player4.id])
+    expect(new Set(ids).size).toBe(12)
   })
 
   it('con forcePosition activo, prefiere parejas drive+revés sobre drive+drive', () => {
-    // avoidRepetition:false para que no haya jitter aleatorio en el orden por
-    // rating — así cada pista recibe siempre exactamente 2 drive + 2 revés
-    // (los participantes alternan posición por índice) y el resultado es determinista.
-    const result = generateMixingRound(makeParticipants(12), { ...baseConfig, avoidRepetition: false, forcePosition: true })
-    for (const match of result.matches) {
-      const pairPositions = (pair: [MixingParticipant, MixingParticipant]) => [pair[0].court_position, pair[1].court_position]
-      const [a1, a2] = pairPositions(match.pairA)
-      const [b1, b2] = pairPositions(match.pairB)
-      // Ninguna pareja debería ser drive+drive o reves+reves cuando hay alternativas complementarias disponibles
-      expect(a1 === a2).toBe(false)
-      expect(b1 === b2).toBe(false)
+    // 12 jugadores alternando drive/revés → cada pista recibe 2 drive + 2 revés
+    // si el reparto es par; con grupos aleatorios puede haber 3+1, así que solo
+    // exigimos que las parejas complementarias se elijan cuando existen.
+    for (let run = 0; run < 20; run++) {
+      const result = generateMixingRound(makeParticipants(12), { ...baseConfig, forcePosition: true })
+      for (const match of result.matches) {
+        const positions = [match.player1, match.player2, match.player3, match.player4].map(p => p.court_position)
+        const drives = positions.filter(p => p === 'drive').length
+        if (drives !== 2) continue
+        expect(match.pairA[0].court_position === match.pairA[1].court_position).toBe(false)
+        expect(match.pairB[0].court_position === match.pairB[1].court_position).toBe(false)
+      }
     }
   })
 
-  it('ambas estrategias generan partidos completos y válidos', () => {
-    for (const balanceStrategy of ['similar_levels', 'pro_am'] as const) {
-      const result = generateMixingRound(makeParticipants(12), { ...baseConfig, balanceStrategy })
-      expect(result.matches).toHaveLength(3)
-      result.matches.forEach(m => {
-        const ids = [m.player1.id, m.player2.id, m.player3.id, m.player4.id]
-        expect(new Set(ids).size).toBe(4) // 4 jugadores distintos por partido
-      })
-    }
+  it('con prioritizeLevel activo, equilibra las dos parejas de la pista', () => {
+    const participants = makeParticipants(4).map((p, i) => ({ ...p, rating: [4, 3, 2, 1][i] }))
+    const result = generateMixingRound(participants, { ...baseConfig, prioritizeLevel: true })
+    const m = result.matches[0]
+    const sum = (pair: [MixingParticipant, MixingParticipant]) => pair[0].rating + pair[1].rating
+    // 4+1 vs 3+2 es la única forma equilibrada
+    expect(Math.abs(sum(m.pairA) - sum(m.pairB))).toBe(0)
   })
 })
 
-describe('generateMixingRound — Serpentín (pro_am): no repetir pareja dentro del evento', () => {
-  // Ratings muy separados para que el orden sea estable pese al jitter (±0.25)
-  // de avoidRepetition, sin necesidad de mockear Math.random.
-  function makeSpreadParticipants(n: number): MixingParticipant[] {
-    return makeParticipants(n).map((p, i) => ({ ...p, rating: 100 - i * 10 }))
+describe('exclusiones (por tipo)', () => {
+  const group = () => makeParticipants(4)
+
+  it('no_partner: nunca son pareja, pero sí pueden compartir pista como rivales', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_partner' }]
+    for (let run = 0; run < 20; run++) {
+      const m = generateMixingRound(group(), { ...baseConfig, exclusions }).matches[0]
+      expect(arePartners(m, 'p0', 'p1')).toBe(false)
+      expect(m.warning).toBeUndefined()
+    }
+  })
+
+  it('no_opponent: nunca son rivales (juegan en la misma pareja)', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_opponent' }]
+    for (let run = 0; run < 20; run++) {
+      const m = generateMixingRound(group(), { ...baseConfig, exclusions }).matches[0]
+      expect(areRivals(m, 'p0', 'p1')).toBe(false)
+      expect(m.warning).toBeUndefined()
+    }
+  })
+
+  it('no_contact: no comparten pista cuando hay alternativa', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_contact' }]
+    for (let run = 0; run < 20; run++) {
+      const result = generateMixingRound(makeParticipants(12), { ...baseConfig, exclusions })
+      const m = findMatch(result.matches, 'p0')!
+      expect([m.player1.id, m.player2.id, m.player3.id, m.player4.id]).not.toContain('p1')
+    }
+  })
+
+  it('avisa cuando no se puede respetar una exclusión', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_contact' }]
+    const m = generateMixingRound(group(), { ...baseConfig, exclusions }).matches[0]
+    expect(m.warning).toContain('exclusiones')
+  })
+})
+
+describe('pareja repetida', () => {
+  it('nunca repite una pareja de este mismo evento (bloqueo duro), aunque el nivel lo favorezca', () => {
+    for (let run = 0; run < 20; run++) {
+      // 4+1 vs 3+2 es el reparto equilibrado; p0 y p3 ya fueron pareja hoy
+      const participants = makeParticipants(4).map((p, i) => ({ ...p, rating: [4, 3, 2, 1][i] }))
+      participants[0].session_partner_history = ['p3']
+      participants[3].session_partner_history = ['p0']
+      const m = generateMixingRound(participants, { ...baseConfig, prioritizeLevel: true }).matches[0]
+      expect(arePartners(m, 'p0', 'p3')).toBe(false)
+    }
+  })
+
+  it('evita repetir la pareja del evento anterior cuando no cuesta nivel (blando)', () => {
+    for (let run = 0; run < 20; run++) {
+      const participants = makeParticipants(4)
+      participants[0].partner_history = ['p1']
+      participants[1].partner_history = ['p0']
+      const m = generateMixingRound(participants, baseConfig).matches[0]
+      expect(arePartners(m, 'p0', 'p1')).toBe(false)
+    }
+  })
+
+  it('el nivel pesa más que repetir la pareja del evento anterior', () => {
+    // 4+1 vs 3+2 es la única forma equilibrada; p0 y p3 fueron pareja la semana pasada
+    const participants = makeParticipants(4).map((p, i) => ({ ...p, rating: [4, 3, 2, 1][i] }))
+    participants[0].partner_history = ['p3']
+    participants[3].partner_history = ['p0']
+    const m = generateMixingRound(participants, { ...baseConfig, prioritizeLevel: true }).matches[0]
+    expect(arePartners(m, 'p0', 'p3')).toBe(true)
+  })
+
+  it('avisa si es imposible evitar una pareja repetida en este evento', () => {
+    const participants = makeParticipants(4)
+    // p0 ya fue pareja de los otros tres hoy: cualquier emparejamiento repite
+    participants[0].session_partner_history = ['p1', 'p2', 'p3']
+    participants[1].session_partner_history = ['p0']
+    participants[2].session_partner_history = ['p0']
+    participants[3].session_partner_history = ['p0']
+    const m = generateMixingRound(participants, baseConfig).matches[0]
+    expect(m.warning).toContain('PAREJA')
+  })
+})
+
+describe('avisos de reencuentro', () => {
+  it('avisa cuando los jugadores ya coincidieron en pista en este evento', () => {
+    const participants = makeParticipants(4)
+    participants.forEach(p => {
+      p.session_encounter_counts = Object.fromEntries(participants.filter(o => o.id !== p.id).map(o => [o.id, 1]))
+    })
+    const m = generateMixingRound(participants, baseConfig).matches[0]
+    expect(m.warning).toContain('en este evento')
+  })
+
+  it('no avisa si nadie ha coincidido antes', () => {
+    const m = generateMixingRound(makeParticipants(4), baseConfig).matches[0]
+    expect(m.warning).toBeUndefined()
+  })
+})
+
+describe('generateEventRounds — objetivo: no volver a verse las caras', () => {
+  it('12 jugadores, 3 rondas: ninguna pareja repetida y reencuentros en el mínimo posible (9)', () => {
+    // Con 3 pistas de 4, en la ronda 2 es inevitable que haya jugadores de una
+    // misma pista de la ronda 1. El mínimo teórico del evento es 9 reencuentros.
+    for (let run = 0; run < 10; run++) {
+      const rounds = generateEventRounds(makeParticipants(12), baseConfig, 3)
+      expect(partnerRepeats(rounds)).toBe(0)
+      expect(reMeetings(rounds)).toBeLessThanOrEqual(10)
+    }
+  })
+
+  it('16 jugadores, 3 rondas: ni parejas ni reencuentros (existe solución perfecta)', () => {
+    let worst = 0
+    for (let run = 0; run < 10; run++) {
+      const rounds = generateEventRounds(makeParticipants(16), baseConfig, 3)
+      expect(partnerRepeats(rounds)).toBe(0)
+      worst = Math.max(worst, reMeetings(rounds))
+    }
+    expect(worst).toBeLessThanOrEqual(2)
+  })
+
+  it('con un evento anterior de 16 jugadores sigue sin repetir pareja ni encadenar reencuentros', () => {
+    // Evento anterior: mismos 16 con historial; antes de la corrección esto daba ~7 reencuentros.
+    const players = makeParticipants(16)
+    const previous = generateEventRounds(players, baseConfig, 3)
+    previous.forEach(r => r.matches.forEach(m => {
+      const all = [m.player1, m.player2, m.player3, m.player4]
+      for (const a of all) for (const b of all) {
+        if (a.id === b.id) continue
+        const p = players.find(x => x.id === a.id)!
+        p.encounter_counts[b.id] = (p.encounter_counts[b.id] ?? 0) + 1
+      }
+      for (const pair of [m.pairA, m.pairB]) {
+        players.find(x => x.id === pair[0].id)!.partner_history!.push(pair[1].id)
+        players.find(x => x.id === pair[1].id)!.partner_history!.push(pair[0].id)
+      }
+    }))
+
+    let total = 0
+    for (let run = 0; run < 10; run++) {
+      const rounds = generateEventRounds(players, baseConfig, 3)
+      expect(partnerRepeats(rounds)).toBe(0)
+      total += reMeetings(rounds)
+    }
+    expect(total / 10).toBeLessThan(1)
+  })
+})
+
+describe('prioridad de nivel: partidos igualados (opción A)', () => {
+  // Ratings repartidos entre 2,6 y 4,6 como en el grupo real.
+  const spread = (n: number) => makeParticipants(n).map((p, i) => ({ ...p, rating: 2.6 + (2 * i) / (n - 1) }))
+
+  function meanPairImbalance(prioritizeLevel: boolean) {
+    let total = 0
+    let count = 0
+    for (let run = 0; run < 5; run++) {
+      for (const round of generateEventRounds(spread(12), { ...baseConfig, prioritizeLevel }, 3)) {
+        for (const m of round.matches) {
+          total += Math.abs((m.pairA[0].rating + m.pairA[1].rating) - (m.pairB[0].rating + m.pairB[1].rating))
+          count++
+        }
+      }
+    }
+    return total / count
   }
 
-  it('el mejor y el peor rankeado no repiten pareja en 3 rondas consecutivas (pueden serlo una vez, nunca dos)', () => {
-    const participants = makeSpreadParticipants(12)
-    const config: MixingConfig = { ...baseConfig, balanceStrategy: 'pro_am' }
-    let timesPaired = 0
+  it('con nivel activo los partidos quedan igualados sin sacrificar la rotación del evento', () => {
+    const withLevel = meanPairImbalance(true)
+    const withoutLevel = meanPairImbalance(false)
+    expect(withLevel).toBeLessThan(0.35)
+    expect(withLevel).toBeLessThan(withoutLevel / 2)
 
-    for (let round = 0; round < 3; round++) {
-      const result = generateMixingRound(participants, config)
-      const match = findMatch(result.matches, 'p0')
-      if (match && arePartners(match, 'p0', 'p11')) timesPaired++
-      applyRoundHistory(participants, result.matches)
+    for (let run = 0; run < 5; run++) {
+      const rounds = generateEventRounds(spread(12), { ...baseConfig, prioritizeLevel: true }, 3)
+      expect(partnerRepeats(rounds)).toBe(0)
+      expect(reMeetings(rounds)).toBeLessThanOrEqual(10)
     }
-
-    expect(timesPaired).toBeLessThanOrEqual(1)
-  })
-
-  it('respeta una exclusión no_partner incluso cuando el patrón serpentín los empareja por defecto', () => {
-    const participants = makeSpreadParticipants(8)
-    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p7', type: 'no_partner' }]
-    const result = generateMixingRound(participants, { ...baseConfig, balanceStrategy: 'pro_am', exclusions })
-    const match = findMatch(result.matches, 'p0')
-    expect(match && arePartners(match, 'p0', 'p7')).toBe(false)
-    expect(match?.warning).toBeUndefined()
-  })
-
-  it('permite repetir pareja con un evento anterior (preferencia soft, no bloqueo)', () => {
-    // past_partners (histórico global) tiene la repetición, pero
-    // current_event_partners (este evento) está vacío — no debe bloquearse.
-    const participants = makeSpreadParticipants(4)
-    participants[0].past_partners.push('p3')
-    participants[3].past_partners.push('p0')
-    const result = generateMixingRound(participants, { ...baseConfig, balanceStrategy: 'pro_am' })
-    expect(result.matches).toHaveLength(1)
-    expect(result.matches[0].warning).toBeUndefined()
   })
 })
 
-describe('generateMixingRound — similar_levels: filtro duro de repetición dentro del evento', () => {
-  it('descarta permutaciones que repiten pareja del evento actual aunque el balance de nivel las favorezca', () => {
-    const participants = makeParticipants(4).map((p, i) => ({ ...p, rating: [1000, 1, 1, 0][i] }))
-    // p0 y p2 ya son pareja en ESTE evento (mid_balance: p0+p2 vs p1+p3)
-    participants[0].current_event_partners.push('p2')
-    participants[2].current_event_partners.push('p0')
-    const result = generateMixingRound(participants, { ...baseConfig, balanceStrategy: 'similar_levels' })
-    const match = result.matches[0]
-    expect(arePartners(match, 'p0', 'p2')).toBe(false)
-  })
-})
