@@ -94,7 +94,7 @@ export default function ExclusionsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard">
+        <Link href="/admin">
           <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
         </Link>
         <div>
