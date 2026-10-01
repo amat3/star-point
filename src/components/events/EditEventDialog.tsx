@@ -1,37 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import styled from '@emotion/styled'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
+import { toast } from 'sonner'
+import Button from '@/components/atoms/Button'
+import Input from '@/components/atoms/Input'
+import Select from '@/components/atoms/Select'
+import Dialog from '@/components/molecules/Dialog'
+import Field from '@/components/molecules/Field'
+import { createClient } from '@/utils/supabase/client'
 import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
 import { updateEvent } from '@/app/actions/events'
 import { MixingEvent } from '@/types/events'
 
 const formSchema = z.object({
-  title: z.string().min(3, "El título debe tener al menos 3 caracteres"),
-  date: z.string(),
-  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido HH:MM"),
-  courts: z.number().min(1, "Mínimo 1 pista").max(9, "Máximo 9 pistas"),
-  rounds: z.number().min(1).max(6),
-  duration_minutes: z.number().min(30)
+  title: z.string().min(3, 'El título debe tener al menos 3 caracteres'),
+  club_id: z.string(),
+  date: z.string().min(1, 'Elige una fecha'),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)'),
+  courts: z.number().min(1, 'Mínimo 1 pista').max(9, 'Máximo 9 pistas'),
+  rounds: z.number().min(1, 'Mínimo 1 ronda').max(6, 'Máximo 6 rondas'),
+  duration_minutes: z.number().min(30, 'Mínimo 30 minutos'),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -42,57 +34,45 @@ interface EditEventDialogProps {
   event: MixingEvent
 }
 
-export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogProps) {
-  const { date: datePart, time: timePart } = utcToMadridDateTime(event.start_time)
+const valuesFor = (event: MixingEvent): FormValues => {
+  const { date, time } = utcToMadridDateTime(event.start_time)
+  return {
+    title: event.title,
+    club_id: event.club_id ?? '',
+    date,
+    time,
+    courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
+    rounds: event.rounds || 1,
+    duration_minutes: event.duration_minutes || 90,
+  }
+}
 
-  const form = useForm<FormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(formSchema) as any,
-    defaultValues: {
-      title: event.title,
-      date: datePart,
-      time: timePart,
-      courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
-      rounds: event.rounds || 1,
-      duration_minutes: event.duration_minutes || 90
-    }
+export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [clubs, setClubs] = useState<{ id: string; name: string }[]>([])
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: valuesFor(event),
   })
 
-  const [isLoading, setIsLoading] = useState(false)
-
-  // Watch for changes to rounds to auto-update title if it follows pattern
-  const roundsValue = form.watch("rounds")
-  const titleValue = form.watch("title")
-
+  // Reset the form and load the clubs every time the dialog opens
   useEffect(() => {
-    // pattern: "Some Text (X Ronda)" or "Some Text (X Rondas)"
-    // explicitly look for this pattern at the end of string
-    const match = titleValue.match(/^(.*) \(\d+ Rondas?\)$/)
-    if (match) {
-       const prefix = match[1]
-       const suffix = roundsValue === 1 ? "(1 Ronda)" : `(${roundsValue} Rondas)`
-       const newTitle = `${prefix} ${suffix}`
-       
-       if (newTitle !== titleValue) {
-           form.setValue("title", newTitle)
-       }
-    }
-  }, [roundsValue, form, titleValue])
-
-  // Reset form when event changes or dialog opens
-  useEffect(() => {
-    if (open) {
-      const { date, time } = utcToMadridDateTime(event.start_time)
-      form.reset({
-        title: event.title,
-        date,
-        time,
-        courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
-        rounds: event.rounds || 1,
-        duration_minutes: event.duration_minutes || 90
+    if (!open) return
+    reset(valuesFor(event))
+    createClient()
+      .from('clubs')
+      .select('id, name')
+      .order('name')
+      .then(({ data }) => {
+        if (data) setClubs(data)
       })
-    }
-  }, [event, open, form])
+  }, [event, open, reset])
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true)
@@ -102,13 +82,14 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
         start_time: madridDateTimeToUTC(values.date, values.time),
         max_spots: values.courts * PLAYERS_PER_COURT,
         rounds: values.rounds,
-        duration_minutes: values.duration_minutes
+        duration_minutes: values.duration_minutes,
+        club_id: values.club_id || null,
       })
-      
-      toast.success("Evento actualizado")
+
+      toast.success('Evento actualizado')
       onOpenChange(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al actualizar evento")
+      toast.error(error instanceof Error ? error.message : 'Error al actualizar evento')
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -116,118 +97,59 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle>Editar Evento</DialogTitle>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Partida Mixin..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hora</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+    <Dialog open={open} onOpenChange={onOpenChange} title="Editar evento">
+      <Form id="edit-event-form" onSubmit={handleSubmit(onSubmit)}>
+        <Field label="Título" htmlFor="edit-title" error={errors.title?.message}>
+          <Input id="edit-title" {...register('title')} />
+        </Field>
 
-              <FormField
-                control={form.control}
-                name="duration_minutes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duración (minutos)</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(30, field.value - 30))}>-</Button>
-                            <Input type="number" {...field} className="text-center" readOnly />
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(field.value + 30)}>+</Button>
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <Field label="Club" htmlFor="edit-club" error={errors.club_id?.message}>
+          <Select id="edit-club" {...register('club_id')}>
+            <option value="">Club por confirmar</option>
+            {clubs.map(club => (
+              <option key={club.id} value={club.id}>{club.name}</option>
+            ))}
+          </Select>
+        </Field>
 
-              <FormField
-                control={form.control}
-                name="rounds"
-                render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Partidos</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-2">
-                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
-                        <Input type="number" {...field} className="text-center" readOnly />
-                        <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(6, field.value + 1))}>+</Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-                )}
-              />
+        <Row>
+          <Field label="Fecha" htmlFor="edit-date" error={errors.date?.message}>
+            <Input id="edit-date" type="date" {...register('date')} />
+          </Field>
+          <Field label="Hora" htmlFor="edit-time" error={errors.time?.message}>
+            <Input id="edit-time" type="time" {...register('time')} />
+          </Field>
+        </Row>
 
-              <FormField
-                control={form.control}
-                name="courts"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pistas Disponibles</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.max(1, field.value - 1))}>-</Button>
-                            <Input type="number" {...field} className="text-center" readOnly />
-                            <Button type="button" variant="outline" size="icon" onClick={() => field.onChange(Math.min(9, field.value + 1))}>+</Button>
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <Row>
+          <Field label="Pistas" htmlFor="edit-courts" error={errors.courts?.message}>
+            <Input id="edit-courts" type="number" inputMode="numeric" min={1} max={9} {...register('courts', { valueAsNumber: true })} />
+          </Field>
+          <Field label="Rondas" htmlFor="edit-rounds" error={errors.rounds?.message}>
+            <Input id="edit-rounds" type="number" inputMode="numeric" min={1} max={6} {...register('rounds', { valueAsNumber: true })} />
+          </Field>
+        </Row>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
+        <Field label="Duración (minutos)" htmlFor="edit-duration" error={errors.duration_minutes?.message}>
+          <Input id="edit-duration" type="number" inputMode="numeric" min={30} step={5} {...register('duration_minutes', { valueAsNumber: true })} />
+        </Field>
+
+        <Button type="submit" $size="lg" disabled={isLoading}>
+          {isLoading ? 'Guardando…' : 'Guardar cambios'}
+        </Button>
+      </Form>
     </Dialog>
   )
 }
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`
+
+const Row = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+`

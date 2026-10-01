@@ -1,34 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { UserPlus, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { useState, useEffect, useMemo } from 'react'
+import styled from '@emotion/styled'
+import { Check, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
+import Button from '@/components/atoms/Button'
+import Input from '@/components/atoms/Input'
+import Dialog from '@/components/molecules/Dialog'
 import { addParticipant } from '@/app/actions/events'
 import { createClient } from '@/utils/supabase/client'
-import { toast } from 'sonner'
 import { toTitleCase } from '@/lib/utils'
 
 interface AddParticipantDialogProps {
   eventId: string
   alreadyJoined: string[]
   disabled?: boolean
-  // Custom trigger (new design system); defaults to the legacy icon button
-  trigger?: React.ReactNode
+  // Custom trigger (new design system); defaults to a plain icon button
+  trigger?: React.ReactElement
 }
 
 type Player = { id: string; full_name: string | null }
@@ -36,10 +24,12 @@ type Player = { id: string; full_name: string | null }
 export function AddParticipantDialog({ eventId, alreadyJoined, disabled, trigger }: AddParticipantDialogProps) {
   const [open, setOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
+  const [search, setSearch] = useState('')
   const [addingId, setAddingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
+    setSearch('')
     const supabase = createClient()
     supabase
       .from('profiles')
@@ -50,6 +40,11 @@ export function AddParticipantDialog({ eventId, alreadyJoined, disabled, trigger
         if (data) setPlayers(data.filter(p => !alreadyJoined.includes(p.id)))
       })
   }, [open, alreadyJoined])
+
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return term ? players.filter(p => (p.full_name ?? '').toLowerCase().includes(term)) : players
+  }, [players, search])
 
   const handleSelect = async (player: Player) => {
     setAddingId(player.id)
@@ -64,48 +59,77 @@ export function AddParticipantDialog({ eventId, alreadyJoined, disabled, trigger
     }
   }
 
+  const triggerNode = trigger ?? (
+    <Button type="button" $variant="ghost" $size="icon" disabled={disabled} title="Añadir jugador">
+      <UserPlus />
+    </Button>
+  )
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
-            disabled={disabled}
-            title={disabled ? 'Los partidos ya están en marcha' : 'Añadir jugador'}
-          >
-            <UserPlus className="h-4 w-4" />
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-sm p-0 gap-0">
-        <DialogHeader className="px-4 pt-4 pb-2">
-          <DialogTitle className="text-base">Añadir jugador</DialogTitle>
-        </DialogHeader>
-        <Command>
-          <CommandInput placeholder="Buscar jugador..." />
-          <CommandList className="max-h-72">
-            <CommandEmpty>No hay jugadores disponibles.</CommandEmpty>
-            <CommandGroup>
-              {players.map(player => (
-                <CommandItem
-                  key={player.id}
-                  value={player.full_name ?? ''}
-                  onSelect={() => handleSelect(player)}
-                  disabled={addingId === player.id}
-                  className="cursor-pointer"
-                >
-                  {addingId === player.id
-                    ? <Check className="h-4 w-4 mr-2 animate-pulse" />
-                    : <span className="w-6" />}
-                  {toTitleCase(player.full_name)}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </DialogContent>
-    </Dialog>
+    <>
+      {/* The trigger opens the dialog without losing its own handlers */}
+      <TriggerWrapper onClick={() => !disabled && setOpen(true)}>{triggerNode}</TriggerWrapper>
+
+      <Dialog open={open} onOpenChange={setOpen} title="Añadir jugador">
+        <Input placeholder="Buscar jugador…" value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+        <List>
+          {visible.length === 0 && <Empty>No hay jugadores disponibles.</Empty>}
+          {visible.map(player => (
+            <Option key={player.id} type="button" disabled={addingId !== null} onClick={() => handleSelect(player)}>
+              {toTitleCase(player.full_name)}
+              {addingId === player.id && <Check />}
+            </Option>
+          ))}
+        </List>
+      </Dialog>
+    </>
   )
 }
+
+const TriggerWrapper = styled.span`
+  display: contents;
+`
+
+const List = styled.div`
+  display: flex;
+  max-height: 50dvh;
+  flex-direction: column;
+  overflow-y: auto;
+  border: 1px solid ${({ theme }) => theme.colors.line};
+  border-radius: ${({ theme }) => theme.radii.md};
+`
+
+const Option = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.line};
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:last-of-type {
+    border-bottom: 0;
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+`
+
+const Empty = styled.p`
+  margin: 0;
+  padding: 1rem;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.875rem;
+  text-align: center;
+`

@@ -290,7 +290,7 @@ export async function createEvent(data: { title: string, start_time: string, max
 }
 
 
-export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number }) {
+export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, club_id?: string | null }) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -309,13 +309,17 @@ export async function updateEvent(eventId: string, data: { title: string, start_
         start_time: data.start_time,
         max_spots: data.max_spots,
         rounds: data.rounds,
-        duration_minutes: data.duration_minutes
+        duration_minutes: data.duration_minutes,
+        // undefined leaves the club untouched; null clears it
+        ...(data.club_id !== undefined ? { club_id: data.club_id } : {}),
       })
       .eq('id', eventId)
 
     if (error) throw error instanceof Error ? error : new Error(String(error))
 
-    revalidatePath('/dashboard')
+    revalidatePath('/')
+    revalidatePath('/mixing')
+    revalidatePath(`/events/${eventId}`)
     return { success: true }
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error))

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import styled from '@emotion/styled'
+import Button from '@/components/atoms/Button'
+import Dialog from '@/components/molecules/Dialog'
 import { PartyPopper } from 'lucide-react'
 
 interface NotificationRow {
@@ -105,34 +106,47 @@ export function NotificationListener({ userId }: { userId: string }) {
   }
 
   return (
-    <Dialog open={!!current}>
-      <DialogContent
-        showCloseButton={false}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        className="sm:max-w-lg w-[calc(100%-1rem)] h-[85vh] sm:h-auto flex flex-col items-center justify-center text-center gap-6 p-8"
-      >
-        <PartyPopper className="h-16 w-16 text-primary" />
-        <DialogHeader className="items-center">
-          <DialogTitle className="text-2xl">¡Pasas a titular!</DialogTitle>
-          <DialogDescription asChild>
-            <div className="text-base text-center space-y-1">
-              <p>Has pasado a titular en</p>
-              {current?.event_title && (
-                <p className="font-semibold text-foreground">&quot;{current.event_title}&quot;</p>
-              )}
-              {current?.event_start_time && (
-                <p>{formatEventDate(current.event_start_time)}</p>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="w-full">
-          <Button className="w-full" onClick={dismiss}>
-            Aceptar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+    <Dialog
+      open={!!current}
+      onOpenChange={() => {}}
+      dismissible={false}
+      title="¡Pasas a titular!"
+      footer={
+        <Button type="button" $size="lg" onClick={dismiss}>
+          Aceptar
+        </Button>
+      }
+    >
+      <Celebration>
+        <PartyPopper />
+        <p>Has pasado a titular en</p>
+        {current?.event_title && <strong>&quot;{current.event_title}&quot;</strong>}
+        {current?.event_start_time && <p>{formatEventDate(current.event_start_time)}</p>}
+      </Celebration>
     </Dialog>
   )
 }
+
+const Celebration = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0;
+  text-align: center;
+
+  svg {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 0.5rem;
+    color: ${({ theme }) => theme.colors.forest};
+  }
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.muted};
+    font-size: 0.9375rem;
+  }
+  strong {
+    font-size: 1.0625rem;
+  }
+`
