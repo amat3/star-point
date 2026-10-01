@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react'
 import { Camera } from 'lucide-react'
 import { ThinkingOrb } from 'thinking-orbs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import styled from '@emotion/styled'
+import Avatar from '@/components/atoms/Avatar'
 import { createClient } from '@/utils/supabase/client'
 import { updateAvatarUrl } from '@/app/actions/users'
 import { toast } from 'sonner'
@@ -59,34 +60,67 @@ export function AvatarUpload({ userId, avatarUrl, userName }: AvatarUploadProps)
   }
 
   return (
-    <div className="relative shrink-0">
+    <Root>
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        hidden
         onChange={handleFileChange}
       />
-      <button
+      <Trigger
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="relative block rounded-full disabled:opacity-70"
         title="Cambiar foto de perfil"
+        aria-label="Cambiar foto de perfil"
       >
-        <Avatar className="h-32 w-32 border-4 border-lime-500">
-          <AvatarImage src={previewUrl ?? undefined} />
-          <AvatarFallback className="bg-lime-100 text-lime-800 text-4xl font-bold">
-            {userName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
-          {uploading ? <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Subiendo…" /> : <Camera className="h-5 w-5" />}
-        </span>
-      </button>
-    </div>
+        <Avatar src={previewUrl} name={userName} size={104} />
+        <CameraBadge>
+          {uploading ? <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Subiendo…" /> : <Camera />}
+        </CameraBadge>
+      </Trigger>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`
+
+const Trigger = styled.button`
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+  }
+`
+
+const CameraBadge = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid ${({ theme }) => theme.colors.background};
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.onForest};
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+`
 
 async function compressToSquareJpeg(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })

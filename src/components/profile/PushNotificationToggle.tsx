@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import Switch from '@/components/atoms/Switch'
+import SettingRow from '@/components/molecules/SettingRow'
 import { Bell, BellOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { isIOSDevice, isStandaloneMode } from '@/lib/utils'
@@ -90,45 +90,51 @@ export function PushNotificationToggle() {
   }
 
   if (status === 'checking') {
-    return <div className="h-9 w-full max-w-50 rounded-full bg-gray-100 dark:bg-gray-700/50 animate-pulse" />
+    return <SettingRow icon={<BellOff />} title="Notificaciones" description="Comprobando…" control={<Switch aria-label="Notificaciones" disabled checked={false} />} />
   }
 
   if (status === 'unsupported') {
     const iosNotInstalled = isIOSDevice() && !isStandaloneMode()
     return (
-      <p className="text-xs text-muted-foreground leading-snug">
-        {iosNotInstalled
-          ? 'En iPhone, instala primero StarPoint en la pantalla de inicio para poder activar las notificaciones.'
-          : 'Tu navegador no soporta notificaciones push.'}
-      </p>
+      <SettingRow
+        icon={<BellOff />}
+        title="Notificaciones"
+        description={
+          iosNotInstalled
+            ? 'En iPhone, instala primero StarPoint en la pantalla de inicio para poder activar las notificaciones.'
+            : 'Tu navegador no soporta notificaciones push.'
+        }
+        control={null}
+      />
     )
   }
 
   if (status === 'denied') {
     return (
-      <p className="text-xs text-muted-foreground leading-snug">
-        Has bloqueado las notificaciones para StarPoint. Actívalas en los ajustes del navegador para recibir avisos.
-      </p>
+      <SettingRow
+        icon={<BellOff />}
+        title="Notificaciones"
+        description="Has bloqueado las notificaciones para StarPoint. Actívalas en los ajustes del navegador para recibir avisos."
+        control={null}
+      />
     )
   }
 
   const isOn = status === 'on'
 
   return (
-    <div className="flex items-center space-x-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 w-fit">
-      {isOn ? <Bell className="h-4 w-4 text-primary" /> : <BellOff className="h-4 w-4 text-gray-500" />}
-      <div className="flex items-center space-x-2">
+    <SettingRow
+      icon={isOn ? <Bell /> : <BellOff />}
+      title="Notificaciones"
+      description={isOn ? 'Activadas' : 'Desactivadas'}
+      control={
         <Switch
-          id="push-notifications"
+          aria-label="Notificaciones"
           checked={isOn}
           disabled={busy}
           onCheckedChange={(checked) => (checked ? enable() : disable())}
-          className="scale-75 data-[state=checked]:bg-primary"
         />
-        <Label htmlFor="push-notifications" className="text-xs font-medium cursor-pointer min-w-15">
-          {isOn ? 'Activadas' : 'Desactivadas'}
-        </Label>
-      </div>
-    </div>
+      }
+    />
   )
 }
