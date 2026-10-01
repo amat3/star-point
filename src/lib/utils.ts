@@ -157,3 +157,27 @@ export function formatEventWeekday(dateStr: string) {
 export function formatEventChip(dateStr: string) {
   return `${Number(formatEventDay(dateStr))} ${formatEventMonth(dateStr).toUpperCase()} · ${formatEventTime(dateStr)}`
 }
+
+/**
+ * Hora estimada de inicio de una ronda: el evento reparte su duración a partes
+ * iguales entre sus rondas (90 min y 3 rondas → una cada 30 min).
+ */
+export function roundStartsAt(
+  eventStart: string,
+  durationMinutes: number | null | undefined,
+  rounds: number | null | undefined,
+  roundNumber: number | null | undefined
+): Date {
+  const slotMs = ((durationMinutes || 90) / (rounds || 1)) * 60_000
+  return new Date(new Date(eventStart).getTime() + ((roundNumber || 1) - 1) * slotMs)
+}
+
+/** Hora estimada de fin de una ronda: el inicio de la siguiente (la última acaba con el evento). */
+export function roundEndsAt(
+  eventStart: string,
+  durationMinutes: number | null | undefined,
+  rounds: number | null | undefined,
+  roundNumber: number | null | undefined
+): Date {
+  return roundStartsAt(eventStart, durationMinutes, rounds, (roundNumber || 1) + 1)
+}

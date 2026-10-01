@@ -34,7 +34,9 @@ export default async function HomePage() {
 
   const userName = user ? (profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador') : undefined
 
-  const pendingActions = user ? await getPendingActions(user.id) : []
+  const { actions: pendingActions, nextRevealAt } = user
+    ? await getPendingActions(user.id)
+    : { actions: [], nextRevealAt: null }
   // Admin-only layout previews while the cards are being designed.
   const visibleActions = profile?.role === 'admin' ? [...SAMPLE_PENDING_ACTIONS, ...pendingActions] : pendingActions
   const lastMatch = user ? await getLastMatch(user.id) : null
@@ -50,7 +52,7 @@ export default async function HomePage() {
         name={userName ? toTitleCase(userName.split(' ')[0]) : undefined}
       />
       <Content>
-        <PendingActions actions={visibleActions} />
+        <PendingActions actions={visibleActions} nextRevealAt={nextRevealAt} />
         <SectionHeader title="Lo que viene" />
         {events.length === 0 && <EmptyState>Aún no hay mixings abiertos.</EmptyState>}
         {events.map(event => {

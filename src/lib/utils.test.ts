@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase } from './utils'
+import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase, roundStartsAt, roundEndsAt } from './utils'
 
 describe('madridDateTimeToUTC', () => {
   it('convierte 20:00 Madrid en verano (CEST, +2) a 18:00 UTC', () => {
@@ -37,5 +37,35 @@ describe('toTitleCase', () => {
   it('devuelve cadena vacía para null/undefined', () => {
     expect(toTitleCase(null)).toBe('')
     expect(toTitleCase(undefined)).toBe('')
+  })
+})
+
+describe('roundStartsAt', () => {
+  const start = '2026-10-14T18:00:00.000Z'
+
+  it('la ronda 1 empieza con el evento', () => {
+    expect(roundStartsAt(start, 90, 3, 1).toISOString()).toBe(start)
+  })
+
+  it('reparte la duración a partes iguales: 90 min y 3 rondas, una cada 30 min', () => {
+    expect(roundStartsAt(start, 90, 3, 2).toISOString()).toBe('2026-10-14T18:30:00.000Z')
+    expect(roundStartsAt(start, 90, 3, 3).toISOString()).toBe('2026-10-14T19:00:00.000Z')
+  })
+
+  it('sin datos usa 90 min y una ronda', () => {
+    expect(roundStartsAt(start, null, null, null).toISOString()).toBe(start)
+  })
+})
+
+describe('roundEndsAt', () => {
+  const start = '2026-10-14T18:00:00.000Z'
+
+  it('cada ronda acaba cuando empieza la siguiente', () => {
+    expect(roundEndsAt(start, 90, 3, 1).toISOString()).toBe('2026-10-14T18:30:00.000Z')
+    expect(roundEndsAt(start, 90, 3, 2).toISOString()).toBe('2026-10-14T19:00:00.000Z')
+  })
+
+  it('la última ronda acaba cuando acaba el evento', () => {
+    expect(roundEndsAt(start, 90, 3, 3).toISOString()).toBe('2026-10-14T19:30:00.000Z')
   })
 })

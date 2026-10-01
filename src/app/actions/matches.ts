@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { toTitleCase, formatRelativeDay, totalGames } from '@/lib/utils'
+import { toTitleCase, formatRelativeDay, totalGames, roundEndsAt } from '@/lib/utils'
 import { applyMatchConfirmation, parseGames, type ConfirmableMatch } from '@/lib/confirm-match'
 
 export async function getPlayerGameStats(userId: string) {
@@ -310,7 +310,8 @@ export type PendingAction = {
   }
 }
 
-type PendingRow = LastMatchRow & {
+type PendingRow = Omit<LastMatchRow, 'event'> & {
+  event: { start_time: string; duration_minutes: number | null; rounds: number | null; club: { name: string } | null } | null
   last_updated_by: string | null
   court_number: number | null
   court_name: string | null
@@ -324,12 +325,20 @@ function courtName(m: Pick<PendingRow, 'court' | 'court_name' | 'court_number'>)
   return court?.name ?? m.court_name ?? (m.court_number ? `Pista ${m.court_number}` : null)
 }
 
+export type PendingActionsResult = {
+  actions: PendingAction[]
+  // When the next "introducir resultado" card becomes visible (a round ends); null if none
+  nextRevealAt: string | null
+}
+
 /**
  * Partidos del jugador que esperan algo de él: introducir el resultado (0-0)
  * o confirmar el que ha metido el rival. Si el último en tocarlo fue él, está
- * esperando al rival y no se muestra.
+ * esperando al rival y no se muestra. La tarjeta de introducir resultado de una
+ * ronda solo aparece cuando esa ronda ha terminado (hora estimada por reparto
+ * igual de la duración del evento), para no enseñar las 3 rondas desde el sorteo.
  */
-export async function getPendingActions(userId: string): Promise<PendingAction[]> {
+export async function getPendingActions(userId: string): Promise<PendingActionsResult> {
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -342,7 +351,7 @@ export async function getPendingActions(userId: string): Promise<PendingAction[]
       p_a2:profiles!player_a2(full_name),
       p_b1:profiles!player_b1(full_name),
       p_b2:profiles!player_b2(full_name),
-      event:events(start_time, club:clubs(name))
+      event:events(start_time, duration_minutes, rounds, club:clubs(name))
     `)
     .eq('status', 'pending')
     .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
@@ -351,8 +360,19 @@ export async function getPendingActions(userId: string): Promise<PendingAction[]
   const rows = (data ?? []) as unknown as PendingRow[]
   const firstName = (name: string | null | undefined) => toTitleCase(name).split(' ')[0] || 'Jugador'
 
-  return rows
+  const now = Date.now()
+  let nextReveal: number | null = null
+
+  const actions = rows
     .filter(m => m.last_updated_by !== userId)
+    .filter(m => {
+      const hasScore = (m.score_details ?? '0-0') !== '0-0'
+      if (hasScore || !m.event) return true
+      const endsAt = roundEndsAt(m.event.start_time, m.event.duration_minutes, m.event.rounds, m.round_number).getTime()
+      if (endsAt <= now) return true
+      nextReveal = nextReveal === null ? endsAt : Math.min(nextReveal, endsAt)
+      return false
+    })
     .map(m => {
       const inTeamA = m.player_a1 === userId || m.player_a2 === userId
       const [me, partner, rival1, rival2] = inTeamA
@@ -382,4 +402,6 @@ export async function getPendingActions(userId: string): Promise<PendingAction[]
         },
       }
     })
+
+  return { actions, nextRevealAt: nextReveal === null ? null : new Date(nextReveal).toISOString() }
 }
