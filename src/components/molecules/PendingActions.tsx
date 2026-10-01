@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,8 +16,35 @@ import { SAMPLE_ID_PREFIX } from '@/lib/sample-pending-actions'
 const sortByKind = (actions: PendingAction[]) =>
   [...actions].sort((a, b) => Number(a.kind === 'confirm') - Number(b.kind === 'confirm'))
 
-function PendingActions({ actions }: { actions: PendingAction[] }) {
+// Max delay setTimeout supports; longer waits are re-evaluated on the next refresh.
+const MAX_TIMEOUT_MS = 2 ** 31 - 1
+
+interface PendingActionsProps {
+  actions: PendingAction[]
+  // ISO date when the next "introducir resultado" card should appear (a round ends)
+  nextRevealAt?: string | null
+}
+
+function PendingActions({ actions, nextRevealAt }: PendingActionsProps) {
   const router = useRouter()
+
+  // New cards appear when a round ends, with no data change to trigger a
+  // refresh: schedule one for that moment, and also when the tab becomes visible
+  // again (timers are throttled while the phone sleeps).
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    if (nextRevealAt) {
+      const wait = new Date(nextRevealAt).getTime() - Date.now()
+      timer = setTimeout(() => router.refresh(), Math.min(Math.max(wait, 0) + 500, MAX_TIMEOUT_MS))
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') router.refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      if (timer) clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [nextRevealAt, router])
+
   const [isPending, startTransition] = useTransition()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set())

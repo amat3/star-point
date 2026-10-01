@@ -15,7 +15,8 @@ export function ShareEventButton({ event }: ShareEventButtonProps) {
     const date = new Date(event.start_time).toLocaleDateString('es-ES', { 
         weekday: 'long', 
         day: 'numeric', 
-        month: 'long' 
+        month: 'long',
+        timeZone: 'Europe/Madrid',
     }) // "sábado, 10 de enero"
     
     // Capitalize first letter
@@ -23,7 +24,8 @@ export function ShareEventButton({ event }: ShareEventButtonProps) {
     
     const time = new Date(event.start_time).toLocaleTimeString('es-ES', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'Europe/Madrid',
     })
     
     const url = `${window.location.origin}`
