@@ -15,6 +15,7 @@ import Greeting from '@/components/molecules/Greeting'
 import Header from '@/components/molecules/Header'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
+import { isAdminView } from '@/lib/view-mode'
 import { SAMPLE_PENDING_ACTIONS } from '@/lib/sample-pending-actions'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
@@ -38,7 +39,8 @@ export default async function HomePage() {
     ? await getPendingActions(user.id)
     : { actions: [], nextRevealAt: null }
   // Admin-only layout previews while the cards are being designed.
-  const visibleActions = profile?.role === 'admin' ? [...SAMPLE_PENDING_ACTIONS, ...pendingActions] : pendingActions
+  const adminView = await isAdminView(profile?.role)
+  const visibleActions = adminView ? [...SAMPLE_PENDING_ACTIONS, ...pendingActions] : pendingActions
   const lastMatch = user ? await getLastMatch(user.id) : null
   const events = user ? await getOpenEvents() : await getPublicEvents()
 
@@ -46,7 +48,7 @@ export default async function HomePage() {
     <>
       {user && <RealtimeRefresher />}
       {user && <NotificationListener userId={user.id} />}
-      <Header profile={profile} userName={userName} />
+      <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <Greeting
         date={formatTodayLong()}
         name={userName ? toTitleCase(userName.split(' ')[0]) : undefined}

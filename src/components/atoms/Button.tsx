@@ -12,7 +12,7 @@ const variants = (t: Theme): Record<ButtonVariant, string> => ({
   accent: `background: ${t.colors.lime}; color: ${t.colors.forestDeep}; border-color: transparent;`,
   outline: `background: transparent; color: ${t.colors.ink}; border-color: ${t.colors.line};`,
   ghost: `background: transparent; color: ${t.colors.ink}; border-color: transparent;`,
-  danger: `background: ${t.colors.coral}; color: #fff; border-color: transparent;`,
+  danger: `background: ${t.colors.danger}; color: ${t.colors.onDanger}; border-color: transparent;`,
   link: `background: transparent; color: ${t.colors.forest}; border-color: transparent; text-decoration: underline; text-underline-offset: 4px;`,
 })
 
