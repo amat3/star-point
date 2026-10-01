@@ -7,6 +7,8 @@ const MADRID_TZ = 'Europe/Madrid'
 const COURTS = 3
 const ROUNDS = 3
 const DURATION_MINUTES = 90
+const EVENT_TITLE = 'El plan de los miércoles'
+const DEFAULT_CLUB_NAME = 'Padel Indoor'
 const CREATED_BY = 'cb288b22-8fdb-4744-a421-c05646c37454' // Juanan
 
 function getMadridHour(): number {
@@ -101,19 +103,33 @@ export async function GET(request: Request) {
   const windowStart = `${datePart}T00:00:00.000Z`
   const windowEnd = `${datePart}T23:59:59.000Z`
 
-  const { data: existing } = await supabase
+  // count instead of maybeSingle: with two events that day maybeSingle errors,
+  // returns null and a third one would be created.
+  const { count: existingCount, error: existingError } = await supabase
     .from('events')
-    .select('id')
+    .select('id', { count: 'exact', head: true })
     .gte('start_time', windowStart)
     .lte('start_time', windowEnd)
-    .maybeSingle()
 
-  if (existing) {
+  if (existingError) {
+    return NextResponse.json({ error: existingError.message }, { status: 500 })
+  }
+
+  if ((existingCount ?? 0) > 0) {
     return NextResponse.json({ skipped: true, reason: 'Event already exists for this Wednesday' })
   }
 
+  // Default venue. If the club were renamed, the event is still created
+  // without a club ("Club por confirmar") rather than failing.
+  const { data: club } = await supabase
+    .from('clubs')
+    .select('id')
+    .eq('name', DEFAULT_CLUB_NAME)
+    .maybeSingle()
+
   const { error } = await supabase.from('events').insert({
-    title: 'Mixing',
+    title: EVENT_TITLE,
+    club_id: club?.id ?? null,
     start_time: startTime,
     max_spots: COURTS * PLAYERS_PER_COURT,
     rounds: ROUNDS,
@@ -142,8 +158,8 @@ export async function GET(request: Request) {
 
   await sendPushToUsers((players ?? []).map(p => p.id), {
     title: 'Nuevo evento disponible',
-    body: `"Mixing" el ${formattedDate} — ¡apúntate!`,
-    url: '/dashboard',
+    body: `"${EVENT_TITLE}" el ${formattedDate} — ¡apúntate!`,
+    url: '/',
   }).catch(console.error)
 
   return NextResponse.json({ created: true, start_time: startTime })

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import Header from '@/components/molecules/Header'
 import TabBar from '@/components/molecules/TabBar'
 import EventOpenView from '@/components/organisms/EventOpenView'
-import { formatEventDate, formatEventTime, formatLevel, formatWeekdayPlural, toTitleCase } from '@/lib/utils'
+import { formatEventDate, formatEventTime, formatLevel, toTitleCase } from '@/lib/utils'
 
 interface EventPageProps {
   params: Promise<{ id: string }>
@@ -116,7 +116,7 @@ export default async function EventPage(props: EventPageProps) {
         />
         <EventOpenView
           event={fullEvent}
-          eyebrow={`El plan de los ${formatWeekdayPlural(fullEvent.start_time)}`}
+          eyebrow="Mixing semanal"
           heroTitle={formatEventDate(fullEvent.start_time)}
           startsAt={formatEventTime(fullEvent.start_time)}
           players={players}
