@@ -45,7 +45,7 @@ function PlayerList({ title, headerExtra, players, totalSlots, onSelect, onRemov
             return (
               <Row key={`free-${index}`}>
                 <Free>
-                  <Placeholder />
+                  <Placeholder aria-hidden="true">?</Placeholder>
                   <FreeLabel>Plaza libre</FreeLabel>
                 </Free>
               </Row>
@@ -211,11 +211,19 @@ const Free = styled.div`
 `
 
 const Placeholder = styled.span`
+  display: grid;
   flex-shrink: 0;
+  place-items: center;
   width: 40px;
   height: 40px;
-  border: 1px dashed ${({ theme }) => theme.colors.line};
+  border: 1.5px dashed ${({ theme }) => theme.colors.fieldBorder};
   border-radius: 50%;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.forest};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
 `
 
 const FreeLabel = styled.span`
