@@ -15,11 +15,13 @@ interface EventListItemProps {
   full?: boolean
   // Visitors without a session can see the event but not open it
   locked?: boolean
+  // The viewer is signed up (or playing): the card gets a stronger border
+  joined?: boolean
 }
 
-function EventListItem({ href, day, month, title, time, venue, availability, full, locked }: EventListItemProps) {
+function EventListItem({ href, day, month, title, time, venue, availability, full, locked, joined }: EventListItemProps) {
   return (
-    <Root href={href}>
+    <Root href={href} $joined={joined}>
       <DateBlock>
         <Day>{day}</Day>
         <Month>{month}</Month>
@@ -41,12 +43,14 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
   )
 }
 
-const Root = styled(Link)`
+const Root = styled(Link, {
+  shouldForwardProp: (prop) => prop !== '$joined',
+})<{ $joined?: boolean }>`
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.line};
+  border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.line)};
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};

@@ -10,7 +10,8 @@ import { Activity, CircleUserRound, Home, LogIn, Trophy } from 'lucide-react'
 // Tabs without an href are placeholders until their page exists.
 const TABS = [
   { label: 'Inicio', icon: Home, href: '/' },
-  { label: 'Mixing', icon: Activity, href: undefined },
+  // Event pages belong to the Mixing section, so the tab stays active there
+  { label: 'Mixing', icon: Activity, href: '/mixing', alsoActiveOn: ['/events'] },
   { label: 'Ranking', icon: Trophy, href: undefined },
   { label: 'Perfil', icon: CircleUserRound, href: '/profile' },
 ]
@@ -25,7 +26,7 @@ function TabBar({ loggedIn = true }: { loggedIn?: boolean }) {
 
   return (
     <Root aria-label="Menú principal">
-      {(loggedIn ? TABS : GUEST_TABS).map(({ label, icon: Icon, href }) => {
+      {(loggedIn ? TABS : GUEST_TABS).map(({ label, icon: Icon, href, ...tab }) => {
         const content = (
           <>
             <Icon />
@@ -39,7 +40,8 @@ function TabBar({ loggedIn = true }: { loggedIn?: boolean }) {
             </Placeholder>
           )
         }
-        const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
+        const sections = [href, ...('alsoActiveOn' in tab ? (tab.alsoActiveOn ?? []) : [])]
+        const active = href === '/' ? pathname === '/' : sections.some(path => pathname === path || pathname.startsWith(`${path}/`))
         return (
           <Tab key={label} href={href} aria-current={active ? 'page' : undefined}>
             {content}

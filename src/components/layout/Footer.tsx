@@ -20,8 +20,9 @@ export function Footer() {
 // Bottom padding keeps the footer clear of the fixed TabBar.
 const Root = styled.footer`
   display: flex;
-  flex-direction: column;
+  justify-content: space-evenly;
   align-items: center;
+  margin-block: 0.5rem 1rem;
   gap: 0.25rem;
   width: 100%;
   padding: 1.5rem 1rem calc(${({ theme }) => theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + 0.5rem);
