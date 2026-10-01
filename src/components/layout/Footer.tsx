@@ -22,6 +22,8 @@ const Root = styled.footer`
   display: flex;
   justify-content: space-evenly;
   align-items: center;
+  /* auto on top pushes the footer to the bottom when the page is short */
+  margin-top: auto;
   margin-bottom: 1rem;
   gap: 0.25rem;
   width: 100%;
