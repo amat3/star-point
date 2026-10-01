@@ -208,6 +208,15 @@ describe('avisos de reencuentro', () => {
     expect(m.warning).toContain('en este evento')
   })
 
+  it('no avisa por coincidencias con el evento anterior', () => {
+    const participants = makeParticipants(4)
+    participants.forEach(p => {
+      p.encounter_counts = Object.fromEntries(participants.filter(o => o.id !== p.id).map(o => [o.id, 3]))
+    })
+    const m = generateMixingRound(participants, baseConfig).matches[0]
+    expect(m.warning).toBeUndefined()
+  })
+
   it('no avisa si nadie ha coincidido antes', () => {
     const m = generateMixingRound(makeParticipants(4), baseConfig).matches[0]
     expect(m.warning).toBeUndefined()

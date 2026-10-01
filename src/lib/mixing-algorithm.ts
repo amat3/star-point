@@ -342,18 +342,15 @@ function resolveCourtRoles(
   const costs = pairings.map(p => pairingCost(p, config))
   const [pairA, pairB] = pairings[costs.indexOf(Math.min(...costs))]
 
-  // Avisos: reencuentros DENTRO del evento (el peor caso) y, con menos peso,
-  // coincidencias repetidas con el evento anterior.
+  // Avisos: solo reencuentros DENTRO del evento. Coincidir con el evento
+  // anterior es una preferencia blanda y no se avisa.
   const allCrossings: Pair[] = [pairA, pairB, ...rivalPairs([pairA, pairB])]
   const hasSessionRepeat = allCrossings.some(([x, y]) => sessionCount(x, y) >= 1)
-  const REPEAT_WARNING_THRESHOLD = 2
-  const hasPriorRepeat = allCrossings.some(([x, y]) => encounterCount(x, y) >= REPEAT_WARNING_THRESHOLD)
 
   const warningMsgs: string[] = []
   if (exclusionForced) warningMsgs.push('No fue posible respetar todas las exclusiones en esta pista')
   if (partnerRepeatForced) warningMsgs.push('No fue posible evitar que estos jugadores repitan como PAREJA — no había ninguna alternativa disponible')
   if (hasSessionRepeat) warningMsgs.push('Algunos jugadores ya han coincidido en pista en este evento — no fue posible evitarlo')
-  else if (hasPriorRepeat) warningMsgs.push('Estos jugadores ya han coincidido varias veces recientemente — no fue posible evitarlo esta vez')
 
   return {
     courtNumber,
