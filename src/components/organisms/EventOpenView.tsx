@@ -13,12 +13,12 @@ import WaitlistNote from '../molecules/WaitlistNote'
 import HandSummary, { type HandCounts } from '../molecules/HandSummary'
 import JoinBar from '../molecules/JoinBar'
 import Content from '../molecules/Content'
+import ConfirmDialog from '../molecules/ConfirmDialog'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, addGuestToEvent } from '@/app/actions/events'
 import { EditEventDialog } from '@/components/events/EditEventDialog'
 import { AddParticipantDialog } from '@/components/events/AddParticipantDialog'
 import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
 import { ShareEventButton } from '@/components/events/ShareEventButton'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { MixingEvent } from '@/types/events'
 
 // Keep in sync with MAX_RESERVES in app/actions/events.ts

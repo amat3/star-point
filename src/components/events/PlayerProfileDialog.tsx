@@ -1,23 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trophy, Pencil, Check, X } from 'lucide-react'
+import styled from '@emotion/styled'
+import { Check, Pencil, X } from 'lucide-react'
 import { ThinkingOrb } from 'thinking-orbs'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { PlayerStatsCard } from '@/components/dashboard/PlayerStatsCard'
+import { toast } from 'sonner'
+import Avatar from '@/components/atoms/Avatar'
+import Button from '@/components/atoms/Button'
+import Input from '@/components/atoms/Input'
+import Dialog from '@/components/molecules/Dialog'
+import StatsRow from '@/components/molecules/StatsRow'
 import { getPlayerProfileDetails, type PlayerProfileDetails } from '@/app/actions/matches'
 import { renameGuest } from '@/app/actions/events'
 import { toTitleCase } from '@/lib/utils'
-import { toast } from 'sonner'
 
 interface PlayerProfileDialogProps {
   userId: string | null
@@ -38,19 +33,12 @@ const HAND_LABEL: Record<string, string> = {
 }
 
 const POSITION_LABEL: Record<string, string> = {
-  reves: 'Revés (Izquierda)',
-  drive: 'Drive (Derecha)',
-  ambos: 'Ambos Lados',
+  reves: 'Revés (izquierda)',
+  drive: 'Drive (derecha)',
+  ambos: 'Ambos lados',
 }
 
-function InfoRow({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  )
-}
+const NOT_SET = 'No especificado'
 
 export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: PlayerProfileDialogProps) {
   const [loading, setLoading] = useState(false)
@@ -94,92 +82,159 @@ export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: Pl
     }
   }
 
+  const name = toTitleCase(data?.full_name) || '—'
+  const matchesWon = data ? Math.round(data.matches_played * data.win_ratio) : 0
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Perfil del Jugador</DialogTitle>
-          <DialogDescription className="sr-only">
-            Datos y estadísticas del jugador seleccionado
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Perfil del jugador"
+      description="Datos y estadísticas del jugador seleccionado."
+    >
+      {loading && (
+        <Center>
+          <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Cargando…" />
+        </Center>
+      )}
 
-        {loading && (
-          <div className="flex justify-center py-8">
-            <ThinkingOrb state="composing" size={20} theme="auto" aria-label="Cargando…" />
-          </div>
-        )}
+      {!loading && !data && <Message>No se pudo cargar el perfil de este jugador.</Message>}
 
-        {!loading && !data && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No se pudo cargar el perfil de este jugador.
-          </p>
-        )}
+      {!loading && data && (
+        <>
+          <Identity>
+            <Avatar src={data.avatar_url} name={name} size={88} />
+            {editingName ? (
+              <NameEditor>
+                <Input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} autoFocus disabled={savingName} />
+                <Button type="button" $size="icon" aria-label="Guardar nombre" onClick={saveName} disabled={savingName}>
+                  <Check />
+                </Button>
+                <Button type="button" $variant="ghost" $size="icon" aria-label="Cancelar" onClick={() => setEditingName(false)} disabled={savingName}>
+                  <X />
+                </Button>
+              </NameEditor>
+            ) : (
+              <NameRow>
+                <PlayerName>{name}</PlayerName>
+                {userRole === 'admin' && data.is_guest && (
+                  <EditButton type="button" onClick={startEditingName} title="Editar nombre del invitado" aria-label="Editar nombre del invitado">
+                    <Pencil />
+                  </EditButton>
+                )}
+              </NameRow>
+            )}
+          </Identity>
 
-        {!loading && data && (
-          <div className="space-y-4">
-            <div className="flex flex-col items-center gap-2">
-              <Avatar className="h-24 w-24 border-2 border-lime-500">
-                <AvatarImage src={data.avatar_url ?? undefined} />
-                <AvatarFallback className="bg-lime-100 text-lime-800 text-3xl font-bold">
-                  {(data.full_name ?? '?').charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              {editingName ? (
-                <div className="flex items-center gap-1 w-full max-w-56">
-                  <Input
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    className="h-8 text-center"
-                    autoFocus
-                    disabled={savingName}
-                  />
-                  <Button size="icon" className="h-8 w-8 shrink-0" onClick={saveName} disabled={savingName}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setEditingName(false)} disabled={savingName}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg font-bold">{toTitleCase(data.full_name)}</span>
-                  {userRole === 'admin' && data.is_guest && (
-                    <button
-                      type="button"
-                      onClick={startEditingName}
-                      className="text-muted-foreground hover:text-primary"
-                      title="Editar nombre del invitado"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+          <Info>
+            <InfoRow label="Género" value={(data.gender && GENDER_LABEL[data.gender]) || NOT_SET} />
+            <InfoRow label="Mano preferida" value={(data.preferred_hand && HAND_LABEL[data.preferred_hand]) || NOT_SET} />
+            <InfoRow label="Posición en pista" value={(data.court_position && POSITION_LABEL[data.court_position]) || NOT_SET} />
+          </Info>
 
-            <div className="space-y-1.5 border-t pt-3">
-              <InfoRow label="Género" value={data.gender ? (GENDER_LABEL[data.gender] ?? 'No especificado') : 'No especificado'} />
-              <InfoRow label="Mano Preferida" value={data.preferred_hand ? (HAND_LABEL[data.preferred_hand] ?? 'No especificado') : 'No especificado'} />
-              <InfoRow label="Posición en Pista" value={data.court_position ? (POSITION_LABEL[data.court_position] ?? 'No especificado') : 'No especificado'} />
-            </div>
-
-            <div className="border-t pt-3">
-              <PlayerStatsCard
-                matchesPlayed={data.matches_played}
-                gamesWon={data.gamesWon}
-                gamesLost={data.gamesLost}
-              />
-            </div>
-
-            <div className="flex flex-col items-center gap-1 border-t pt-3">
-              <Trophy className="h-4 w-4 text-lime-500" />
-              <span className="text-2xl font-bold">{(data.win_ratio * 100).toFixed(0)}%</span>
-              <span className="text-xs text-muted-foreground">Ratio de Victoria</span>
-            </div>
-          </div>
-        )}
-      </DialogContent>
+          <StatsRow
+            matchesPlayed={data.matches_played}
+            matchesWon={matchesWon}
+            winRatio={data.win_ratio}
+            gamesWon={data.gamesWon}
+            gamesLost={data.gamesLost}
+          />
+        </>
+      )}
     </Dialog>
   )
 }
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Row>
+      <Label>{label}</Label>
+      <Value>{value}</Value>
+    </Row>
+  )
+}
+
+const Center = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+`
+
+const Message = styled.p`
+  margin: 0;
+  padding: 2rem 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.875rem;
+  text-align: center;
+`
+
+const Identity = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+`
+
+const NameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const PlayerName = styled.span`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.25rem;
+  font-weight: 700;
+`
+
+const EditButton = styled.button`
+  display: grid;
+  place-items: center;
+  padding: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.muted};
+  cursor: pointer;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+`
+
+const NameEditor = styled.div`
+  display: flex;
+  width: 100%;
+  max-width: 18rem;
+  align-items: center;
+  gap: 0.375rem;
+
+  button {
+    flex-shrink: 0;
+  }
+`
+
+const Info = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.line};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.line};
+`
+
+const Row = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+`
+
+const Label = styled.span`
+  color: ${({ theme }) => theme.colors.muted};
+`
+
+const Value = styled.span`
+  font-weight: 600;
+`

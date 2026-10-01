@@ -1,14 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import { EventCard } from '@/components/events/EventCard'
-import { ShareEventButton } from '@/components/events/ShareEventButton'
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
 import { MixingEvent } from '@/types/events'
 import { isEventFullyConfirmed } from '@/app/actions/events'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import Header from '@/components/molecules/Header'
 import TabBar from '@/components/molecules/TabBar'
 import EventOpenView from '@/components/organisms/EventOpenView'
@@ -172,35 +167,6 @@ export default async function EventPage(props: EventPageProps) {
     )
   }
 
-  return (
-    <div className="container mx-auto max-w-md py-8 px-4 space-y-8 animate-in fade-in duration-500">
-      <RealtimeRefresher />
-      <NotificationListener userId={user.id} />
-        <div className="flex items-center gap-4 mb-6">
-            <Link href="/dashboard">
-                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                    <ArrowLeft className="h-6 w-6 text-gray-500" />
-                </Button>
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Detalle del Evento</h1>
-        </div>
-        
-        <div>
-            <EventCard event={fullEvent} userId={user.id} userRole={userRole} />
-        </div>
-        
-        {userRole === 'admin' && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
-                <div className="border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Panel de Admin</h3>
-                    <p className="text-sm text-gray-500">Gestiona y difunde este evento.</p>
-                </div>
-                
-                <div className="grid gap-3">
-                    <ShareEventButton event={fullEvent} />
-                </div>
-            </div>
-        )}
-    </div>
-  )
+  // Any other status (not expected) has no view
+  notFound()
 }

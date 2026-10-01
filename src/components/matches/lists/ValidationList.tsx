@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import ConfirmDialog from '@/components/molecules/ConfirmDialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
@@ -126,7 +126,7 @@ function MatchCard({
       title={pending?.title ?? ''}
       description={pending?.description ?? ''}
       confirmLabel={pending?.confirmLabel}
-      variant={pending?.variant}
+      variant={pending?.variant === 'outline' ? 'primary' : 'danger'}
       onConfirm={() => pending?.action()}
     />
     <div className="flex flex-col rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
