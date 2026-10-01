@@ -2,31 +2,8 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateNewRating, applyGuestProtection } from '@/lib/rating-logic'
-
-/**
- * Helper para extraer juegos totales de un marcador tipo "6-4 6-2" o "12-5"
- */
-function parseGames(score: string) {
-  let gamesA = 0
-  let gamesB = 0
-  
-  if (!score) return { gamesA: 0, gamesB: 0 }
-
-  // Divide por espacios para separar sets
-  const parts = score.split(' ') 
-  
-  parts.forEach(part => {
-    // Divide por guión para sacar juegos de cada lado
-    const [a, b] = part.split('-').map(Number)
-    if (!isNaN(a) && !isNaN(b)) {
-      gamesA += a
-      gamesB += b
-    }
-  })
-  
-  return { gamesA, gamesB }
-}
+import { toTitleCase, formatRelativeDay } from '@/lib/utils'
+import { applyMatchConfirmation, parseGames, type ConfirmableMatch } from '@/lib/confirm-match'
 
 export async function getPlayerGameStats(userId: string) {
   const supabase = await createClient()
@@ -111,169 +88,11 @@ export async function confirmMatch(matchId: string) {
   }
 
 
-  // 2. Obtener los perfiles actuales de los 4 jugadores
-  const playerIds = [match.player_a1, match.player_a2, match.player_b1, match.player_b2]
-  
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('*')
-    .in('id', playerIds)
-
-  if (profilesError || !profiles || profiles.length !== 4) {
-    console.error('❌ Error al obtener perfiles:', profilesError)
-    return { success: false, error: 'No se pudieron cargar los perfiles de los jugadores' }
+  if (match.status === 'expired') {
+    return { success: false, error: 'Este partido ha caducado' }
   }
 
-  // Mapa para acceso rápido a datos del perfil
-  const profileMap = Object.fromEntries(profiles.map(p => [
-    p.id,
-    {
-      rating: p.rating,
-      matches_played: p.matches_played || 0,
-      matches_won: p.matches_won || 0,
-      is_guest: p.is_guest || false
-    }
-  ]))
-
-  const matchHasGuest = playerIds.some(id => profileMap[id].is_guest)
-
-  // 3. Experiencia previa para K-Factor — usamos matches_played del perfil (fuente canónica)
-  const matchesA1 = profileMap[match.player_a1].matches_played
-  const matchesA2 = profileMap[match.player_a2].matches_played
-  const matchesB1 = profileMap[match.player_b1].matches_played
-  const matchesB2 = profileMap[match.player_b2].matches_played
-
-  console.log('📊 Experiencia (Partidos previos jugados):', {
-    A1: matchesA1, A2: matchesA2, B1: matchesB1, B2: matchesB2
-  })
-
-  // 4. Preparar datos de juego (Juegos y Ganador)
-  const { gamesA, gamesB } = parseGames(match.score_details || "")
-
-  if (gamesA === 0 && gamesB === 0) {
-    return { success: false, error: 'El partido no tiene marcador registrado. Añade el resultado antes de confirmar.' }
-  }
-
-  // Evento de prueba: confirmar sin actualizar ratings ni estadísticas
-  const isTestEvent = (match.events as { is_test: boolean } | null)?.is_test ?? false
-  if (isTestEvent) {
-    const { getAdminClient } = await import('@/utils/supabase/admin')
-    const adminSupabase = getAdminClient()
-    const { error: testError } = await adminSupabase
-      .from('matches')
-      .update({ status: 'confirmed' })
-      .eq('id', matchId)
-    if (testError) return { success: false, error: testError.message }
-    revalidatePath('/dashboard')
-    return { success: true }
-  }
-
-  const isDraw = gamesA === gamesB
-  const teamAWon = gamesA > gamesB
-  const teamBWon = gamesB > gamesA
-
-  const resultTypeA: 'win' | 'draw' | 'loss' = isDraw ? 'draw' : teamAWon ? 'win' : 'loss'
-  const resultTypeB: 'win' | 'draw' | 'loss' = isDraw ? 'draw' : teamBWon ? 'win' : 'loss'
-
-  console.log(`📊 Análisis: Juegos A=${gamesA} B=${gamesB}. Resultado: ${isDraw ? 'Empate' : teamAWon ? 'Gana A' : 'Gana B'}`)
-
-  // 5. Calcular nuevos ratings
-
-  // TEAM A
-  const resultA1 = applyGuestProtection(
-    profileMap[match.player_a1].rating,
-    calculateNewRating(
-      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-      gamesA, gamesB, resultTypeA, matchesA1
-    ),
-    matchHasGuest, profileMap[match.player_a1].is_guest
-  )
-  const resultA2 = applyGuestProtection(
-    profileMap[match.player_a2].rating,
-    calculateNewRating(
-      profileMap[match.player_a2].rating, profileMap[match.player_a1].rating,
-      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-      gamesA, gamesB, resultTypeA, matchesA2
-    ),
-    matchHasGuest, profileMap[match.player_a2].is_guest
-  )
-
-  // TEAM B
-  const resultB1 = applyGuestProtection(
-    profileMap[match.player_b1].rating,
-    calculateNewRating(
-      profileMap[match.player_b1].rating, profileMap[match.player_b2].rating,
-      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-      gamesB, gamesA, resultTypeB, matchesB1
-    ),
-    matchHasGuest, profileMap[match.player_b1].is_guest
-  )
-  const resultB2 = applyGuestProtection(
-    profileMap[match.player_b2].rating,
-    calculateNewRating(
-      profileMap[match.player_b2].rating, profileMap[match.player_b1].rating,
-      profileMap[match.player_a1].rating, profileMap[match.player_a2].rating,
-      gamesB, gamesA, resultTypeB, matchesB2
-    ),
-    matchHasGuest, profileMap[match.player_b2].is_guest
-  )
-
-  // 6. Preparar actualizaciones de BD
-  const playerUpdates = [
-    { id: match.player_a1, result: resultA1, teamWon: teamAWon },
-    { id: match.player_a2, result: resultA2, teamWon: teamAWon },
-    { id: match.player_b1, result: resultB1, teamWon: teamBWon },
-    { id: match.player_b2, result: resultB2, teamWon: teamBWon },
-  ]
-
-  try {
-    // A+B+C en una sola transacción atómica vía RPC
-    const rpcPayload = playerUpdates.map(pu => {
-      const pm = profileMap[pu.id]
-      const newPlayed = (pm.matches_played || 0) + 1
-      const newWon = (pm.matches_won || 0) + (pu.teamWon ? 1 : 0)
-      const newRatio = newPlayed > 0 ? newWon / newPlayed : 0
-      return {
-        player_id: pu.id,
-        new_rating: pu.result.newRating,
-        new_matches_played: newPlayed,
-        new_matches_won: newWon,
-        new_win_ratio: newRatio,
-        rating_before: pm.rating,
-      }
-    })
-
-    const { error: rpcError } = await supabase.rpc('confirm_match_atomic', {
-      p_match_id: matchId,
-      p_rating_change: resultA1.change,
-      p_player_updates: rpcPayload,
-    })
-
-    if (rpcError) {
-      if (rpcError.message?.includes('ALREADY_CONFIRMED')) {
-        return { success: false, error: 'Este partido ya fue validado anteriormente' }
-      }
-      throw new Error(`Error confirmando partido: ${rpcError.message}`)
-    }
-
-    console.log('✅ Partido confirmado y procesado con éxito.')
-
-    // 7. Refrescar UI
-    revalidatePath('/dashboard')
-    revalidatePath('/ranking')
-    revalidatePath('/profile')
-    if (match.event_id) {
-      revalidatePath(`/events/${match.event_id}`)
-      revalidatePath(`/admin/events/${match.event_id}/generate`)
-    }
-
-    return { success: true }
-
-  } catch (error) {
-    console.error('❌ Error en transacción:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Error desconocido al confirmar' }
-  }
+  return applyMatchConfirmation(supabase, match as ConfirmableMatch)
 }
 
 export async function updateMatchScore(
@@ -327,7 +146,7 @@ export async function updateMatchScore(
 
   if (error) throw new Error(error.message)
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -368,7 +187,7 @@ export async function rotateMatchPlayers(matchId: string) {
 
   if (error) throw new Error(error.message)
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -402,4 +221,178 @@ export async function getUserMatches(userId: string, limit: number, page: number
   // Transform data to flat structure if needed, or keep as is.
   // We'll keep it as is but careful with types in the client component.
   return { matches: data, totalCount: count || 0, error: null }
+}
+
+// Only total games count (no sets): sums every "a-b" part, oriented to the user's team.
+function totalGames(scoreDetails: string | null, inTeamA: boolean) {
+  const parts = (scoreDetails ?? '').split(' ').map(part => part.split('-').map(Number))
+  let mine = 0
+  let theirs = 0
+  for (const [a, b] of parts) {
+    if (isNaN(a) || isNaN(b)) continue
+    mine += inTeamA ? a : b
+    theirs += inTeamA ? b : a
+  }
+  return { mine, theirs }
+}
+
+export type LastMatch = {
+  id: string
+  outcome: 'win' | 'loss' | 'draw'
+  partnerName: string | null
+  // Total games from the user's point of view, e.g. "8-2"
+  score: string
+  playedAt: string
+  clubName: string | null
+}
+
+type LastMatchRow = {
+  id: string
+  created_at: string
+  score_details: string | null
+  player_a1: string
+  player_a2: string
+  player_b1: string
+  player_b2: string
+  p_a1: { full_name: string | null } | null
+  p_a2: { full_name: string | null } | null
+  p_b1: { full_name: string | null } | null
+  p_b2: { full_name: string | null } | null
+  event: { start_time: string; club: { name: string } | null } | null
+}
+
+/** Último partido confirmado del jugador, orientado desde su punto de vista. */
+export async function getLastMatch(userId: string): Promise<LastMatch | null> {
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from('matches')
+    .select(`
+      id, created_at, score_details, player_a1, player_a2, player_b1, player_b2,
+      p_a1:profiles!player_a1(full_name),
+      p_a2:profiles!player_a2(full_name),
+      p_b1:profiles!player_b1(full_name),
+      p_b2:profiles!player_b2(full_name),
+      event:events(start_time, club:clubs(name))
+    `)
+    .eq('status', 'confirmed')
+    .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!data) return null
+  const m = data as unknown as LastMatchRow
+
+  const inTeamA = m.player_a1 === userId || m.player_a2 === userId
+  const partner = inTeamA
+    ? (m.player_a1 === userId ? m.p_a2 : m.p_a1)
+    : (m.player_b1 === userId ? m.p_b2 : m.p_b1)
+
+  const { mine, theirs } = totalGames(m.score_details, inTeamA)
+
+  return {
+    id: m.id,
+    outcome: mine > theirs ? 'win' : mine < theirs ? 'loss' : 'draw',
+    partnerName: partner?.full_name ?? null,
+    score: `${mine}-${theirs}`,
+    playedAt: m.event?.start_time ?? m.created_at,
+    clubName: m.event?.club?.name ?? null,
+  }
+}
+
+
+export type PendingAction = {
+  id: string
+  kind: 'record' | 'confirm'
+  when: string
+  partnerName: string | null
+  myTeam: string[]
+  opponents: string[]
+  // Total games from the user's point of view; null while there is no result yet
+  games: { mine: number; theirs: number } | null
+  courtLabel: string | null
+  // Raw match data for the score dialog
+  match: {
+    id: string
+    score_details: string
+    p_a1: { full_name: string | null } | null
+    p_a2: { full_name: string | null } | null
+    p_b1: { full_name: string | null } | null
+    p_b2: { full_name: string | null } | null
+  }
+}
+
+type PendingRow = LastMatchRow & {
+  last_updated_by: string | null
+  court_number: number | null
+  court_name: string | null
+  court: { name: string } | { name: string }[] | null
+  round_number: number | null
+}
+
+// Real court name when assigned (court row, then legacy text), otherwise the round-local number.
+function courtName(m: Pick<PendingRow, 'court' | 'court_name' | 'court_number'>) {
+  const court = Array.isArray(m.court) ? m.court[0] : m.court
+  return court?.name ?? m.court_name ?? (m.court_number ? `Pista ${m.court_number}` : null)
+}
+
+/**
+ * Partidos del jugador que esperan algo de él: introducir el resultado (0-0)
+ * o confirmar el que ha metido el rival. Si el último en tocarlo fue él, está
+ * esperando al rival y no se muestra.
+ */
+export async function getPendingActions(userId: string): Promise<PendingAction[]> {
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from('matches')
+    .select(`
+      id, created_at, score_details, last_updated_by, court_number, court_name, round_number,
+      court:courts(name),
+      player_a1, player_a2, player_b1, player_b2,
+      p_a1:profiles!player_a1(full_name),
+      p_a2:profiles!player_a2(full_name),
+      p_b1:profiles!player_b1(full_name),
+      p_b2:profiles!player_b2(full_name),
+      event:events(start_time, club:clubs(name))
+    `)
+    .eq('status', 'pending')
+    .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
+    .order('created_at', { ascending: false })
+
+  const rows = (data ?? []) as unknown as PendingRow[]
+  const firstName = (name: string | null | undefined) => toTitleCase(name).split(' ')[0] || 'Jugador'
+
+  return rows
+    .filter(m => m.last_updated_by !== userId)
+    .map(m => {
+      const inTeamA = m.player_a1 === userId || m.player_a2 === userId
+      const [me, partner, rival1, rival2] = inTeamA
+        ? (m.player_a1 === userId ? [m.p_a1, m.p_a2, m.p_b1, m.p_b2] : [m.p_a2, m.p_a1, m.p_b1, m.p_b2])
+        : (m.player_b1 === userId ? [m.p_b1, m.p_b2, m.p_a1, m.p_a2] : [m.p_b2, m.p_b1, m.p_a1, m.p_a2])
+
+      const raw = m.score_details ?? '0-0'
+      const hasScore = raw !== '0-0'
+      const games = hasScore ? totalGames(raw, inTeamA) : null
+
+      return {
+        id: m.id,
+        kind: hasScore ? 'confirm' as const : 'record' as const,
+        when: formatRelativeDay(m.event?.start_time ?? m.created_at),
+        partnerName: partner?.full_name ? firstName(partner.full_name) : null,
+        myTeam: [firstName(me?.full_name), firstName(partner?.full_name)],
+        opponents: [firstName(rival1?.full_name), firstName(rival2?.full_name)],
+        games,
+        courtLabel: [courtName(m), m.round_number ? `Ronda ${m.round_number}` : null].filter(Boolean).join(' · ') || null,
+        match: {
+          id: m.id,
+          score_details: raw,
+          p_a1: m.p_a1,
+          p_a2: m.p_a2,
+          p_b1: m.p_b1,
+          p_b2: m.p_b2,
+        },
+      }
+    })
 }

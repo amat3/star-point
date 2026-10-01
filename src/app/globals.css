@@ -51,7 +51,7 @@
   --radius: 1rem;
 
   /* Cloud Dancer Background */
-  --background: hsl(43 19% 93%);
+  --background: #fbfaf6;
   --foreground: hsl(222.2 84% 4.9%);
 
   --card: hsl(0 0% 100%);

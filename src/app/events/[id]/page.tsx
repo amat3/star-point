@@ -9,6 +9,10 @@ import { isEventFullyConfirmed } from '@/app/actions/events'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Header from '@/components/molecules/Header'
+import TabBar from '@/components/molecules/TabBar'
+import EventOpenView from '@/components/organisms/EventOpenView'
+import { formatEventDate, formatEventTime, formatLevel, formatWeekdayPlural, toTitleCase } from '@/lib/utils'
 
 interface EventPageProps {
   params: Promise<{ id: string }>
@@ -19,7 +23,7 @@ export default async function EventPage(props: EventPageProps) {
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return redirect('/login')
+  if (!user) return redirect(`/login?next=/events/${params.id}`)
 
   // 1. Fetch Event
   const { data: event, error } = await supabase
@@ -46,14 +50,14 @@ export default async function EventPage(props: EventPageProps) {
        .order('joined_at', { ascending: true })
 
   // 3. Fetch Profiles for Participants
-  type EventProfile = { id: string; full_name?: string | null; avatar_url?: string | null }
+  type EventProfile = { id: string; full_name?: string | null; avatar_url?: string | null; is_guest?: boolean | null; rating?: number | null }
   const userIds = rawParticipants?.map((p) => p.user_id) || []
   const profilesMap: Record<string, EventProfile> = {}
 
   if (userIds.length > 0) {
         const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, full_name, avatar_url')
+            .select('id, full_name, avatar_url, is_guest, rating')
             .in('id', userIds)
 
         profiles?.forEach((p) => {
@@ -66,7 +70,9 @@ export default async function EventPage(props: EventPageProps) {
   const formattedParticipants = rawParticipants?.map((p) => ({
         user_id: p.user_id,
         full_name: profilesMap[p.user_id]?.full_name || 'Jugador',
-        avatar_url: profilesMap[p.user_id]?.avatar_url
+        avatar_url: profilesMap[p.user_id]?.avatar_url,
+        is_guest: profilesMap[p.user_id]?.is_guest ?? false,
+        rating: profilesMap[p.user_id]?.rating ?? null,
     })) || []
 
   // 4. Build MixingEvent object
@@ -82,11 +88,44 @@ export default async function EventPage(props: EventPageProps) {
   // 5. Get User Role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name, avatar_url')
     .eq('id', user.id)
     .single()
   
   const userRole = profile?.role || 'player'
+
+  // Open events (sign-up phase) use the new design; later phases keep the legacy view for now.
+  if (fullEvent.status === 'open') {
+    const total = fullEvent.max_spots
+    const players = formattedParticipants.map((p, index) => ({
+      userId: p.user_id,
+      name: toTitleCase(p.full_name),
+      avatarUrl: p.avatar_url ?? null,
+      level: formatLevel(p.rating),
+      isGuest: p.is_guest,
+      status: index < total ? 'Plaza confirmada' : `Reserva ${index - total + 1}`,
+    }))
+
+    return (
+      <>
+        <RealtimeRefresher />
+        <NotificationListener userId={user.id} />
+        <Header
+          profile={profile}
+          userName={profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'}
+        />
+        <EventOpenView
+          event={fullEvent}
+          eyebrow={`El plan de los ${formatWeekdayPlural(fullEvent.start_time)}`}
+          heroTitle={formatEventDate(fullEvent.start_time)}
+          startsAt={formatEventTime(fullEvent.start_time)}
+          players={players}
+          userRole={userRole}
+        />
+        <TabBar loggedIn />
+      </>
+    )
+  }
 
   return (
     <div className="container mx-auto max-w-md py-8 px-4 space-y-8 animate-in fade-in duration-500">

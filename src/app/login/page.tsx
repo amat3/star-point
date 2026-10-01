@@ -1,255 +1,226 @@
 'use client'
 
 import { useState } from 'react'
+import styled from '@emotion/styled'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Eye, EyeOff } from 'lucide-react'
+import Logo from '@/components/atoms/Logo'
+import Input from '@/components/atoms/Input'
+import Label from '@/components/atoms/Label'
+import Button from '@/components/atoms/Button'
+import PasswordInput from '@/components/molecules/PasswordInput'
 import { RATING_CONFIG } from '@/lib/config'
 
+// Sign-ups are closed for now: only existing accounts can log in.
+// Flip this to bring the register form back (also needs sign-ups enabled in Supabase).
+const REGISTRATION_ENABLED = false
+
+// Only same-site paths are allowed as post-login destinations.
+function getNextPath() {
+  const next = new URLSearchParams(window.location.search).get('next')
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+}
+
 export default function LoginPage() {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  const isRegister = REGISTRATION_ENABLED && mode === 'register'
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
-    }
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-
+  const handleRegister = async () => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          rating: RATING_CONFIG.INITIAL_RATING
-        },
-      },
+      options: { data: { full_name: fullName, rating: RATING_CONFIG.INITIAL_RATING } },
     })
+    if (error) throw error
+    // Force update profile just in case trigger doesn't pick up metadata rating
+    if (data.user) {
+      await supabase.from('profiles').update({ rating: RATING_CONFIG.INITIAL_RATING }).eq('id', data.user.id)
+    }
+  }
 
-    if (error) {
-      setError(error.message)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setNotice(null)
+
+    try {
+      if (isRegister) await handleRegister()
+      else await handleLogin()
+      router.push(getNextPath())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se ha podido completar la operación')
       setLoading(false)
-    } else {
-      // Force update profile just in case trigger doesn't pick up metadata rating
-      if (data.user) {
-        await supabase.from('profiles').update({ 
-          rating: RATING_CONFIG.INITIAL_RATING 
-        }).eq('id', data.user.id)
-      }
-      router.push('/dashboard')
     }
   }
 
   const handleForgotPassword = async () => {
     if (!email) {
-      setError('Por favor, ingresa tu email primero')
+      setError('Escribe primero tu email')
       return
     }
 
     setLoading(true)
     setError(null)
+    setNotice(null)
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      alert('¡Revisa tu email! Te hemos enviado un enlace para restablecer tu contraseña.')
-      setLoading(false)
-    }
+    if (error) setError(error.message)
+    else setNotice('Revisa tu email: te hemos enviado un enlace para restablecer tu contraseña.')
+    setLoading(false)
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full flex-1 px-4 py-12 sm:px-6 lg:px-8 animate-in fade-in duration-1000">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Star<span className="text-lime-500">Point</span>
-          </h2>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            Tu app de Padel & Risas
-          </p>
-        </div>
+    <Root>
+      <Brand>
+        <Logo />
+        <Tagline>Tu app de Pádel</Tagline>
+      </Brand>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-            <TabsTrigger value="register">Registrarse</TabsTrigger>
-          </TabsList>
+      <Form onSubmit={handleSubmit}>
+        <Heading>{isRegister ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</Heading>
 
-          <TabsContent value="login">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bienvenido de nuevo</CardTitle>
-                <CardDescription>
-                  Ingresa tus credenciales para acceder a tu cuenta.
-                </CardDescription>
-              </CardHeader>
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="nombre@ejemplo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Contraseña</Label>
-                    <div className="relative">
-                      <Input 
-                        id="password" 
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      disabled={loading}
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </button>
-                  </div>
-                  {error && (
-                    <div className="text-sm text-red-500">
-                      {error}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="pt-6">
-                  <Button className="w-full" type="submit" disabled={loading}>
-                    {loading ? 'Cargando...' : 'Iniciar Sesión'}
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
+        {isRegister && (
+          <Field>
+            <Label htmlFor="fullname">Nombre completo</Label>
+            <Input
+              id="fullname"
+              placeholder="Juan Pérez"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              required
+            />
+          </Field>
+        )}
 
-          <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>Crea una cuenta</CardTitle>
-                <CardDescription>
-                  Únete a StarPoint para empezar a jugar.
-                </CardDescription>
-              </CardHeader>
-              <form onSubmit={handleRegister}>
-                <CardContent className="space-y-4">
-                  <div className="p-3 mb-4 text-sm text-yellow-800 bg-yellow-100 rounded-lg dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50">
-                    ⚠️ El registro de nuevos usuarios está temporalmente deshabilitado. Contacta con un administrador si necesitas acceso.
-                  </div>
-                  <div className="space-y-2 opacity-60">
-                    <Label htmlFor="register-fullname">Nombre Completo</Label>
-                    <Input 
-                      id="register-fullname" 
-                      type="text" 
-                      placeholder="Juan Pérez"
-                      disabled
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2 opacity-60">
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input 
-                      id="register-email" 
-                      type="email" 
-                      placeholder="nombre@ejemplo.com"
-                      disabled
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2 opacity-60">
-                    <Label htmlFor="register-password">Contraseña</Label>
-                    <div className="relative">
-                      <Input 
-                        id="register-password" 
-                        type={showPassword ? "text" : "password"}
-                        disabled
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        disabled
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  {error && (
-                    <div className="text-sm text-red-500">
-                      {error}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="pt-6">
-                  <Button className="w-full" type="submit" disabled>
-                    Registrarse (Deshabilitado)
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+        <Field>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="nombre@ejemplo.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </Field>
+
+        <Field>
+          <Label htmlFor="password">Contraseña</Label>
+          <PasswordInput
+            id="password"
+            autoComplete={isRegister ? 'new-password' : 'current-password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+        </Field>
+
+        {!isRegister && (
+          <TextButton type="button" onClick={handleForgotPassword} disabled={loading}>
+            ¿Olvidaste tu contraseña?
+          </TextButton>
+        )}
+
+        {error && <Message role="alert" $error>{error}</Message>}
+        {notice && <Message role="status">{notice}</Message>}
+
+        <Button type="submit" $size="lg" disabled={loading}>
+          {loading ? 'Cargando…' : isRegister ? 'Registrarse' : 'Iniciar sesión'}
+        </Button>
+
+        {REGISTRATION_ENABLED && (
+          <TextButton type="button" onClick={() => setMode(isRegister ? 'login' : 'register')}>
+            {isRegister ? 'Ya tengo cuenta' : 'Crear una cuenta'}
+          </TextButton>
+        )}
+      </Form>
+    </Root>
   )
 }
+
+const Root = styled.main`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 2rem 1.5rem;
+`
+
+const Brand = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+`
+
+const Tagline = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.875rem;
+`
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`
+
+const Heading = styled.h1`
+  margin: 0 0 0.25rem;
+  color: ${({ theme }) => theme.colors.forest};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+`
+
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+const TextButton = styled.button`
+  align-self: flex-end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.forest};
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+`
+
+const Message = styled('p', {
+  shouldForwardProp: (prop) => prop !== '$error',
+})<{ $error?: boolean }>`
+  margin: 0;
+  color: ${({ theme, $error }) => ($error ? theme.colors.alert : theme.colors.forest)};
+  font-size: 0.8125rem;
+`

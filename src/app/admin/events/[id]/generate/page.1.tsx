@@ -36,14 +36,11 @@ export default function GenerateMixPage() {
   // Selection for swapping
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
-  // 🆕 Config simplificada: rotación siempre activa, el nivel es un
-  // interruptor único (antes: balanceStrategy + avoidRepetition).
-  // Activados por defecto: con la cascada de prioridades, nunca pueden
-  // empeorar la rotación — solo desempatan entre opciones ya igual de
-  // buenas, así que no hay motivo para no aprovecharlos desde el principio.
+  // Config State
   const [config, setConfig] = useState<MixingConfig>({
     genderMode: 'open',
-    prioritizeLevel: true,
+    balanceStrategy: 'similar_levels',
+    avoidRepetition: true,
     forcePosition: true
   })
 
@@ -100,6 +97,9 @@ export default function GenerateMixPage() {
         }
 
         console.log("Cloning participants...")
+        // Deep clone para no mutar el state directamente. generateEventRounds
+        // gestiona internamente el historial (pareja/rival) entre rondas y la
+        // rotación de grupos — ya no hace falta reimplementarlo aquí.
         const currentParticipants: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
 
         console.log("Generating", roundsCount, "rounds")
@@ -121,8 +121,10 @@ export default function GenerateMixPage() {
     const proposal = proposals[roundIndex]
     if (!proposal) return
 
+    // Find the two players locations
     const newMatches = [...proposal.matches]
 
+    // Helper to find player coords
     const findCoords = (pid: string) => {
         for (let mIdx = 0; mIdx < newMatches.length; mIdx++) {
             const match = newMatches[mIdx]
@@ -137,12 +139,18 @@ export default function GenerateMixPage() {
     const c2 = findCoords(targetPlayerId)
 
     if (c1 && c2 && c1.mIdx !== c2.mIdx) {
+        // Un swap entre pistas distintas deshace el balance de nivel, la
+        // complementariedad de posición y las exclusiones que el algoritmo
+        // calculó para ese grupo de 4 concreto — solo se permite reordenar
+        // parejas dentro del mismo partido/pista.
         toast.error('Solo puedes intercambiar jugadores dentro de la misma pista')
         setSelectedPlayerId(null)
         return
     }
 
     if (c1 && c2) {
+        // c1.mIdx === c2.mIdx garantizado por el chequeo anterior: siempre es
+        // un reordenamiento dentro del mismo partido/pista.
         const m1 = { ...newMatches[c1.mIdx] }
         newMatches[c1.mIdx] = m1
         const m2 = m1
@@ -220,20 +228,47 @@ export default function GenerateMixPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-6">
 
-            {/* 🆕 Nivel: ahora es un único interruptor, no una elección entre 2 estrategias */}
+            {/* Strategy */}
             <div className="space-y-2">
-                <label className="text-sm font-medium">Priorizar Nivel</label>
+                <label className="text-sm font-medium">Estrategia</label>
                 <div className="flex gap-2">
-                     <Button
-                        variant={config.prioritizeLevel ? 'default' : 'outline'}
-                        onClick={() => setConfig({...config, prioritizeLevel: !config.prioritizeLevel})}
+                    <Button
+                        variant={config.balanceStrategy === 'similar_levels' ? 'default' : 'outline'}
+                        onClick={() => setConfig({...config, balanceStrategy: 'similar_levels'})}
                         size="sm"
                     >
-                        {config.prioritizeLevel ? 'Activado' : 'Desactivado'}
+                        Niveles Similares
+                    </Button>
+                    <Button
+                        variant={config.balanceStrategy === 'pro_am' ? 'default' : 'outline'}
+                        onClick={() => setConfig({...config, balanceStrategy: 'pro_am'})}
+                        size="sm"
+                    >
+                        Serpentín
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    El objetivo principal es siempre rotar al máximo compañeros y rivales. Con esto activado, entre varias rotaciones igual de buenas se prefiere la que iguala más el nivel; nunca fuerza una repetición evitable.
+                    {config.balanceStrategy === 'similar_levels'
+                        ? 'Agrupa por nivel: los mejores en la misma pista, los peores en la misma pista.'
+                        : 'El mejor se empareja con el peor, el 2º con el 11º, etc. Mezcla todos los niveles en todas las pistas.'
+                    }
+                </p>
+            </div>
+
+            {/* Repetition */}
+            <div className="space-y-2">
+                <label className="text-sm font-medium">Evitar Repetición</label>
+                <div className="flex gap-2">
+                     <Button
+                        variant={config.avoidRepetition ? 'default' : 'outline'}
+                        onClick={() => setConfig({...config, avoidRepetition: !config.avoidRepetition})}
+                        size="sm"
+                    >
+                        {config.avoidRepetition ? 'Activado' : 'Desactivado'}
+                    </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Prioriza que no repitan pareja ni rival los mismos jugadores en este evento, rotando quién comparte pista con quién.
                 </p>
             </div>
 
