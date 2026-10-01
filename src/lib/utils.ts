@@ -130,9 +130,3 @@ export function formatRelativeDay(dateStr: string, now = new Date()) {
 export function formatLevel(rating: number | null | undefined) {
   return (rating ?? 0).toFixed(1).replace('.', ',')
 }
-
-/** Día de la semana en plural para "El plan de los viernes" (hora de Madrid). */
-export function formatWeekdayPlural(dateStr: string) {
-  const day = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'Europe/Madrid' })
-  return day.endsWith('s') ? day : `${day}s`
-}
