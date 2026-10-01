@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import Button from '../atoms/Button'
 import CourtCard from '../molecules/CourtCard'
 import EmptyState from '../molecules/EmptyState'
+import ResultReviewDialog from '../molecules/ResultReviewDialog'
 import RoundTabs from '../molecules/RoundTabs'
 import Content from '../molecules/Content'
 import { confirmMatch } from '@/app/actions/matches'
@@ -29,7 +30,8 @@ function EventDrawView({ eyebrow, chip, title, summary, rounds, isAdmin }: Event
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeRound, setActiveRound] = useState(rounds[0]?.number ?? 1)
-  const [recording, setRecording] = useState<DrawMatch | null>(null)
+  const [recording, setRecording] = useState<{ match: DrawMatch; mode: 'record' | 'correct' } | null>(null)
+  const [reviewing, setReviewing] = useState<DrawMatch | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const matches = [...(rounds.find(r => r.number === activeRound)?.matches ?? [])]
@@ -61,7 +63,7 @@ function EventDrawView({ eyebrow, chip, title, summary, rounds, isAdmin }: Event
     if (m.status === 'disputed') return <Status>Resultado impugnado: lo revisará un admin{score && <Score>{score}</Score>}</Status>
     if (!m.games) {
       return (
-        <Button $variant="accent" $size="md" onClick={() => setRecording(m)}>
+        <Button $variant="accent" $size="md" onClick={() => setRecording({ match: m, mode: 'record' })}>
           <Pencil />
           Introducir resultado
         </Button>
@@ -71,7 +73,7 @@ function EventDrawView({ eyebrow, chip, title, summary, rounds, isAdmin }: Event
       return (
         <Action>
           <Score>{score}</Score>
-          <Button $variant="accent" $size="md" disabled={isPending && busyId === m.id} onClick={() => handleConfirm(m.id)}>
+          <Button $variant="accent" $size="md" disabled={isPending && busyId === m.id} onClick={() => setReviewing(m)}>
             <Check />
             {isPending && busyId === m.id ? 'Confirmando…' : 'Confirmar resultado'}
           </Button>
@@ -109,9 +111,30 @@ function EventDrawView({ eyebrow, chip, title, summary, rounds, isAdmin }: Event
         {!isAdmin && rounds.length === 0 && <EmptyState>Todavía no hay partidos para ti.</EmptyState>}
       </Body>
 
+      {reviewing && reviewing.games && (
+        <ResultReviewDialog
+          open
+          onOpenChange={(open) => { if (!open) setReviewing(null) }}
+          myTeam={reviewing.teamA.map(p => p.name.split(' ')[0])}
+          opponents={reviewing.teamB.map(p => p.name.split(' ')[0])}
+          games={{ mine: reviewing.games.a, theirs: reviewing.games.b }}
+          onConfirm={() => {
+            const id = reviewing.id
+            setReviewing(null)
+            handleConfirm(id)
+          }}
+          onCorrect={() => {
+            const match = reviewing
+            setReviewing(null)
+            setRecording({ match, mode: 'correct' })
+          }}
+        />
+      )}
+
       {recording && (
         <EditMatchDialog
-          match={recording.dialogMatch as unknown as Match}
+          match={recording.match.dialogMatch as unknown as Match}
+          mode={recording.mode}
           open
           onOpenChange={(open) => {
             if (!open) {

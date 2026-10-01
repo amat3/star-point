@@ -4,7 +4,7 @@ import type { Hand } from '@/components/atoms/HandTag'
 import type { CourtPlayer } from '@/components/molecules/CourtCard'
 import type { DrawMatch, DrawRound } from '@/types/draw'
 
-type DrawProfile = {
+export type DrawProfile = {
   full_name: string | null
   avatar_url: string | null
   court_position: Hand | null
@@ -28,6 +28,17 @@ type DrawRow = {
   p_b1: DrawProfile
   p_b2: DrawProfile
   court: { name: string } | { name: string }[] | null
+}
+
+// Level is only included when the viewer may see it (admins).
+export function toCourtPlayer(id: string, profile: DrawProfile, showLevel: boolean): CourtPlayer {
+  return {
+    userId: id,
+    name: toTitleCase(profile?.full_name) || 'Jugador',
+    avatarUrl: profile?.avatar_url ?? null,
+    hand: profile?.court_position ?? null,
+    ...(showLevel && profile?.rating != null ? { level: profile.rating.toFixed(1).replace('.', ',') } : {}),
+  }
 }
 
 /**
@@ -65,13 +76,7 @@ export async function getEventDraw(
   const { data } = await query
   const rows = (data ?? []) as unknown as DrawRow[]
 
-  const toPlayer = (id: string, profile: DrawProfile): CourtPlayer => ({
-    userId: id,
-    name: toTitleCase(profile?.full_name) || 'Jugador',
-    avatarUrl: profile?.avatar_url ?? null,
-    hand: profile?.court_position ?? null,
-    ...(isAdmin && profile?.rating != null ? { level: profile.rating.toFixed(1).replace('.', ',') } : {}),
-  })
+  const toPlayer = (id: string, profile: DrawProfile) => toCourtPlayer(id, profile, isAdmin)
 
   const rounds = new Map<number, DrawMatch[]>()
 

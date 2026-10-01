@@ -14,6 +14,8 @@ interface EditMatchDialogProps {
   match: Match
   open: boolean
   onOpenChange: (open: boolean) => void
+  // 'correct': the viewer fixes a score someone else entered; the rival has to confirm it
+  mode?: 'record' | 'correct'
 }
 
 const MAX_GAMES = 50
@@ -27,7 +29,7 @@ const pairLabel = (first?: { full_name?: string | null } | null, second?: { full
   [first, second].map(p => toTitleCase(p?.full_name).split(' ')[0] || 'Jugador').join(' + ')
 
 // Total games of each pair (no sets): the only thing that is recorded.
-export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogProps) {
+export function EditMatchDialog({ match, open, onOpenChange, mode = 'record' }: EditMatchDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [score, setScore] = useState(() => parseScore(match.score_details))
 
@@ -43,7 +45,7 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
     setIsSubmitting(true)
     try {
       await updateMatchScore(match.id, { score_details: `${score.a}-${score.b}` })
-      toast.success('Resultado guardado')
+      toast.success(mode === 'correct' ? 'Marcador corregido: el rival tendrá que confirmarlo' : 'Resultado guardado')
       onOpenChange(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar el resultado')
@@ -56,11 +58,15 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Resultado del partido"
-      description="Indica los juegos totales de cada pareja."
+      title={mode === 'correct' ? 'Corregir el marcador' : 'Resultado del partido'}
+      description={
+        mode === 'correct'
+          ? 'Indica los juegos que de verdad se jugaron. El rival tendrá que confirmarlo.'
+          : 'Indica los juegos totales de cada pareja.'
+      }
       footer={
         <Button type="button" $size="lg" disabled={isSubmitting || isEmpty} onClick={handleSave}>
-          {isSubmitting ? 'Guardando…' : 'Guardar resultado'}
+          {isSubmitting ? 'Guardando…' : mode === 'correct' ? 'Guardar corrección' : 'Guardar resultado'}
         </Button>
       }
     >

@@ -53,7 +53,7 @@ export async function deleteMatch(matchId: string) {
       return { success: false, error: 'No se encontró el partido o ya fue eliminado.' }
     }
     
-    revalidatePath('/dashboard')
+    revalidatePath('/')
     return { success: true }
   }
 
@@ -69,11 +69,12 @@ export async function deleteMatch(matchId: string) {
      return { success: false, error: 'No se pudo eliminar. Verifica permisos RLS.' }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 
-export async function updateCourtName(eventId: string, courtNumber: number, courtName: string) {
+// Assigns a court of the event's club to every match of that court number in the event.
+export async function assignCourt(eventId: string, courtNumber: number, courtId: string | null) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'No autenticado' }
@@ -82,14 +83,24 @@ export async function updateCourtName(eventId: string, courtNumber: number, cour
   if (profile?.role !== 'admin') return { success: false, error: 'Requiere admin' }
 
   const adminSupabase = getAdminClient()
+
+  let courtName: string | null = null
+  if (courtId) {
+    const { data: court } = await adminSupabase.from('courts').select('name').eq('id', courtId).single()
+    if (!court) return { success: false, error: 'La pista no existe' }
+    courtName = court.name
+  }
+
   const { error } = await adminSupabase
     .from('matches')
-    .update({ court_name: courtName })
+    .update({ court_id: courtId, court_name: courtName })
     .eq('event_id', eventId)
     .eq('court_number', courtNumber)
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard')
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
+  revalidatePath('/admin/matches')
   return { success: true }
 }
