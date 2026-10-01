@@ -15,7 +15,7 @@ export async function getPlayersRanking() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, rating, matches_played, court_position, gender')
+    .select('id, full_name, avatar_url, rating, matches_played, court_position, gender')
     .eq('is_guest', false)
     .order('full_name', { ascending: true })
 
