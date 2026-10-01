@@ -215,7 +215,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean, club_id?: string | null }) {
   try {
     const supabase = await createClient()
     
@@ -246,6 +246,7 @@ export async function createEvent(data: { title: string, start_time: string, max
         created_by: user.id,
         status: 'open',
         is_test: data.is_test ?? false,
+        club_id: data.club_id ?? null,
       })
       .select('id, title, start_time')
       .single()
@@ -277,10 +278,11 @@ export async function createEvent(data: { title: string, start_time: string, max
     sendPushToUsers(playerIds, {
       title: 'Nuevo evento disponible',
       body: `"${newEvent.title}" el ${formattedDate} — ¡apúntate!`,
-      url: '/dashboard',
+      url: '/',
     }).catch(console.error)
 
-    revalidatePath('/dashboard')
+    revalidatePath('/')
+    revalidatePath('/mixing')
     return { success: true }
   } catch (error) {
     throw error instanceof Error ? error : new Error("Error interno del servidor")
