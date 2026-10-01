@@ -2,24 +2,26 @@
 
 import styled from '@emotion/styled'
 import { CalendarDays } from 'lucide-react'
+import type { Theme } from '@/theme'
 
 interface LastMatchRowProps {
   title: string
   meta: string
   score: string
+  outcome: 'win' | 'loss' | 'draw'
 }
 
-function LastMatchRow({ title, meta, score }: LastMatchRowProps) {
+function LastMatchRow({ title, meta, score, outcome }: LastMatchRowProps) {
   return (
     <Root>
-      <IconBox>
+      <IconBox $outcome={outcome}>
         <CalendarDays />
       </IconBox>
       <Info>
         <Title>{title}</Title>
         <Meta>{meta}</Meta>
       </Info>
-      <Score>{score}</Score>
+      <Score $outcome={outcome}>{score}</Score>
     </Root>
   )
 }
@@ -30,15 +32,25 @@ const Root = styled.div`
   gap: 0.875rem;
 `
 
-const IconBox = styled.div`
+// Same code as the history cards: green win, red loss, neutral draw.
+const outcomeColors = (theme: Theme, outcome: LastMatchRowProps['outcome']) => ({
+  win: { tint: theme.colors.winTint, icon: theme.colors.online, score: theme.colors.forest },
+  loss: { tint: theme.colors.coralTint, icon: theme.colors.danger, score: theme.colors.danger },
+  draw: { tint: theme.colors.surface, icon: theme.colors.muted, score: theme.colors.ink },
+})[outcome]
+
+const IconBox = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$outcome',
+})<{ $outcome: LastMatchRowProps['outcome'] }>`
   display: grid;
   flex-shrink: 0;
   place-items: center;
   width: 2rem;
   height: 2rem;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ theme }) => theme.colors.coralTint};
-  color: ${({ theme }) => theme.colors.coral};
+  border: 1.5px solid ${({ theme, $outcome }) => outcomeColors(theme, $outcome).icon};
+  background: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).tint};
+  color: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).icon};
 
   svg {
     width: 1rem;
@@ -67,9 +79,11 @@ const Meta = styled.p`
   font-size: 0.625rem;
 `
 
-const Score = styled.span`
+const Score = styled('span', {
+  shouldForwardProp: (prop) => prop !== '$outcome',
+})<{ $outcome: LastMatchRowProps['outcome'] }>`
   flex-shrink: 0;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).score};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 1rem;
   font-weight: 700;

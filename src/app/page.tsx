@@ -95,6 +95,7 @@ export default async function HomePage() {
               title={`${{ win: 'Victoria', loss: 'Derrota', draw: 'Empate' }[lastMatch.outcome]}${lastMatch.partnerName ? ` con ${toTitleCase(lastMatch.partnerName)}` : ''}`}
               meta={[formatRelativeDay(lastMatch.playedAt), lastMatch.clubName].filter(Boolean).join(' · ')}
               score={lastMatch.score}
+              outcome={lastMatch.outcome}
             />
           </>
         )}

@@ -1,14 +1,17 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { MatchHistory } from '@/components/dashboard/MatchHistory'
-import { PlayerStatsCard } from '@/components/dashboard/PlayerStatsCard'
-import { ArrowLeft, History, Trophy } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getPlayerGameStats } from '@/app/actions/matches'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+import Content from '@/components/molecules/Content'
+import Header from '@/components/molecules/Header'
+import PageIntro from '@/components/molecules/PageIntro'
+import SectionHeader from '@/components/molecules/SectionHeader'
+import StatsRow from '@/components/molecules/StatsRow'
+import TabBar from '@/components/molecules/TabBar'
+import HistoryList from '@/components/organisms/HistoryList'
+import { getMatchHistory, getPlayerGameStats } from '@/app/actions/matches'
+import { isAdminView } from '@/lib/view-mode'
 
 export default async function HistoryPage() {
   const supabase = await createClient()
@@ -18,62 +21,40 @@ export default async function HistoryPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return redirect('/login')
+    return redirect('/login?next=/history')
   }
 
-  // Fetch Profile Stats
   const { data: profile } = await supabase
     .from('profiles')
-    .select('matches_played, win_ratio')
+    .select('full_name, avatar_url, role, matches_played, matches_won, win_ratio')
     .eq('id', user.id)
     .single()
 
-  const matchesPlayed = profile?.matches_played ?? 0
-  const winRatio = profile?.win_ratio ? `${(profile.win_ratio * 100).toFixed(0)}%` : '0%'
+  const userName = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador'
+  const adminView = await isAdminView(profile?.role)
+
   const { gamesWon, gamesLost } = await getPlayerGameStats(user.id)
+  const { matches, hasMore } = await getMatchHistory(1)
 
   return (
-    <div className="min-h-screen bg-background animate-in fade-in duration-500">
-      {/* Header Section */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-800/80 sticky top-0 z-10 transition-all border-b border-gray-100 dark:border-gray-700">
-        <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/dashboard" 
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title="Volver al Dashboard"
-            >
-              <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-            </Link>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <History className="h-6 w-6 text-primary" />
-                Historial Completo
-            </h1>
-          </div>
-        </div>
-      </header>
+    <>
+      <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
+      <PageIntro title="Historial" subtitle="Todos tus partidos" />
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        
-        {/* Stats */}
-        <Card>
-          <CardContent className="pt-6">
-            <PlayerStatsCard matchesPlayed={matchesPlayed} gamesWon={gamesWon} gamesLost={gamesLost} />
-          </CardContent>
-        </Card>
+      <Content>
+        <StatsRow
+          matchesPlayed={profile?.matches_played ?? 0}
+          matchesWon={profile?.matches_won ?? 0}
+          winRatio={profile?.win_ratio ?? 0}
+          gamesWon={gamesWon}
+          gamesLost={gamesLost}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-col items-center justify-center space-y-1 pb-2 pt-4">
-            <Trophy className="h-4 w-4 text-lime-500" />
-            <CardTitle className="text-sm font-medium">Ratio de Victoria</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center pb-4">
-            <div className="text-2xl font-bold">{winRatio}</div>
-          </CardContent>
-        </Card>
+        <SectionHeader title="Partidos" />
+        <HistoryList initialMatches={matches} initialHasMore={hasMore} />
+      </Content>
 
-        <MatchHistory userId={user.id} />
-      </main>
-    </div>
+      <TabBar loggedIn />
+    </>
   )
 }

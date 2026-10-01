@@ -191,36 +191,80 @@ export async function rotateMatchPlayers(matchId: string) {
   return { success: true }
 }
 
-export async function getUserMatches(userId: string, limit: number, page: number) {
+export type HistoryMatch = {
+  id: string
+  // Date of the event when there is one, otherwise when the match was created
+  playedAt: string
+  title: string | null
+  clubName: string | null
+  outcome: 'win' | 'loss' | 'draw'
+  // The viewer's team first
+  myTeam: string[]
+  opponents: string[]
+  games: { mine: number; theirs: number }
+}
+
+const HISTORY_PAGE_SIZE = 10
+
+/**
+ * Página del historial de partidos confirmados de la persona que llama. Ignora
+ * cualquier id recibido: siempre es el historial del usuario autenticado.
+ */
+export async function getMatchHistory(page: number): Promise<{ matches: HistoryMatch[]; hasMore: boolean }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { matches: [], hasMore: false }
 
-  // Calculate range for pagination
-  const from = (page - 1) * limit
-  const to = from + limit - 1
+  const from = Math.max(page - 1, 0) * HISTORY_PAGE_SIZE
+  // One extra row tells us whether there is another page
+  const to = from + HISTORY_PAGE_SIZE
 
-  const { data, count, error } = await supabase
+  const { data, error } = await supabase
     .from('matches')
     .select(`
-      *,
-      event:events(title),
-      p_a1:profiles!player_a1(full_name, is_guest, avatar_url),
-      p_a2:profiles!player_a2(full_name, is_guest, avatar_url),
-      p_b1:profiles!player_b1(full_name, is_guest, avatar_url),
-      p_b2:profiles!player_b2(full_name, is_guest, avatar_url)
-    `, { count: 'exact' })
-    .or(`player_a1.eq.${userId},player_a2.eq.${userId},player_b1.eq.${userId},player_b2.eq.${userId}`)
-    .eq('status', 'confirmed') // Only finished/confirmed matches
+      id, created_at, score_details, player_a1, player_a2, player_b1, player_b2,
+      p_a1:profiles!player_a1(full_name),
+      p_a2:profiles!player_a2(full_name),
+      p_b1:profiles!player_b1(full_name),
+      p_b2:profiles!player_b2(full_name),
+      event:events(title, start_time, club:clubs(name))
+    `)
+    .or(`player_a1.eq.${user.id},player_a2.eq.${user.id},player_b1.eq.${user.id},player_b2.eq.${user.id}`)
+    .eq('status', 'confirmed')
     .order('created_at', { ascending: false })
     .range(from, to)
 
   if (error) {
-    console.error('Error fetching user matches:', error)
-    return { matches: [], totalCount: 0, error: error.message }
+    console.error('Error fetching match history:', error)
+    return { matches: [], hasMore: false }
   }
 
-  // Transform data to flat structure if needed, or keep as is.
-  // We'll keep it as is but careful with types in the client component.
-  return { matches: data, totalCount: count || 0, error: null }
+  type Row = Omit<LastMatchRow, 'event'> & {
+    event: { title: string; start_time: string; club: { name: string } | { name: string }[] | null } | null
+  }
+  const rows = (data ?? []) as unknown as Row[]
+  const firstName = (name: string | null | undefined) => toTitleCase(name).split(' ')[0] || 'Jugador'
+
+  const matches = rows.slice(0, HISTORY_PAGE_SIZE).map((m): HistoryMatch => {
+    const inTeamA = m.player_a1 === user.id || m.player_a2 === user.id
+    const mine = inTeamA ? [m.p_a1, m.p_a2] : [m.p_b1, m.p_b2]
+    const theirs = inTeamA ? [m.p_b1, m.p_b2] : [m.p_a1, m.p_a2]
+    const games = totalGames(m.score_details, inTeamA)
+    const club = Array.isArray(m.event?.club) ? m.event?.club[0] : m.event?.club
+
+    return {
+      id: m.id,
+      playedAt: m.event?.start_time ?? m.created_at,
+      title: m.event?.title?.trim() ?? null,
+      clubName: club?.name ?? null,
+      outcome: games.mine > games.theirs ? 'win' : games.mine < games.theirs ? 'loss' : 'draw',
+      myTeam: mine.map(p => firstName(p?.full_name)),
+      opponents: theirs.map(p => firstName(p?.full_name)),
+      games,
+    }
+  })
+
+  return { matches, hasMore: rows.length > HISTORY_PAGE_SIZE }
 }
 
 export type LastMatch = {
