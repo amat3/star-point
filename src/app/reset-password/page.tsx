@@ -1,30 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import styled from '@emotion/styled'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Eye, EyeOff } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
+import Logo from '@/components/atoms/Logo'
+import Button from '@/components/atoms/Button'
+import Field from '@/components/molecules/Field'
+import PasswordInput from '@/components/molecules/PasswordInput'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // User clicked the reset link, show the form
-      }
-    })
+    // The reset link signs the user in with a recovery session; the form is always shown.
+    const { data } = supabase.auth.onAuthStateChange(() => {})
+    return () => data.subscription.unsubscribe()
   }, [supabase.auth])
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -42,77 +38,91 @@ export default function ResetPasswordPage() {
 
     setLoading(true)
 
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    })
+    const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
       toast.error(error.message)
       setLoading(false)
     } else {
       toast.success('¡Contraseña actualizada correctamente!')
-      router.push('/dashboard')
+      router.push('/')
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">StarPoint</h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Restablecer contraseña
-          </p>
+    <Root>
+      <Brand>
+        <Logo />
+      </Brand>
+
+      <Form onSubmit={handleResetPassword}>
+        <div>
+          <Heading>Nueva contraseña</Heading>
+          <Hint>Escribe la contraseña con la que quieres entrar a partir de ahora.</Hint>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Nueva Contraseña</CardTitle>
-            <CardDescription>
-              Ingresa tu nueva contraseña
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleResetPassword}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Nueva Contraseña</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
-                <Input
-                  id="confirm-password"
-                  type={showPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <Button className="w-full" type="submit" disabled={loading}>
-                {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
-              </Button>
-            </CardContent>
-          </form>
-        </Card>
-      </div>
-    </div>
+        <Field label="Nueva contraseña" htmlFor="password" hint="Mínimo 6 caracteres.">
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </Field>
+
+        <Field label="Confirmar contraseña" htmlFor="confirm-password">
+          <PasswordInput
+            id="confirm-password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </Field>
+
+        <Button type="submit" $size="lg" disabled={loading}>
+          {loading ? 'Actualizando…' : 'Actualizar contraseña'}
+        </Button>
+      </Form>
+    </Root>
   )
 }
+
+const Root = styled.main`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 2rem 1.5rem;
+`
+
+const Brand = styled.div`
+  display: flex;
+  justify-content: center;
+`
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`
+
+const Heading = styled.h1`
+  margin: 0 0 0.25rem;
+  color: ${({ theme }) => theme.colors.forest};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+`
+
+const Hint = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.875rem;
+`
