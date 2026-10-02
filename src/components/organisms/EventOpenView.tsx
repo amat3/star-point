@@ -201,9 +201,9 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
   )
 }
 
-// Space for the fixed JoinBar (button + notes) above the TabBar
 const Body = styled(Content)`
-  padding-bottom: 11rem;
+  /* tab bar + the fixed join bar above it (its notes can take several lines) */
+  padding-bottom: calc(${({ theme }) => theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + ${({ theme }) => theme.layout.joinBarHeight});
 `
 
 const AdminPanel = styled.section`

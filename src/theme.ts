@@ -48,6 +48,8 @@ export const lightTheme = {
     maxWidth: '30rem',
     headerHeight: '4.25rem',
     tabBarHeight: '4.5rem',
+    // Fixed join bar above the tab bar: guarantee note + button + extra note (worst case)
+    joinBarHeight: '12rem',
   },
   motion: {
     enter: '520ms cubic-bezier(0.2, 0.75, 0.25, 1)',

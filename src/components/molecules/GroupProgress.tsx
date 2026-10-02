@@ -35,6 +35,7 @@ const Root = styled.section`
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
+  background-color: #fffefa;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -76,6 +77,7 @@ const Track = styled.div`
   overflow: hidden;
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.line};
+  border: 1px solid ${({ theme }) => theme.colors.hairline};
 `
 
 const Fill = styled.div`
