@@ -27,15 +27,15 @@ export const metadata: Metadata = {
     title: "StarPoint",
   },
   icons: {
-    icon: "/icon-512.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/pwa-icon/512",
+    apple: "/pwa-icon/180",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F0EEE9" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfaf6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1512" },
   ],
 };
 

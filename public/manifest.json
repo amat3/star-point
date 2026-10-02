@@ -1,21 +1,29 @@
 {
-  "name": "StartPoint Padel",
-  "short_name": "StartPoint",
-  "description": "Gestión de ranking y partidos de pádel",
-  "start_url": "/dashboard",
+  "name": "StarPoint",
+  "short_name": "StarPoint",
+  "description": "Tu app de Pádel",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#F0EEE9",
-  "theme_color": "#F0EEE9",
+  "background_color": "#fbfaf6",
+  "theme_color": "#fbfaf6",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/pwa-icon/192",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/pwa-icon/512",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
