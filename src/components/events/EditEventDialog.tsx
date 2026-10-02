@@ -32,6 +32,8 @@ interface EditEventDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   event: MixingEvent
+  // Draw already published: changing club, courts or rounds undoes the draw
+  published?: boolean
 }
 
 const valuesFor = (event: MixingEvent): FormValues => {
@@ -47,7 +49,7 @@ const valuesFor = (event: MixingEvent): FormValues => {
   }
 }
 
-export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogProps) {
+export function EditEventDialog({ open, onOpenChange, event, published = false }: EditEventDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [clubs, setClubs] = useState<{ id: string; name: string }[]>([])
 
@@ -134,6 +136,10 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
           <Input id="edit-duration" type="number" inputMode="numeric" min={30} step={5} {...register('duration_minutes', { valueAsNumber: true })} />
         </Field>
 
+        {published && (
+          <Note>El sorteo ya está publicado: si cambias club, pistas o rondas se deshará y tendrás que generarlo de nuevo. Fecha, hora, título y duración no lo afectan.</Note>
+        )}
+
         <Button type="submit" $size="lg" disabled={isLoading}>
           {isLoading ? 'Guardando…' : 'Guardar cambios'}
         </Button>
@@ -141,6 +147,12 @@ export function EditEventDialog({ open, onOpenChange, event }: EditEventDialogPr
     </Dialog>
   )
 }
+
+const Note = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.8125rem;
+`
 
 const Form = styled.form`
   display: flex;

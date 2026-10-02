@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
+import { getAdminClient } from '@/utils/supabase/admin'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 
 // 🆕 Ventana de historial: cuántos eventos recientes (incluyendo el actual,
@@ -188,12 +189,18 @@ export async function saveAllRounds(
     throw new Error('El evento no está completo. Añade jugadores o invitados antes de generar partidos.')
   }
 
-  // Never save a second draw on top of an existing one
-  const { count: existingMatches } = await supabase
+  // Never save a second draw on top of one with results. Leftover matches
+  // without any result (e.g. from a draw that was undone) are replaced.
+  const { count: playedMatches } = await supabase
     .from('matches')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', eventId)
-  if ((existingMatches ?? 0) > 0) throw new Error('Este evento ya tiene partidos generados')
+    .or('status.neq.pending,score_details.neq.0-0')
+  if ((playedMatches ?? 0) > 0) throw new Error('Este evento ya tiene partidos con resultado')
+
+  // matches has no DELETE policy for users: the admin was verified above
+  const { error: clearError } = await getAdminClient().from('matches').delete().eq('event_id', eventId)
+  if (clearError) throw new Error(clearError.message)
 
   // Courts must belong to the event's club
   const courtIds = Object.values(courts).map(c => c.id)
@@ -259,5 +266,37 @@ export async function saveAllRounds(
   revalidatePath('/')
   revalidatePath('/mixing')
   revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
+
+// Rotates the pairs of a published match through its 3 possible pairings
+// (a1+a2 | b1+b2 → a1+b1 | b2+a2 → a1+b2 | a2+b1 → back), for when the four
+// players agree to change partners on the court. Only before a result exists.
+export async function rotateMatchPairs(matchId: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No auth')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Requiere admin')
+
+  const { data: match } = await supabase
+    .from('matches')
+    .select('event_id, status, score_details, player_a1, player_a2, player_b1, player_b2')
+    .eq('id', matchId)
+    .single()
+  if (!match) throw new Error('Partido no encontrado')
+  if (match.status !== 'pending' || (match.score_details ?? '0-0') !== '0-0') {
+    throw new Error('Este partido ya tiene resultado: no se pueden cambiar las parejas')
+  }
+
+  const { player_a1: a1, player_a2: a2, player_b1: b1, player_b2: b2 } = match
+  const { error } = await supabase
+    .from('matches')
+    .update({ player_a1: a1, player_a2: b1, player_b1: b2, player_b2: a2 })
+    .eq('id', matchId)
+  if (error) throw new Error(error.message)
+
+  if (match.event_id) revalidatePath(`/events/${match.event_id}`)
   return { success: true }
 }

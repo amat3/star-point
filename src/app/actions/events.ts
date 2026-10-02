@@ -330,19 +330,52 @@ export async function updateEvent(eventId: string, data: { title: string, start_
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    const { data: existingEvent } = await supabase.from('events').select('status').eq('id', eventId).single()
-    if (existingEvent?.status !== 'open') throw new Error('No se puede editar un evento con los partidos ya en marcha')
+    const { data: existingEvent } = await supabase
+      .from('events')
+      .select('status, max_spots, rounds, club_id')
+      .eq('id', eventId)
+      .single()
+    const published = existingEvent?.status === 'in_progress'
+    if (existingEvent?.status !== 'open' && !published) throw new Error('Este evento ya no se puede editar')
+
+    // With the draw published, changing courts, rounds or club invalidates it:
+    // the draw is undone (back to sign-up) so it can be generated again.
+    let reopened = false
+    if (published) {
+      const structural =
+        data.max_spots !== existingEvent.max_spots ||
+        data.rounds !== existingEvent.rounds ||
+        (data.club_id !== undefined && data.club_id !== existingEvent.club_id)
+
+      if (structural) {
+        const { count: played } = await supabase
+          .from('matches')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .or('status.neq.pending,score_details.neq.0-0')
+        if ((played ?? 0) > 0) throw new Error('Ya hay resultados introducidos: no se pueden cambiar pistas, rondas ni club')
+
+        const { error: matchesError } = await getAdminClient().from('matches').delete().eq('event_id', eventId)
+        if (matchesError) throw new Error(matchesError.message)
+        reopened = true
+      }
+    }
 
     const { error } = await supabase
       .from('events')
       .update({
         title: data.title,
         start_time: data.start_time,
-        max_spots: data.max_spots,
-        rounds: data.rounds,
         duration_minutes: data.duration_minutes,
-        // undefined leaves the club untouched; null clears it
-        ...(data.club_id !== undefined ? { club_id: data.club_id } : {}),
+        ...(published && !reopened
+          ? {}
+          : {
+              max_spots: data.max_spots,
+              rounds: data.rounds,
+              // undefined leaves the club untouched; null clears it
+              ...(data.club_id !== undefined ? { club_id: data.club_id } : {}),
+              ...(reopened ? { status: 'open' } : {}),
+            }),
       })
       .eq('id', eventId)
 
@@ -367,7 +400,7 @@ export async function deleteEvent(eventId: string) {
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
     const { data: existingEvent } = await supabase.from('events').select('status').eq('id', eventId).single()
-    if (existingEvent?.status !== 'open') throw new Error('No se puede anular un evento con los partidos ya en marcha')
+    if (existingEvent?.status !== 'open' && existingEvent?.status !== 'in_progress') throw new Error('Este evento ya no se puede anular')
 
     // Bloquear si hay partidos con ELO ya aplicado
     const { count: confirmedCount } = await supabase
@@ -377,11 +410,13 @@ export async function deleteEvent(eventId: string) {
       .eq('status', 'confirmed')
 
     if ((confirmedCount || 0) > 0) {
-      throw new Error('No se puede eliminar un evento con partidos ya confirmados')
+      throw new Error('No se puede anular un evento con partidos ya confirmados')
     }
 
     // Borrar partidos pendientes, luego participantes, luego el evento
-    await supabase.from('matches').delete().eq('event_id', eventId)
+    // matches has no DELETE policy for users: the admin was verified above
+    const { error: matchesError } = await getAdminClient().from('matches').delete().eq('event_id', eventId)
+    if (matchesError) throw new Error(matchesError.message)
     await supabase.from('event_participants').delete().eq('event_id', eventId)
 
     const { error } = await supabase.from('events').delete().eq('id', eventId)
@@ -734,4 +769,40 @@ export async function cancelMatchEvent(eventId: string) {
 
   revalidatePath('/')
   return { success: true }
+}
+
+// Takes a published draw back to the sign-up phase so courts, rounds and players
+// can be changed and the draw generated again. Only while no result exists.
+export async function reopenDraw(eventId: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+    if (event?.status !== 'in_progress') throw new Error('Este evento no tiene el sorteo publicado')
+
+    const { count: played } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .or('status.neq.pending,score_details.neq.0-0')
+    if ((played ?? 0) > 0) throw new Error('Ya hay resultados introducidos: no se puede rehacer el sorteo')
+
+    const { error: matchesError } = await getAdminClient().from('matches').delete().eq('event_id', eventId)
+    if (matchesError) throw new Error(matchesError.message)
+
+    const { error } = await supabase.from('events').update({ status: 'open' }).eq('id', eventId)
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/')
+    revalidatePath('/mixing')
+    revalidatePath(`/events/${eventId}`)
+    return { success: true }
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
 }

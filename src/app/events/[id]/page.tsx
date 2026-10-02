@@ -201,6 +201,7 @@ export default async function EventPage(props: EventPageProps) {
           adminView={adminView}
         />
         <EventDrawView
+          event={fullEvent}
           eyebrow={[club?.name, formatEventWeekday(fullEvent.start_time)].filter(Boolean).join(' · ')}
           chip={formatEventChip(fullEvent.start_time)}
           title="El sorteo está listo."
