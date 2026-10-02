@@ -14,6 +14,7 @@ import PageIntro from '@/components/molecules/PageIntro'
 import SectionHeader from '@/components/molecules/SectionHeader'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents } from '@/app/actions/events'
+import { mixingAvailability } from '@/lib/event-capacity'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventDay, formatEventMonth, formatEventTime } from '@/lib/utils'
 import type { MixingEvent } from '@/types/events'
@@ -81,11 +82,9 @@ export default async function MixingPage() {
     } else if (position >= event.max_spots) {
       warn = true
       availability = `En reserva (${position - event.max_spots + 1})`
-    } else if (spotsLeft > 0) {
-      availability = `${spotsLeft} ${spotsLeft === 1 ? 'plaza disponible' : 'plazas disponibles'}`
     } else {
-      warn = true
-      availability = 'Completo'
+      availability = mixingAvailability(count, event.max_spots)
+      warn = spotsLeft <= 0
     }
 
     return (

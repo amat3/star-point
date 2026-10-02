@@ -1,7 +1,7 @@
 'use client'
 
 import styled from '@emotion/styled'
-import { X } from 'lucide-react'
+import { Users, X } from 'lucide-react'
 import Avatar from '../atoms/Avatar'
 import HandTag, { type Hand } from '../atoms/HandTag'
 
@@ -24,13 +24,50 @@ interface PlayerListProps {
   players: PlayerListItem[]
   // Number of confirmed spots: empty ones are shown as "Plaza libre" rows
   totalSlots: number
+  // Mixing waiting list: once the starters are full, a "Lista de espera" section lists the
+  // reserves and the first free reserve spot (up to `capacity` reserves)
+  waitlist?: { capacity: number }
   onSelect?: (userId: string) => void
   onRemove?: (userId: string) => void
 }
 
-function PlayerList({ title, headerExtra, players, totalSlots, onSelect, onRemove }: PlayerListProps) {
-  // Confirmed spots first (filled or free), then the reserves in sign-up order.
-  const rows = Math.max(totalSlots, players.length)
+function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelect, onRemove }: PlayerListProps) {
+  const reserves = players.slice(totalSlots)
+  // The waiting list only exists once every starter spot is taken
+  const showWaitlist = !!waitlist && players.length >= totalSlots
+
+  const renderPlayer = (player: PlayerListItem) => (
+    <Row key={player.userId}>
+      <Main type="button" onClick={() => onSelect?.(player.userId)} disabled={!onSelect}>
+        <Avatar src={player.avatarUrl} name={player.name} size={40} />
+        <Info>
+          <Name>
+            {player.name}
+            {player.isGuest && <Guest>Inv.</Guest>}
+          </Name>
+          <Status>{player.status}</Status>
+        </Info>
+        <Tags>
+          <HandTag hand={player.hand} />
+          {player.level && <Level>Niv. {player.level}</Level>}
+        </Tags>
+      </Main>
+      {onRemove && (
+        <Remove type="button" aria-label={`Eliminar a ${player.name}`} onClick={() => onRemove(player.userId)}>
+          <X />
+        </Remove>
+      )}
+    </Row>
+  )
+
+  const renderFree = (key: string, label: string) => (
+    <Row key={key}>
+      <Free>
+        <Placeholder aria-hidden="true">?</Placeholder>
+        <FreeLabel>{label}</FreeLabel>
+      </Free>
+    </Row>
+  )
 
   return (
     <section>
@@ -39,43 +76,30 @@ function PlayerList({ title, headerExtra, players, totalSlots, onSelect, onRemov
         {headerExtra}
       </Header>
       <Card>
-        {Array.from({ length: rows }, (_, index) => {
-          const player = players[index]
-          if (!player) {
-            return (
-              <Row key={`free-${index}`}>
-                <Free>
-                  <Placeholder aria-hidden="true">?</Placeholder>
-                  <FreeLabel>Plaza libre</FreeLabel>
-                </Free>
-              </Row>
-            )
-          }
-          return (
-            <Row key={player.userId}>
-              <Main type="button" onClick={() => onSelect?.(player.userId)} disabled={!onSelect}>
-                <Avatar src={player.avatarUrl} name={player.name} size={40} />
-                <Info>
-                  <Name>
-                    {player.name}
-                    {player.isGuest && <Guest>Inv.</Guest>}
-                  </Name>
-                  <Status>{player.status}</Status>
-                </Info>
-                <Tags>
-                  <HandTag hand={player.hand} />
-                  {player.level && <Level>Niv. {player.level}</Level>}
-                </Tags>
-              </Main>
-              {onRemove && (
-                <Remove type="button" aria-label={`Eliminar a ${player.name}`} onClick={() => onRemove(player.userId)}>
-                  <X />
-                </Remove>
-              )}
-            </Row>
-          )
-        })}
+        {Array.from({ length: totalSlots }, (_, index) =>
+          players[index] ? renderPlayer(players[index]) : renderFree(`free-${index}`, 'Plaza libre')
+        )}
+        {/* Without a waiting list (partidos) anything beyond the spots just continues the list */}
+        {!showWaitlist && reserves.map(renderPlayer)}
       </Card>
+
+      {showWaitlist && (
+        <Waitlist aria-label="Lista de espera">
+          <WaitHeader>
+            <WaitIcon>
+              <Users />
+            </WaitIcon>
+            <WaitText>
+              <WaitTitle>Lista de espera</WaitTitle>
+              <WaitDetail>Entran si se libera una plaza</WaitDetail>
+            </WaitText>
+            <WaitCount>{reserves.length} en reserva</WaitCount>
+          </WaitHeader>
+          {reserves.map(renderPlayer)}
+          {reserves.length < waitlist.capacity &&
+            renderFree('free-reserve', `Reserva ${reserves.length + 1} · libre`)}
+        </Waitlist>
+      )}
     </section>
   )
 }
@@ -87,6 +111,72 @@ const Header = styled.div`
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+`
+
+// The waiting list is its own list, tinted like the "no confirmed yet" state it represents
+const Waitlist = styled.div`
+  margin-top: 0.75rem;
+  overflow: hidden;
+  border: 1px dashed ${({ theme }) => theme.colors.coral};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.coralTint};
+
+  > div {
+    border-bottom-color: color-mix(in srgb, ${({ theme }) => theme.colors.coral} 30%, transparent);
+  }
+
+  /* the "?" placeholder takes the same tone */
+  span[aria-hidden='true'] {
+    border-color: ${({ theme }) => theme.colors.coral};
+    background: transparent;
+    color: ${({ theme }) => theme.colors.coral};
+  }
+`
+
+const WaitHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid transparent;
+`
+
+const WaitIcon = styled.span`
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  color: ${({ theme }) => theme.colors.coral};
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+`
+
+const WaitText = styled.div`
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+`
+
+const WaitTitle = styled.span`
+  color: ${({ theme }) => theme.colors.coral};
+  font-size: 0.8125rem;
+  font-weight: 700;
+`
+
+const WaitDetail = styled.span`
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.75rem;
+`
+
+const WaitCount = styled.span`
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.colors.coral};
+  font-size: 0.8125rem;
+  font-weight: 700;
 `
 
 const Tags = styled.div`
