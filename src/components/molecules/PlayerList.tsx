@@ -29,9 +29,11 @@ interface PlayerListProps {
   waitlist?: { capacity: number }
   onSelect?: (userId: string) => void
   onRemove?: (userId: string) => void
+  // Which rows get the remove button (all of them by default)
+  canRemove?: (player: PlayerListItem) => boolean
 }
 
-function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelect, onRemove }: PlayerListProps) {
+function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelect, onRemove, canRemove }: PlayerListProps) {
   const reserves = players.slice(totalSlots)
   // The waiting list only exists once every starter spot is taken
   const showWaitlist = !!waitlist && players.length >= totalSlots
@@ -52,7 +54,7 @@ function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelec
           {player.level && <Level>Niv. {player.level}</Level>}
         </Tags>
       </Main>
-      {onRemove && (
+      {onRemove && (canRemove?.(player) ?? true) && (
         <Remove type="button" aria-label={`Eliminar a ${player.name}`} onClick={() => onRemove(player.userId)}>
           <X />
         </Remove>
