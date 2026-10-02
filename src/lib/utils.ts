@@ -160,3 +160,9 @@ export function roundEndsAt(
 ): Date {
   return roundStartsAt(eventStart, durationMinutes, rounds, (roundNumber || 1) + 1)
 }
+
+/** Día de la semana en plural para "El plan de los miércoles" (hora de Madrid). */
+export function formatWeekdayPlural(dateStr: string) {
+  const day = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'Europe/Madrid' })
+  return day.endsWith('s') ? day : `${day}s`
+}
