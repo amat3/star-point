@@ -138,7 +138,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
       <EventIntro
         eyebrow={eyebrow}
         title={event.title.trim()}
-        subtitle="Partidas equilibradas, caras nuevas y buen ambiente."
+        subtitle="Partidos de nivel y cerveza garantizada."
         badge={event.is_test ? 'Prueba · No computa en ranking' : undefined}
       />
 

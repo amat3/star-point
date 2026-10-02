@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
+import AdminToolbar from '@/components/molecules/AdminToolbar'
 import Content from '@/components/molecules/Content'
 import EmptyState from '@/components/molecules/EmptyState'
 import EventListItem from '@/components/molecules/EventListItem'
@@ -41,6 +42,16 @@ export default async function MixingPage() {
 
   // Published matches (kind 'match') live on the home list, not in the Mixing section
   const events = (await getOpenEvents()).filter(e => e.kind !== 'match')
+
+  // Admin view: how many matches are waiting for review (shown on the toolbar button)
+  let pendingCount = 0
+  if (adminView) {
+    const { count } = await supabase
+      .from('matches')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'disputed'])
+    pendingCount = count ?? 0
+  }
   const inProgress = events.filter(e => e.status === 'in_progress')
   const upcoming = events.filter(e => e.status === 'open')
 
@@ -97,9 +108,12 @@ export default async function MixingPage() {
       <RealtimeRefresher />
       <NotificationListener userId={user.id} />
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
-      <PageIntro title="Mixing" subtitle="Tus partidas semanales" />
+      <PageIntro title="Mixing" subtitle="Tus partidos semanales" />
 
       <Content>
+        {/* Admin view: the admin tools live right where the events are listed */}
+        {adminView && <AdminToolbar pendingCount={pendingCount} />}
+
         {events.length === 0 && <EmptyState>Aún no hay mixings abiertos.</EmptyState>}
 
         {inProgress.length > 0 && (

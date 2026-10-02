@@ -5,7 +5,7 @@ import styled from '@emotion/styled'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, LogOut, Settings2, ShieldCheck, UserRound } from 'lucide-react'
+import { Check, LogOut, ShieldCheck, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Avatar from '../atoms/Avatar'
 import { setAdminView } from '@/app/actions/view-mode'
@@ -58,14 +58,6 @@ function AvatarMenu({ name, avatarUrl, isAdmin, adminView }: AvatarMenuProps) {
                   <Indicator><Check /></Indicator>
                 </DropdownMenu.ItemIndicator>
               </CheckItem>
-              {adminView && (
-                <Item asChild>
-                  <Link href="/admin">
-                    <Settings2 />
-                    Administración
-                  </Link>
-                </Item>
-              )}
               <Separator />
             </>
           )}
