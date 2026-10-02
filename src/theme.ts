@@ -20,6 +20,9 @@ export const lightTheme = {
     winTint: 'rgba(112, 187, 106, 0.16)',
     hero: '#123d32',
     heroTint: 'rgba(217, 243, 106, 0.07)',
+    heroRing: 'rgba(217, 243, 106, 0.17)',
+    heroHaloInner: 'rgba(217, 243, 106, 0.045)',
+    heroHaloOuter: 'rgba(217, 243, 106, 0.035)',
     onForest: '#fbfaf6',
     tabInactive: '#929a93',
     glass: 'rgba(251, 250, 246, 0.96)',
@@ -32,6 +35,8 @@ export const lightTheme = {
   shadows: {
     sm: '0 1px 2px rgba(18, 61, 50, 0.08)',
     md: '0 6px 20px rgba(18, 61, 50, 0.10)',
+    // Cards: lifts them off the page background
+    card: '0 9px 20px rgba(18, 61, 50, 0.12)',
   },
   radii: {
     sm: '0.5rem',
@@ -53,6 +58,12 @@ export type Theme = typeof lightTheme
 
 export const darkTheme: Theme = {
   ...lightTheme,
+  // Black-based shadows: the green tint of the light ones disappears on a dark page
+  shadows: {
+    sm: '0 1px 2px rgba(0, 0, 0, 0.4)',
+    md: '0 6px 20px rgba(0, 0, 0, 0.35)',
+    card: '0 9px 20px rgba(0, 0, 0, 0.35)',
+  },
   colors: {
     background: '#0b1512',
     surface: '#142019',
@@ -74,6 +85,9 @@ export const darkTheme: Theme = {
     winTint: 'rgba(127, 208, 120, 0.14)',
     hero: '#17493b',
     heroTint: 'rgba(227, 255, 122, 0.07)',
+    heroRing: 'rgba(227, 255, 122, 0.17)',
+    heroHaloInner: 'rgba(227, 255, 122, 0.045)',
+    heroHaloOuter: 'rgba(227, 255, 122, 0.035)',
     onForest: '#f3f5ef',
     tabInactive: '#6f847a',
     glass: 'rgba(11, 21, 18, 0.96)',

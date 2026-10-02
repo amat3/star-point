@@ -67,6 +67,7 @@ const Root = styled('article', {
   padding: 1rem;
   border: 1px solid ${({ theme, $mine }) => ($mine ? theme.colors.forest : theme.colors.line)};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   background: ${({ theme, $mine }) => ($mine ? theme.colors.surface : 'transparent')};
 `
 

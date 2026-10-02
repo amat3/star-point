@@ -11,7 +11,7 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
-  box-shadow: ${({ theme }) => theme.shadows.sm};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `
 
 export const CardTitle = styled.h3`

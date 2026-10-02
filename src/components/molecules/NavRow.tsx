@@ -34,6 +34,7 @@ const Root = styled(Link)`
   padding: 1rem;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   color: ${({ theme }) => theme.colors.ink};
   text-decoration: none;
   transition: transform 100ms ease;
