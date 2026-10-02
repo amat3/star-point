@@ -9,11 +9,11 @@ import EventIntro from '../molecules/EventIntro'
 import EventHeroCard from '../molecules/EventHeroCard'
 import GroupProgress from '../molecules/GroupProgress'
 import PlayerList, { type PlayerListItem } from '../molecules/PlayerList'
-import WaitlistNote from '../molecules/WaitlistNote'
 import HandSummary, { type HandCounts } from '../molecules/HandSummary'
 import JoinBar from '../molecules/JoinBar'
 import Content from '../molecules/Content'
 import ConfirmDialog from '../molecules/ConfirmDialog'
+import { MAX_RESERVES } from '@/lib/event-capacity'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, addGuestToEvent } from '@/app/actions/events'
 import { EditEventDialog } from '@/components/events/EditEventDialog'
 import { AddParticipantDialog } from '@/components/events/AddParticipantDialog'
@@ -21,8 +21,6 @@ import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
 import { ShareEventButton } from '@/components/events/ShareEventButton'
 import type { MixingEvent } from '@/types/events'
 
-// Keep in sync with MAX_RESERVES in app/actions/events.ts
-const MAX_RESERVES = 6
 
 interface EventOpenViewProps {
   event: MixingEvent
@@ -46,7 +44,6 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
   const total = event.max_spots
   const count = players.length
   const confirmed = Math.min(count, total)
-  const reserves = Math.max(0, count - total)
   const free = total - confirmed
   // Side counts of the confirmed players only: those are the ones to pair up
   const handCounts = players.slice(0, total).reduce<HandCounts>(
@@ -113,7 +110,10 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
       variant: 'accent' as const,
       onClick: () => run(() => joinEvent(event.id), 'Te has apuntado al evento'),
       note: free > 0 ? `La lista de espera se activa cuando se ocupen las ${total} plazas.` : undefined,
-      shield: 'Tu plaza queda confirmada al apuntarte. Si hay una baja, te avisamos si subes a titular.',
+      shield:
+        free > 0
+          ? 'Tu plaza queda confirmada al apuntarte. Si hay una baja, te avisamos si subes a titular.'
+          : 'Entrarás en la lista de espera. Si hay una baja, te avisamos si subes a titular.',
     }
   })()
 
@@ -159,11 +159,10 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
           headerExtra={<HandSummary counts={handCounts} />}
           players={players}
           totalSlots={total}
+          waitlist={{ capacity: MAX_RESERVES }}
           onSelect={setSelectedProfileId}
           onRemove={isAdmin ? handleRemove : undefined}
         />
-
-        {reserves > 0 && <WaitlistNote count={reserves} />}
 
         {isAdmin && (
           <AdminPanel aria-label="Administración del evento">

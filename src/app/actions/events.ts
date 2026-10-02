@@ -5,9 +5,9 @@ import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
+import { MAX_RESERVES } from '@/lib/event-capacity'
 import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
-const MAX_RESERVES = 6
 
 // Un evento in_progress deja de mostrarse en cuanto TODOS sus partidos están
 // confirmados — no hay ningún estado 'finished' en BD, se calcula al vuelo.
