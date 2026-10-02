@@ -81,6 +81,9 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }
         const result = await confirmMatch(id)
         if (!result.success) throw new Error(result.error)
         toast.success('¡Partido confirmado!')
+        // This round is done: move on to the next one
+        const next = rounds.map(r => r.number).find(n => n > activeRound)
+        if (next !== undefined) setActiveRound(next)
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Error al confirmar el partido')

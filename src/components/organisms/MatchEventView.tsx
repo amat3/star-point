@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import styled from '@emotion/styled'
 import { useRouter } from 'next/navigation'
-import { Pencil, UserMinus, X } from 'lucide-react'
+import { Pencil, UserMinus, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../atoms/Button'
 import ConfirmDialog from '../molecules/ConfirmDialog'
@@ -12,9 +12,10 @@ import EventHeroCard from '../molecules/EventHeroCard'
 import EventIntro from '../molecules/EventIntro'
 import JoinBar from '../molecules/JoinBar'
 import PlayerList, { type PlayerListItem } from '../molecules/PlayerList'
+import { AddGuestDialog } from '@/components/events/AddGuestDialog'
 import { EditPartidoDialog } from '@/components/events/EditPartidoDialog'
 import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
-import { cancelMatchEvent, joinEvent, leaveEvent } from '@/app/actions/events'
+import { cancelMatchEvent, joinEvent, leaveEvent, removeGuestFromMatch } from '@/app/actions/events'
 import { MATCH_DURATION_MINUTES, missingLabel } from '@/lib/match-events'
 
 interface MatchEventViewProps {
@@ -42,6 +43,7 @@ function MatchEventView({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
+  const [guestOpen, setGuestOpen] = useState(false)
   const [pending, setPending] = useState<PendingConfirm | null>(null)
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
 
@@ -65,6 +67,14 @@ function MatchEventView({
       description: '¿Seguro que quieres salir? Tu plaza quedará libre para otro jugador del grupo.',
       confirmLabel: 'Sí, desapuntarme',
       action: () => run(() => leaveEvent(eventId), 'Te has desapuntado del partido'),
+    })
+
+  const handleRemoveGuest = (guestId: string) =>
+    setPending({
+      title: 'Quitar jugador',
+      description: '¿Seguro que quieres quitar a este jugador del partido?',
+      confirmLabel: 'Quitar',
+      action: () => run(() => removeGuestFromMatch(eventId, guestId), 'Jugador eliminado'),
     })
 
   const handleCancel = () =>
@@ -95,6 +105,7 @@ function MatchEventView({
 
   return (
     <>
+      <AddGuestDialog open={guestOpen} onOpenChange={setGuestOpen} eventId={eventId} />
       <EditPartidoDialog
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -135,10 +146,21 @@ function MatchEventView({
           players="4"
         />
 
-        <PlayerList title="Quién juega" players={players} totalSlots={maxSpots} onSelect={setSelectedProfileId} />
+        <PlayerList
+          title="Quién juega"
+          players={players}
+          totalSlots={maxSpots}
+          onSelect={setSelectedProfileId}
+          onRemove={canManage ? handleRemoveGuest : undefined}
+          canRemove={player => player.isGuest}
+        />
 
         {canManage && (
           <Manage aria-label="Gestionar partido">
+            <Button type="button" $variant="accent" $size="lg" disabled={isFull} onClick={() => setGuestOpen(true)}>
+              <UserPlus />
+              {isFull ? 'Partido completo' : 'Añadir jugador'}
+            </Button>
             <Button type="button" $variant="primary" $size="lg" onClick={() => setEditOpen(true)}>
               <Pencil />
               Editar partido

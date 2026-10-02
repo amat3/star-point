@@ -806,3 +806,72 @@ export async function reopenDraw(eventId: string) {
     throw error instanceof Error ? error : new Error(String(error))
   }
 }
+
+// A player from outside the group, added by whoever organizes the match (or an admin).
+// It is a guest profile (it can never log in), named by the organizer.
+export async function addGuestToMatch(eventId: string, name: string) {
+  const { event } = await getManageableMatch(eventId)
+
+  const guestName = name.trim()
+  if (guestName.length < 2) throw new Error('El nombre debe tener al menos 2 caracteres')
+  if (guestName.length > 40) throw new Error('El nombre es demasiado largo')
+
+  const admin = getAdminClient()
+
+  const { count } = await admin.from('event_participants').select('*', { count: 'exact', head: true }).eq('event_id', eventId)
+  if ((count ?? 0) >= event.max_spots) throw new Error('El partido ya está completo')
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: `invitado-${crypto.randomUUID()}@guest.local`,
+    password: crypto.randomUUID(),
+    email_confirm: true,
+  })
+  if (authError || !authData.user) throw new Error(authError?.message || 'Error creando el invitado')
+  const guestId = authData.user.id
+
+  // The auth trigger already created the profile row: mark it as a guest
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ full_name: guestName, rating: 3.5, role: 'player', is_guest: true, matches_played: 0, matches_won: 0, win_ratio: 0 })
+    .eq('id', guestId)
+  if (profileError) {
+    await admin.auth.admin.deleteUser(guestId)
+    throw new Error(profileError.message)
+  }
+
+  const { error: joinError } = await admin.from('event_participants').insert({ event_id: eventId, user_id: guestId })
+  if (joinError) {
+    await admin.auth.admin.deleteUser(guestId)
+    throw new Error(joinError.message)
+  }
+
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
+
+// Removes a guest the organizer added; real players leave by themselves.
+export async function removeGuestFromMatch(eventId: string, guestId: string) {
+  await getManageableMatch(eventId)
+
+  const admin = getAdminClient()
+
+  const { data: guest } = await admin.from('profiles').select('is_guest').eq('id', guestId).single()
+  if (!guest?.is_guest) throw new Error('Solo se pueden quitar invitados')
+
+  const { data: removed, error } = await admin
+    .from('event_participants')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('user_id', guestId)
+    .select('user_id')
+  if (error) throw new Error(error.message)
+  if (!removed?.length) throw new Error('Ese invitado no está en el partido')
+
+  // The guest only existed for this match
+  await admin.auth.admin.deleteUser(guestId)
+
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
