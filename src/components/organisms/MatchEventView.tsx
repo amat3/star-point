@@ -160,7 +160,10 @@ function MatchEventView({
 const Body = styled(Content, {
   shouldForwardProp: (prop) => prop !== '$hasBar',
 })<{ $hasBar: boolean }>`
-  ${({ $hasBar }) => ($hasBar ? 'padding-bottom: 11rem;' : '')}
+  ${({ $hasBar, theme }) =>
+    $hasBar
+      ? `padding-bottom: calc(${theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + ${theme.layout.joinBarHeight});`
+      : ''}
 `
 
 const Manage = styled.section`

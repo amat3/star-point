@@ -61,17 +61,13 @@ export default async function MixingPage() {
     const position = (event.participants ?? []).findIndex(p => p.user_id === user.id)
 
     let availability: string
-    let joined = false
     let warn = false
 
     if (event.status === 'in_progress') {
-      joined = playingIn.has(event.id)
-      availability = joined ? 'Tienes partidos' : 'En juego'
+      availability = playingIn.has(event.id) ? 'Tienes partidos' : 'En juego'
     } else if (position >= 0 && position < event.max_spots) {
-      joined = true
       availability = 'Estás apuntado'
     } else if (position >= event.max_spots) {
-      joined = true
       warn = true
       availability = `En reserva (${position - event.max_spots + 1})`
     } else if (spotsLeft > 0) {
@@ -92,7 +88,6 @@ export default async function MixingPage() {
         venue={event.club?.name}
         availability={availability}
         full={warn}
-        joined={joined}
       />
     )
   }
