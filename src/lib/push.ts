@@ -48,6 +48,8 @@ function ensureVapidConfigured(): boolean {
 // debe llamar a esto explícitamente — no hay trigger genérico automático.
 export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
   if (!userIds.length) return
+  // Kill switch for testing: with PUSH_DISABLED=true nothing is sent
+  if (process.env.PUSH_DISABLED === 'true') return
   if (!ensureVapidConfigured()) return
 
   const adminSupabase = getAdminClient()

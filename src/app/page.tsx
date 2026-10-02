@@ -18,7 +18,7 @@ import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
 import { missingLabel } from '@/lib/match-events'
-import { mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
 
@@ -72,7 +72,7 @@ export default async function HomePage() {
               venue={event.club?.name}
               availability={
                 event.status === 'in_progress'
-                  ? 'En juego'
+                  ? drawAvailability(event.start_time)
                   : event.kind === 'match'
                     ? spotsLeft <= 0
                       ? 'Completo'

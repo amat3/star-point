@@ -14,3 +14,9 @@ export function mixingAvailability(signedUp: number, maxSpots: number) {
   if (free > 0) return `${free} ${free === 1 ? 'plaza disponible' : 'plazas disponibles'}`
   return reserveSpotsLeft(signedUp, maxSpots) > 0 ? 'Completo · apúntate en reserva' : 'Completo'
 }
+
+// A published draw only becomes "En juego" when the event starts; before that
+// the matches are just created.
+export function drawAvailability(startTime: string, now: number = Date.now()): string {
+  return new Date(startTime).getTime() <= now ? 'En juego' : 'Partidos creados'
+}
