@@ -1,8 +1,10 @@
 'use client'
 
 import styled from '@emotion/styled'
+import { useTheme } from '@emotion/react'
 import Link from 'next/link'
 import { ArrowRight, Clock, Lock, MapPin } from 'lucide-react'
+import PulsatingDot from '../atoms/PulsatingDot'
 
 interface EventListItemProps {
   href: string
@@ -20,6 +22,8 @@ interface EventListItemProps {
 }
 
 function EventListItem({ href, day, month, title, time, venue, availability, full, locked, joined }: EventListItemProps) {
+  const theme = useTheme()
+
   return (
     <Root href={href} $joined={joined}>
       <DateBlock>
@@ -30,12 +34,22 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
       <Info>
         <Title>{title}</Title>
         <Meta>
-          <Clock />
-          {time}
-          <MapPin />
-          {venue ?? 'Club por confirmar'}
+          <MetaItem>
+            <Clock />
+            {time}
+          </MetaItem>
+          {venue && (
+            <MetaItem>
+              <MapPin />
+              {venue}
+            </MetaItem>
+          )}
         </Meta>
-        <Availability $full={full}>{availability}</Availability>
+        <Availability $full={full}>
+          {/* Green and alive while there is room; plain coral when it is full */}
+          <PulsatingDot size={7} color={full ? theme.colors.coral : theme.colors.online} pulse={!full} />
+          {availability}
+        </Availability>
       </Info>
 
       {locked ? <Lock /> : <ArrowRight />}
@@ -50,7 +64,7 @@ const Root = styled(Link, {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.line)};
+  border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.hairline)};
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
@@ -74,6 +88,8 @@ const DateBlock = styled.div`
   flex-direction: column;
   align-items: center;
   width: 3.5rem;
+  padding-right: .75rem;
+  border-right: 1px solid ${({ theme }) => theme.colors.hairline};
 `
 
 const Day = styled.span`
@@ -90,7 +106,7 @@ const Month = styled.span`
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-transform: capitalize;
+  text-transform: uppercase;
 `
 
 const Info = styled.div`
@@ -104,25 +120,28 @@ const Info = styled.div`
 const Title = styled.h3`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.0625rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: ${({ theme }) => theme.colors.ink}
 `
 
-const Meta = styled.span`
+const Meta = styled.div`
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.375rem;
+  gap: 0.375rem 0.75rem;
   font-size: 0.8125rem;
+  color:#68766e;
+`
+
+const MetaItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 
   svg {
     width: 0.875rem;
     height: 0.875rem;
-  }
-  svg + svg,
-  svg:not(:first-of-type) {
-    margin-left: 0.5rem;
   }
 `
 
@@ -131,18 +150,11 @@ const Availability = styled('span', {
 })<{ $full?: boolean }>`
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  /* wider than the dot's ring so the pulse never touches the text */
+  gap: 0.625rem;
   color: ${({ theme, $full }) => ($full ? theme.colors.coral : theme.colors.forest)};
   font-size: 0.75rem;
   font-weight: 600;
-
-  &::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${({ theme, $full }) => ($full ? theme.colors.coral : theme.colors.online)};
-  }
 `
 
 export default EventListItem

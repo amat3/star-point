@@ -7,10 +7,12 @@ interface PulsatingDotProps {
   size?: number
   // Defaults to the alert color (pending actions).
   color?: string
+  // false: a plain dot, without the expanding ring
+  pulse?: boolean
 }
 
-function PulsatingDot({ size = 10, color }: PulsatingDotProps) {
-  return <Dot $size={size} $color={color} aria-hidden="true" />
+function PulsatingDot({ size = 10, color, pulse = true }: PulsatingDotProps) {
+  return <Dot $size={size} $color={color} $pulse={pulse} aria-hidden="true" />
 }
 
 const pulse = keyframes`
@@ -19,8 +21,8 @@ const pulse = keyframes`
 `
 
 const Dot = styled('span', {
-  shouldForwardProp: (prop) => prop !== '$size' && prop !== '$color',
-})<{ $size: number; $color?: string }>`
+  shouldForwardProp: (prop) => prop !== '$size' && prop !== '$color' && prop !== '$pulse',
+})<{ $size: number; $color?: string; $pulse: boolean }>`
   position: relative;
   display: inline-block;
   flex-shrink: 0;
@@ -30,6 +32,7 @@ const Dot = styled('span', {
   background: ${({ theme, $color }) => $color ?? theme.colors.alert};
 
   &::after {
+    display: ${({ $pulse }) => ($pulse ? 'block' : 'none')};
     content: '';
     position: absolute;
     inset: 0;

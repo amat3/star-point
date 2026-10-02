@@ -1,6 +1,6 @@
 {
-  "name": "StarPoint",
-  "short_name": "StarPoint",
+  "name": "starpoint",
+  "short_name": "starpoint",
   "description": "Tu app de Pádel",
   "start_url": "/",
   "display": "standalone",
