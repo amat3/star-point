@@ -157,18 +157,20 @@ function MatchEventView({
 
         {canManage && (
           <Manage aria-label="Gestionar partido">
-            <Button type="button" $variant="accent" $size="lg" disabled={isFull} onClick={() => setGuestOpen(true)}>
+            <Button type="button" $variant="primary" $size="lg" disabled={isFull} onClick={() => setGuestOpen(true)}>
               <UserPlus />
               {isFull ? 'Partido completo' : 'Añadir jugador'}
             </Button>
-            <Button type="button" $variant="primary" $size="lg" onClick={() => setEditOpen(true)}>
-              <Pencil />
-              Editar partido
-            </Button>
-            <Button type="button" $variant="warn" $size="lg" onClick={handleCancel}>
-              <X />
-              Cancelar partido
-            </Button>
+            <SecondaryActions>
+              <Button type="button" $variant="outline" $size="md" onClick={() => setEditOpen(true)}>
+                <Pencil />
+                Editar
+              </Button>
+              <Button type="button" $variant="warn" $size="md" onClick={handleCancel}>
+                <X />
+                Cancelar
+              </Button>
+            </SecondaryActions>
           </Manage>
         )}
       </Body>
@@ -192,6 +194,12 @@ const Manage = styled.section`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+`
+
+const SecondaryActions = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 `
 
 export default MatchEventView
