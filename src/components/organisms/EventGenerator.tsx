@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import styled from '@emotion/styled'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, Send } from 'lucide-react'
+import { RefreshCw, Send, ShieldBan } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../atoms/Button'
 import Card from '../atoms/Card'
@@ -145,6 +145,10 @@ function EventGenerator({ eventId, participants, maxSpots, rounds, exclusions, c
           <RefreshCw />
           {proposals.length > 0 ? 'Volver a generar' : 'Generar sorteo'}
         </Button>
+        <ExclusionsLink href="/admin/exclusions">
+          <ShieldBan />
+          Exclusiones del sorteo
+        </ExclusionsLink>
       </Card>
 
       {proposals.length > 0 && (
@@ -219,6 +223,21 @@ const Hint = styled.p`
   a {
     color: ${({ theme }) => theme.colors.forest};
     font-weight: 700;
+  }
+`
+
+const ExclusionsLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  color: ${({ theme }) => theme.colors.forest};
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
   }
 `
 

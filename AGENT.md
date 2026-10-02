@@ -73,7 +73,7 @@ Key `lib/` files: `rating-logic.ts` + `config.ts` (ELO), `mixing-algorithm.ts` (
 | `/partido` | "+ Partido" form (publish a match) | Session |
 | `/events/[id]` | Event page: mixing sign-up, mixing draw, or partido (depends on `kind`/`status`) | Session |
 | `/history`, `/profile` | Match history, profile & settings | Session |
-| `/admin`, `/admin/events/new`, `/admin/matches`, `/admin/players`, `/admin/exclusions`, `/admin/events/[id]/generate` | Admin tools (hub from the avatar menu) | **Real** admin role (checked in `app/admin/layout.tsx`) |
+| `/admin/events/new`, `/admin/matches`, `/admin/players`, `/admin/exclusions`, `/admin/events/[id]/generate` | Admin tools, reached from where they are used: the admin-view toolbar on `/mixing` (create event, pending matches with a counter, players), the event page (generate draw) and the generator (draw exclusions). There is no `/admin` hub | **Real** admin role (checked in `app/admin/layout.tsx`) |
 | `/dashboard` | Redirects to `/` (kept for old links/bookmarks) | — |
 | `/api/cron/*` | Cron endpoints, `Authorization: Bearer $CRON_SECRET` | Secret |
 
