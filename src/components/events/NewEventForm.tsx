@@ -46,7 +46,7 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: 'Mixing Padel&Risas',
+      title: 'Mixing Padel y Risas',
       club_id: clubs.find(c => c.name === 'Padel Indoor')?.id ?? '',
       date: utcToMadridDateTime(new Date().toISOString()).date,
       time: '20:00',
@@ -82,7 +82,7 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Field label="Título" htmlFor="title" error={errors.title?.message}>
-        <Input id="title" placeholder="Ej: Mixing Padel&Risas" {...register('title')} />
+        <Input id="title" placeholder="Ej: Mixing Padel y Risas" {...register('title')} />
       </Field>
 
       <Field label="Club" htmlFor="club_id" hint="Si todavía no se sabe, se mostrará «Club por confirmar»." error={errors.club_id?.message}>

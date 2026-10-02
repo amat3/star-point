@@ -7,7 +7,7 @@ const MADRID_TZ = 'Europe/Madrid'
 const COURTS = 3
 const ROUNDS = 3
 const DURATION_MINUTES = 90
-const EVENT_TITLE = 'Mixing Padel&Risas'
+const EVENT_TITLE = 'Mixing Padel y Risas'
 const DEFAULT_CLUB_NAME = 'Padel Indoor'
 const CREATED_BY = 'cb288b22-8fdb-4744-a421-c05646c37454' // Juanan
 
