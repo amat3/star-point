@@ -19,6 +19,11 @@ interface EventHeroCardProps {
 }
 
 function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, players, venue, action }: EventHeroCardProps) {
+  // The title is always "weekday, date": the weekday goes on the first line, the date on the second
+  const [weekday, ...rest] = title.split(', ')
+  const date = rest.length > 0 ? rest.join(', ') : weekday
+  const hasWeekday = rest.length > 0
+
   return (
     <HeroCard>
       <Top>
@@ -26,10 +31,13 @@ function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, 
           <CalendarDays />
         </IconBox>
         <Info>
-          <Title>{title}</Title>
+          <Title>
+            <TitleLine>{hasWeekday ? `${weekday},` : date}</TitleLine>
+            {hasWeekday && <TitleLine>{date}</TitleLine>}
+          </Title>
           <Subtitle>A partir de las {startsAt}{venue ? ` · ${venue}` : ''}</Subtitle>
         </Info>
-        <Badge $variant="accent">{statusLabel}</Badge>
+        <Status $variant="accent">{statusLabel}</Status>
       </Top>
 
       {action && (
@@ -58,8 +66,12 @@ function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, 
 
 const Top = styled.div`
   display: flex;
+  /* on very narrow screens the status drops to its own line instead of overlapping the title */
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
 `
 
 const IconBox = styled.div`
@@ -79,8 +91,21 @@ const IconBox = styled.div`
 `
 
 const Info = styled.div`
-  flex: 1;
+  /* never narrower than ~8rem: below that the status wraps to the next line.
+     The big grow factor makes the title take almost all the spare room on the row. */
+  flex: 100 1 8rem;
   min-width: 0;
+`
+
+// Beside the title it stays about 6rem wide (two lines: "Inscripción / abierta"). When it
+// does not fit and wraps to its own row, flex-grow stretches it across the whole card,
+// so it works as a separator between the header and the stats.
+const Status = styled(Badge)`
+  flex: 1 0 6rem;
+  padding: 0.375rem 0.625rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
 `
 
 const Title = styled.h3`
@@ -90,6 +115,10 @@ const Title = styled.h3`
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
+`
+
+const TitleLine = styled.span`
+  display: block;
 `
 
 const Subtitle = styled.p`
@@ -103,6 +132,8 @@ const Stats = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 0.5rem 1rem;
+  /* lets Stat react to the card's own width instead of the screen's */
+  container: stats / inline-size;
 `
 
 const Stat = styled.span`
@@ -115,6 +146,13 @@ const Stat = styled.span`
     width: 1rem;
     height: 1rem;
     color: ${({ theme }) => theme.colors.lime};
+  }
+
+  /* Narrow card (small phones): the icon goes above its text, three columns */
+  @container stats (max-width: 17rem) {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
   }
 `
 

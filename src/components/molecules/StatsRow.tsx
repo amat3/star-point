@@ -76,6 +76,7 @@ const Tile = styled('div', {
   padding: 1rem;
   border: 1.5px solid ${({ theme, $tone }) => toneColor(theme, $tone)};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `
 
 const Caption = styled.span`

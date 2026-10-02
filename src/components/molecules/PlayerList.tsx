@@ -109,6 +109,7 @@ const Card = styled.div`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `
 
 const Row = styled.div`

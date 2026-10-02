@@ -66,6 +66,7 @@ const Root = styled(Link, {
   padding: 1rem;
   border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.hairline)};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
   text-decoration: none;

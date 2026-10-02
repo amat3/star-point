@@ -2,8 +2,8 @@
 
 import styled from '@emotion/styled'
 
-// Dark forest card with two decorative circles in the top-right corner.
-// Content is lifted above the circles via `> *`.
+// Dark forest card with a decorative circle in the top-right corner: a thin ring plus two
+// soft halos (box-shadow spreads). Content is lifted above it via `> *`.
 const HeroCard = styled.div`
   position: relative;
   display: flex;
@@ -12,7 +12,8 @@ const HeroCard = styled.div`
   overflow: hidden;
   padding: 1.25rem;
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme }) => theme.colors.hero};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  background: ${({ theme }) => theme.colors.forest};
   color: ${({ theme }) => theme.colors.onForest};
   isolation: isolate;
 
@@ -21,31 +22,20 @@ const HeroCard = styled.div`
     z-index: 1;
   }
 
-  &::before,
   &::after {
     content: '';
     position: absolute;
     z-index: 0;
+    top: -39px;
+    right: -26px;
+    width: 148px;
+    height: 148px;
+    border: 1px solid ${({ theme }) => theme.colors.heroRing};
     border-radius: 50%;
+    box-shadow:
+      0 0 0 17px ${({ theme }) => theme.colors.heroHaloInner},
+      0 0 0 36px ${({ theme }) => theme.colors.heroHaloOuter};
     pointer-events: none;
-  }
-
-  /* Outer ring */
-  &::before {
-    top: -6rem;
-    right: -5rem;
-    width: 14rem;
-    height: 14rem;
-    border: 1px solid ${({ theme }) => theme.colors.heroTint};
-  }
-
-  /* Inner filled circle */
-  &::after {
-    top: -4rem;
-    right: -3rem;
-    width: 10rem;
-    height: 10rem;
-    background: ${({ theme }) => theme.colors.heroTint};
   }
 `
 

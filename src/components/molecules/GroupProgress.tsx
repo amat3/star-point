@@ -37,6 +37,9 @@ const Root = styled.section`
   padding: 1rem;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  /* lets Row react to the card's own width instead of the screen's */
+  container: group / inline-size;
 `
 
 const Row = styled.div`
@@ -44,6 +47,13 @@ const Row = styled.div`
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
+
+  /* Narrow card (small phones): stack the two texts instead of squeezing or wrapping them */
+  @container group (max-width: 19rem) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+  }
 `
 
 const Title = styled.h2`

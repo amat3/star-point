@@ -71,6 +71,7 @@ const Root = styled('article', {
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-left: 5px solid ${({ theme, $outcome }) => outcomeColors(theme, $outcome).stripe};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   background: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).tint};
 `
 

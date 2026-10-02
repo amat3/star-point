@@ -172,6 +172,7 @@ const Item = styled.div`
   padding: 1rem 3rem 1rem 1rem;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `
 
 const Names = styled.div`
