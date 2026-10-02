@@ -18,13 +18,13 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "StarPoint",
+  title: "starpoint",
   description: "Tu app de Pádel",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "StarPoint",
+    title: "starpoint", // name under the icon on the iOS home screen
   },
   icons: {
     icon: "/pwa-icon/512",
