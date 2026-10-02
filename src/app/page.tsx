@@ -18,7 +18,7 @@ import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
 import { missingLabel } from '@/lib/match-events'
-import { drawAvailability, mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
 
@@ -60,6 +60,8 @@ export default async function HomePage() {
         {events.map(event => {
           const spotsLeft = event.max_spots - (event.participants_count ?? 0)
           const eventPath = `/events/${event.id}`
+          const position = 'participants' in event ? (event.participants ?? []).findIndex(p => p.user_id === user?.id) : -1
+          const joined = !!user && position >= 0
           return (
             <EventListItem
               key={event.id}
@@ -73,13 +75,16 @@ export default async function HomePage() {
               availability={
                 event.status === 'in_progress'
                   ? drawAvailability(event.start_time)
+                  : joined
+                    ? joinedAvailability(position, event.participants_count ?? 0, event.max_spots)
                   : event.kind === 'match'
                     ? spotsLeft <= 0
                       ? 'Completo'
                       : missingLabel(spotsLeft)
                     : mixingAvailability(event.participants_count ?? 0, event.max_spots)
               }
-              full={event.status === 'open' && spotsLeft <= 0}
+              full={event.status === 'open' && (joined ? position >= event.max_spots : spotsLeft <= 0)}
+              joined={joined}
             />
           )
         })}

@@ -105,7 +105,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
       label: isPending
         ? 'Procesando…'
         : free > 0
-          ? `Apuntarme · quedan ${free} ${free === 1 ? 'plaza' : 'plazas'}`
+          ? `Apuntarme · ${free === 1 ? 'queda 1 plaza' : `quedan ${free} plazas`}`
           : 'Apuntarme a la lista de espera',
       variant: 'accent' as const,
       onClick: () => run(() => joinEvent(event.id), 'Te has apuntado al evento'),
