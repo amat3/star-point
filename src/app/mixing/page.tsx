@@ -14,7 +14,7 @@ import PageIntro from '@/components/molecules/PageIntro'
 import SectionHeader from '@/components/molecules/SectionHeader'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents } from '@/app/actions/events'
-import { mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventDay, formatEventMonth, formatEventTime } from '@/lib/utils'
 import type { MixingEvent } from '@/types/events'
@@ -76,7 +76,7 @@ export default async function MixingPage() {
     let warn = false
 
     if (event.status === 'in_progress') {
-      availability = playingIn.has(event.id) ? 'Tienes partidos' : 'En juego'
+      availability = playingIn.has(event.id) ? 'Tienes partidos' : drawAvailability(event.start_time)
     } else if (position >= 0 && position < event.max_spots) {
       availability = 'Estás apuntado'
     } else if (position >= event.max_spots) {
@@ -117,7 +117,7 @@ export default async function MixingPage() {
 
         {inProgress.length > 0 && (
           <>
-            <SectionHeader title="En curso" />
+            <SectionHeader title={inProgress.some(e => drawAvailability(e.start_time) === 'En juego') ? 'En curso' : 'Sorteo listo'} />
             {inProgress.map(renderEvent)}
           </>
         )}
