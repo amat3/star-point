@@ -17,13 +17,15 @@ interface EventListItemProps {
   full?: boolean
   // Visitors without a session can see the event but not open it
   locked?: boolean
+  // The viewer is signed up (as a starter or on the waiting list): highlighted
+  joined?: boolean
 }
 
-function EventListItem({ href, day, month, title, time, venue, availability, full, locked }: EventListItemProps) {
+function EventListItem({ href, day, month, title, time, venue, availability, full, locked, joined }: EventListItemProps) {
   const theme = useTheme()
 
   return (
-    <Root href={href}>
+    <Root href={href} $joined={joined}>
       <DateBlock>
         <Day>{day}</Day>
         <Month>{month}</Month>
@@ -55,14 +57,16 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
   )
 }
 
-const Root = styled(Link)`
+const Root = styled(Link, {
+  shouldForwardProp: (prop) => prop !== '$joined',
+})<{ $joined?: boolean }>`
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.hairline};
+  border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.hairline)};
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  box-shadow: ${({ theme, $joined }) => ($joined ? `0 0 0 1px ${theme.colors.forest}, ${theme.shadows.card}` : theme.shadows.card)};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
   text-decoration: none;

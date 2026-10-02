@@ -20,3 +20,12 @@ export function mixingAvailability(signedUp: number, maxSpots: number) {
 export function drawAvailability(startTime: string, now: number = Date.now()): string {
   return new Date(startTime).getTime() <= now ? 'En juego' : 'Partidos creados'
 }
+
+// Availability line for an event the viewer is signed up for (position is 0-based):
+// their own status plus how the event stands.
+export function joinedAvailability(position: number, signedUp: number, maxSpots: number): string {
+  const free = maxSpots - signedUp
+  const standing = free > 0 ? (free === 1 ? 'queda 1 plaza' : `quedan ${free} plazas`) : 'Completo'
+  const own = position < maxSpots ? 'Apuntado' : `En reserva (${position - maxSpots + 1})`
+  return `${own} · ${standing}`
+}
