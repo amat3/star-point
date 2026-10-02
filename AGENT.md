@@ -192,7 +192,7 @@ Two layers: (1) plan groups of 4 per round (random start + local search over swa
 
 - **Mixing** (`kind = 'mixing'`): created by the weekly cron or by an admin (`/admin/events/new`, with club). Lifecycle: `open` (sign-up, reserves up to `max_spots + 6`) → admin generates and publishes the draw → `in_progress` → hidden once all its matches are confirmed (`isEventFullyConfirmed`; there is no `finished` status).
 - **Partido** (`kind = 'match'`, `lib/match-events.ts`): any player publishes club + date + time + how many players are missing (1–3). Always 90 min, 4 players, title "Partido". `max_spots = organizer + needed`, **no reserves**, no draw, no results. Shown in "Lo que viene" (also to visitors, no names), hidden after start + 90 min, not listed in `/mixing`. The organizer can edit/cancel (not leave without cancelling); an admin can cancel too. Publishing pushes the whole group. Actions: `createMatchEvent`, `updateMatchEvent`, `cancelMatchEvent`.
-- Weekly cron (`vercel.json`, Wednesdays 20:00 and 21:00 UTC; the route only acts when it is 22:xx in Madrid, covering DST) creates next Wednesday's event titled "Mixing Padel&Risas" at **Padel Indoor** (club looked up by name) at 20:00; it refuses to create a duplicate.
+- Weekly cron (`vercel.json`, Wednesdays 20:00 and 21:00 UTC; the route only acts when it is 22:xx in Madrid, covering DST) creates next Wednesday's event titled "Mixing Padel y Risas" at **Padel Indoor** (club looked up by name) at 20:00; it refuses to create a duplicate.
 - Round times are **derived**: the event duration is split evenly between its rounds (`roundStartsAt` / `roundEndsAt` in `lib/utils.ts`).
 
 ---
