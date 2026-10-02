@@ -50,6 +50,8 @@ export const lightTheme = {
     tabBarHeight: '4.5rem',
     // Fixed join bar above the tab bar: guarantee note + button + extra note (worst case)
     joinBarHeight: '12rem',
+    // Same bar with just a button (no notes), e.g. "Publicar sorteo"
+    actionBarHeight: '6.5rem',
   },
   motion: {
     enter: '520ms cubic-bezier(0.2, 0.75, 0.25, 1)',

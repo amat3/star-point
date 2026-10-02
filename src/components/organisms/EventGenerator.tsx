@@ -178,6 +178,9 @@ function EventGenerator({ eventId, participants, maxSpots, rounds, exclusions, c
             </EmptyState>
           )}
 
+          {/* Room so the last court is not hidden behind the fixed publish bar */}
+          <BarSpace aria-hidden="true" />
+
           <JoinBar
             label={isSaving ? 'Publicando…' : `Publicar sorteo · ${matchCount} partidos`}
             variant="primary"
@@ -190,6 +193,10 @@ function EventGenerator({ eventId, participants, maxSpots, rounds, exclusions, c
     </>
   )
 }
+
+const BarSpace = styled.div`
+  height: ${({ theme }) => theme.layout.actionBarHeight};
+`
 
 const Notice = styled.p`
   margin: 0;

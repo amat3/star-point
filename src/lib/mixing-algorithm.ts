@@ -344,13 +344,17 @@ function resolveCourtRoles(
 
   // Avisos: solo reencuentros DENTRO del evento. Coincidir con el evento
   // anterior es una preferencia blanda y no se avisa.
-  const allCrossings: Pair[] = [pairA, pairB, ...rivalPairs([pairA, pairB])]
-  const hasSessionRepeat = allCrossings.some(([x, y]) => sessionCount(x, y) >= 1)
+  // Having been partners before and now being rivals (or the reverse) is fine:
+  // only repeating the SAME relation counts. Rival meetings so far = total
+  // meetings minus the one as partners.
+  const sessionRivalCount = (x: MixingParticipant, y: MixingParticipant) =>
+    sessionCount(x, y) - (partneredBefore('session_partner_history', x, y) ? 1 : 0)
+  const hasSessionRepeat = rivalPairs([pairA, pairB]).some(([x, y]) => sessionRivalCount(x, y) >= 1)
 
   const warningMsgs: string[] = []
   if (exclusionForced) warningMsgs.push('No fue posible respetar todas las exclusiones en esta pista')
   if (partnerRepeatForced) warningMsgs.push('No fue posible evitar que estos jugadores repitan como PAREJA — no había ninguna alternativa disponible')
-  if (hasSessionRepeat) warningMsgs.push('Algunos jugadores ya han coincidido en pista en este evento — no fue posible evitarlo')
+  if (hasSessionRepeat) warningMsgs.push('Algunos jugadores vuelven a enfrentarse en este evento — no fue posible evitarlo')
 
   return {
     courtNumber,
