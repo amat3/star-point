@@ -31,11 +31,11 @@ export function InstallBanner() {
     <Root role="status">
       <Emoji aria-hidden="true">📲</Emoji>
       <Text>
-        <Title>Reinstala StarPoint</Title>
+        <Title>Reinstala starpoint</Title>
         <Description>
           {state.isIOS
             ? 'Borra el icono actual y vuelve a pulsar Compartir → "Añadir a pantalla de inicio" para abrir la app a pantalla completa.'
-            : 'Borra el icono actual y usa el menú ⋮ → "Instalar app" para abrir StarPoint a pantalla completa.'}
+            : 'Borra el icono actual y usa el menú ⋮ → "Instalar app" para abrir starpoint a pantalla completa.'}
         </Description>
       </Text>
       <Close type="button" onClick={dismiss} aria-label="Cerrar aviso">
