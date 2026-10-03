@@ -23,6 +23,7 @@ function Field({ label, htmlFor, hint, error, children }: FieldProps) {
 }
 
 const Root = styled.div`
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

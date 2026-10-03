@@ -15,6 +15,20 @@ const Input = styled.input`
   font-size: 1rem;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 
+  /* iOS Safari gives date/time fields their own intrinsic width and look: make them behave like text fields */
+  &[type='date'],
+  &[type='time'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    text-align: left;
+  }
+  &[type='date']::-webkit-date-and-time-value,
+  &[type='time']::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
   /* Browsers repaint autofilled fields (password managers) with their own colors */
   &:-webkit-autofill,
   &:-webkit-autofill:hover,
