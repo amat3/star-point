@@ -101,7 +101,7 @@ export function PushNotificationToggle() {
         title="Notificaciones"
         description={
           iosNotInstalled
-            ? 'En iPhone, instala primero StarPoint en la pantalla de inicio para poder activar las notificaciones.'
+            ? 'En iPhone, instala primero starpoint en la pantalla de inicio para poder activar las notificaciones.'
             : 'Tu navegador no soporta notificaciones push.'
         }
         control={null}
@@ -114,7 +114,7 @@ export function PushNotificationToggle() {
       <SettingRow
         icon={<BellOff />}
         title="Notificaciones"
-        description="Has bloqueado las notificaciones para StarPoint. Actívalas en los ajustes del navegador para recibir avisos."
+        description="Has bloqueado las notificaciones para starpoint. Actívalas en los ajustes del navegador para recibir avisos."
         control={null}
       />
     )
