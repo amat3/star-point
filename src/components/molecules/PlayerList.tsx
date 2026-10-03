@@ -1,7 +1,7 @@
 'use client'
 
 import styled from '@emotion/styled'
-import { Users, X } from 'lucide-react'
+import { Pencil, Users, X } from 'lucide-react'
 import Avatar from '../atoms/Avatar'
 import HandTag, { type Hand } from '../atoms/HandTag'
 
@@ -31,9 +31,14 @@ interface PlayerListProps {
   onRemove?: (userId: string) => void
   // Which rows get the remove button (all of them by default)
   canRemove?: (player: PlayerListItem) => boolean
+  // Rename button on the rows `canEdit` allows
+  onEdit?: (userId: string) => void
+  canEdit?: (player: PlayerListItem) => boolean
+  // Show the "Inv." tag on guests (default); partidos do not care about it
+  showGuestTag?: boolean
 }
 
-function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelect, onRemove, canRemove }: PlayerListProps) {
+function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelect, onRemove, canRemove, onEdit, canEdit, showGuestTag = true }: PlayerListProps) {
   const reserves = players.slice(totalSlots)
   // The waiting list only exists once every starter spot is taken
   const showWaitlist = !!waitlist && players.length >= totalSlots
@@ -45,7 +50,7 @@ function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelec
         <Info>
           <Name>
             {player.name}
-            {player.isGuest && <Guest>Inv.</Guest>}
+            {player.isGuest && showGuestTag && <Guest>Inv.</Guest>}
           </Name>
           <Status>{player.status}</Status>
         </Info>
@@ -54,6 +59,11 @@ function PlayerList({ title, headerExtra, players, totalSlots, waitlist, onSelec
           {player.level && <Level>Niv. {player.level}</Level>}
         </Tags>
       </Main>
+      {onEdit && (canEdit?.(player) ?? true) && (
+        <Edit type="button" aria-label={`Cambiar el nombre de ${player.name}`} onClick={() => onEdit(player.userId)}>
+          <Pencil />
+        </Edit>
+      )}
       {onRemove && (canRemove?.(player) ?? true) && (
         <Remove type="button" aria-label={`Eliminar a ${player.name}`} onClick={() => onRemove(player.userId)}>
           <X />
@@ -275,6 +285,23 @@ const Level = styled.span`
   color: ${({ theme }) => theme.colors.forest};
   font-size: 0.75rem;
   font-weight: 700;
+`
+
+const Edit = styled.button`
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.muted};
+  cursor: pointer;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
 `
 
 const Remove = styled.button`

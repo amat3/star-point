@@ -4,12 +4,10 @@ import { useTransition } from 'react'
 import styled from '@emotion/styled'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Check, LogOut, ShieldCheck, UserRound } from 'lucide-react'
+import { Check, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Avatar from '../atoms/Avatar'
 import { setAdminView } from '@/app/actions/view-mode'
-import { createClient } from '@/utils/supabase/client'
 
 interface AvatarMenuProps {
   name: string
@@ -34,11 +32,8 @@ function AvatarMenu({ name, avatarUrl, isAdmin, adminView }: AvatarMenuProps) {
     })
   }
 
-  const handleSignOut = async () => {
-    await createClient().auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
+  // The menu only holds the admin view switch: everyone else has the Perfil tab
+  if (!isAdmin) return <Avatar src={avatarUrl} name={name} online />
 
   return (
     <DropdownMenu.Root>
@@ -49,28 +44,13 @@ function AvatarMenu({ name, avatarUrl, isAdmin, adminView }: AvatarMenuProps) {
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <Content align="end" sideOffset={8}>
-          {isAdmin && (
-            <>
-              <CheckItem checked={adminView} onCheckedChange={handleViewChange}>
-                <ShieldCheck />
-                Vista admin
-                <DropdownMenu.ItemIndicator asChild>
-                  <Indicator><Check /></Indicator>
-                </DropdownMenu.ItemIndicator>
-              </CheckItem>
-              <Separator />
-            </>
-          )}
-          <Item asChild>
-            <Link href="/profile">
-              <UserRound />
-              Perfil
-            </Link>
-          </Item>
-          <Item onSelect={handleSignOut}>
-            <LogOut />
-            Cerrar sesión
-          </Item>
+          <CheckItem checked={adminView} onCheckedChange={handleViewChange}>
+            <ShieldCheck />
+            Vista admin
+            <DropdownMenu.ItemIndicator asChild>
+              <Indicator><Check /></Indicator>
+            </DropdownMenu.ItemIndicator>
+          </CheckItem>
         </Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -121,7 +101,6 @@ const itemStyles = ({ theme }: { theme: import('@/theme').Theme }) => `
   }
 `
 
-const Item = styled(DropdownMenu.Item)(itemStyles)
 const CheckItem = styled(DropdownMenu.CheckboxItem)(itemStyles)
 
 const Indicator = styled.span`
@@ -132,12 +111,6 @@ const Indicator = styled.span`
   svg {
     color: ${({ theme }) => theme.colors.forest};
   }
-`
-
-const Separator = styled(DropdownMenu.Separator)`
-  height: 1px;
-  margin: 0.25rem 0;
-  background: ${({ theme }) => theme.colors.line};
 `
 
 export default AvatarMenu

@@ -17,6 +17,7 @@ import { EditPartidoDialog } from '@/components/events/EditPartidoDialog'
 import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
 import { cancelMatchEvent, joinEvent, leaveEvent, removeGuestFromMatch } from '@/app/actions/events'
 import { MATCH_DURATION_MINUTES, missingLabel } from '@/lib/match-events'
+import { PLAYERS_PER_COURT } from '@/lib/utils'
 
 interface MatchEventViewProps {
   eventId: string
@@ -24,6 +25,8 @@ interface MatchEventViewProps {
   clubId: string | null
   clubName: string | null
   maxSpots: number
+  // Names of the players the organizer already has settled (may be shorter than needed)
+  knownPlayers: string[]
   heroTitle: string
   startsAt: string
   players: PlayerListItem[]
@@ -38,14 +41,28 @@ type PendingConfirm = { title: string; description: string; confirmLabel: string
 
 // A published match: who is in, how many are missing, and join / leave.
 function MatchEventView({
-  eventId, startTime, clubId, clubName, maxSpots, heroTitle, startsAt, players, isJoined, isOrganizer, canManage, userRole,
+  eventId, startTime, clubId, clubName, maxSpots, knownPlayers, heroTitle, startsAt, players, isJoined, isOrganizer, canManage, userRole,
 }: MatchEventViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
   const [guestOpen, setGuestOpen] = useState(false)
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
   const [pending, setPending] = useState<PendingConfirm | null>(null)
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
+
+  // A match is always 4 players. The organizer only asks for the ones still missing, so the
+  // rest are already settled outside the app: shown as confirmed spots, right after the organizer.
+  const known: PlayerListItem[] = Array.from({ length: Math.max(PLAYERS_PER_COURT - maxSpots, 0) }, (_, index) => ({
+    userId: `known-${index}`,
+    name: knownPlayers[index]?.trim() || 'Jugador confirmado',
+    avatarUrl: null,
+    hand: null,
+    isGuest: false,
+    status: 'Confirmado por el organizador',
+  }))
+  const organizer = players.filter(p => p.status === 'Organiza')
+  const listed = [...organizer, ...known, ...players.filter(p => p.status !== 'Organiza')]
 
   const missing = Math.max(maxSpots - players.length, 0)
   const isFull = missing === 0
@@ -106,6 +123,12 @@ function MatchEventView({
   return (
     <>
       <AddGuestDialog open={guestOpen} onOpenChange={setGuestOpen} eventId={eventId} />
+      <AddGuestDialog
+        open={renaming !== null}
+        onOpenChange={(open) => { if (!open) setRenaming(null) }}
+        eventId={eventId}
+        guest={renaming}
+      />
       <EditPartidoDialog
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -132,7 +155,7 @@ function MatchEventView({
       <EventIntro
         eyebrow="Partido"
         title={isFull ? 'Partido completo' : 'Se buscan jugadores'}
-        subtitle={isFull ? 'Ya estáis todos. ¡A jugar!' : `${missingLabel(missing)} para completar el partido.`}
+        subtitle={isFull ? 'Ya estáis todos. ¡A jugar!' : `${missing === 1 ? 'Falta 1 pala' : `Faltan ${missing} palas`} para completar el partido.`}
       />
 
       <Body $hasBar={!isOrganizer}>
@@ -148,11 +171,17 @@ function MatchEventView({
 
         <PlayerList
           title="Quién juega"
-          players={players}
-          totalSlots={maxSpots}
-          onSelect={setSelectedProfileId}
+          players={listed}
+          totalSlots={PLAYERS_PER_COURT}
+          onSelect={id => { if (!id.startsWith('known-')) setSelectedProfileId(id) }}
           onRemove={canManage ? handleRemoveGuest : undefined}
           canRemove={player => player.isGuest}
+          onEdit={canManage ? (id) => {
+            const guest = listed.find(p => p.userId === id)
+            if (guest) setRenaming({ id, name: id.startsWith('known-') && guest.name === 'Jugador confirmado' ? '' : guest.name })
+          } : undefined}
+          canEdit={player => player.isGuest || player.userId.startsWith('known-')}
+          showGuestTag={false}
         />
 
         {canManage && (

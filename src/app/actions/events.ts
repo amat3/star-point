@@ -875,3 +875,55 @@ export async function removeGuestFromMatch(eventId: string, guestId: string) {
   revalidatePath(`/events/${eventId}`)
   return { success: true }
 }
+
+// Renames a guest the organizer added to the match.
+export async function renameMatchGuest(eventId: string, guestId: string, name: string) {
+  await getManageableMatch(eventId)
+
+  const guestName = name.trim()
+  if (guestName.length < 2) throw new Error('El nombre debe tener al menos 2 caracteres')
+  if (guestName.length > 40) throw new Error('El nombre es demasiado largo')
+
+  const admin = getAdminClient()
+
+  const { data: inMatch } = await admin
+    .from('event_participants')
+    .select('user_id, profiles!inner(is_guest)')
+    .eq('event_id', eventId)
+    .eq('user_id', guestId)
+    .eq('profiles.is_guest', true)
+    .maybeSingle()
+  if (!inMatch) throw new Error('Solo se puede cambiar el nombre de invitados de este partido')
+
+  const { error } = await admin.from('profiles').update({ full_name: guestName }).eq('id', guestId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/')
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
+
+// Names the organizer's already-settled players (the "confirmed" rows of a match).
+// `index` is the position among them; an empty name clears it.
+export async function setMatchKnownPlayer(eventId: string, index: number, name: string) {
+  const { event } = await getManageableMatch(eventId)
+
+  const known = Math.max(4 - event.max_spots, 0)
+  if (!Number.isInteger(index) || index < 0 || index >= known) throw new Error('Ese puesto no existe')
+
+  const playerName = name.trim()
+  if (playerName.length > 40) throw new Error('El nombre es demasiado largo')
+  if (playerName.length > 0 && playerName.length < 2) throw new Error('El nombre debe tener al menos 2 caracteres')
+
+  const admin = getAdminClient()
+  const { data: current } = await admin.from('events').select('known_players').eq('id', eventId).single()
+
+  const names: string[] = Array.from({ length: known }, (_, i) => (current?.known_players as string[] | null)?.[i] ?? '')
+  names[index] = playerName
+
+  const { error } = await admin.from('events').update({ known_players: names }).eq('id', eventId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
