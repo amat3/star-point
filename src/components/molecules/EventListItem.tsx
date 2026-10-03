@@ -25,14 +25,17 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
   const theme = useTheme()
 
   return (
-    <Root href={href} $joined={joined}>
+    <Root href={href}>
       <DateBlock>
         <Day>{day}</Day>
         <Month>{month}</Month>
       </DateBlock>
 
       <Info>
-        <Title>{title}</Title>
+        <TitleRow>
+          <Title>{title}</Title>
+          {joined && <JoinedPill>Apuntado</JoinedPill>}
+        </TitleRow>
         <Meta>
           <MetaItem>
             <Clock />
@@ -57,16 +60,14 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
   )
 }
 
-const Root = styled(Link, {
-  shouldForwardProp: (prop) => prop !== '$joined',
-})<{ $joined?: boolean }>`
+const Root = styled(Link)`
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid ${({ theme, $joined }) => ($joined ? theme.colors.forest : theme.colors.hairline)};
+  border: 1px solid ${({ theme }) => theme.colors.hairline};
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: ${({ theme, $joined }) => ($joined ? `0 0 0 1px ${theme.colors.forest}, ${theme.shadows.card}` : theme.shadows.card)};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
   text-decoration: none;
@@ -118,13 +119,34 @@ const Info = styled.div`
   gap: 0.25rem;
 `
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+`
+
+// Marks the events the viewer is signed up for
+const JoinedPill = styled.span`
+  flex-shrink: 0;
+  padding: 0.125rem 0.5rem;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.lime};
+  color: ${({ theme }) => theme.colors.forestDeep};
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+`
+
 const Title = styled.h3`
+  min-width: 0;
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: ${({ theme }) => theme.colors.ink}
+  color: ${({ theme }) => theme.colors.ink};
 `
 
 const Meta = styled.div`
