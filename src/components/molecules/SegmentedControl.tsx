@@ -7,11 +7,13 @@ interface SegmentedControlProps<T extends string> {
   value: T
   onChange: (value: T) => void
   label: string
+  // Stretch over the whole width, options sharing it equally
+  fill?: boolean
 }
 
-function SegmentedControl<T extends string>({ options, value, onChange, label }: SegmentedControlProps<T>) {
+function SegmentedControl<T extends string>({ options, value, onChange, label, fill = false }: SegmentedControlProps<T>) {
   return (
-    <Root role="radiogroup" aria-label={label}>
+    <Root role="radiogroup" aria-label={label} $fill={fill}>
       {options.map(option => (
         <Option
           key={option.value}
@@ -27,8 +29,10 @@ function SegmentedControl<T extends string>({ options, value, onChange, label }:
   )
 }
 
-const Root = styled.div`
-  display: inline-flex;
+const Root = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$fill',
+})<{ $fill: boolean }>`
+  display: ${({ $fill }) => ($fill ? 'flex' : 'inline-flex')};
   gap: 0.25rem;
   padding: 0.25rem;
   border: 1px solid ${({ theme }) => theme.colors.line};
@@ -36,6 +40,8 @@ const Root = styled.div`
 `
 
 const Option = styled.button`
+  flex: 1 1 auto;
+  text-align: center;
   padding: 0.375rem 0.875rem;
   border: 0;
   border-radius: ${({ theme }) => theme.radii.pill};

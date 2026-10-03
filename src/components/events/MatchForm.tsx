@@ -92,6 +92,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
       <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed" hint={`Partido de 4 jugadores y ${MATCH_DURATION_MINUTES} minutos.`}>
         <SegmentedControl
           label="Jugadores que buscas"
+          fill
           value={needed}
           onChange={setNeeded}
           options={[
@@ -117,7 +118,7 @@ const Form = styled.form`
 
 const Row = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 `
 
