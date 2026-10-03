@@ -135,6 +135,7 @@ export default async function EventPage(props: EventPageProps) {
           clubId={fullEvent.club_id ?? null}
           clubName={club?.name ?? null}
           maxSpots={fullEvent.max_spots}
+          knownPlayers={(event.known_players as string[] | null) ?? []}
           heroTitle={formatEventDate(fullEvent.start_time)}
           startsAt={formatEventTime(fullEvent.start_time)}
           players={players}
