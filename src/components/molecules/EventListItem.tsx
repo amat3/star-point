@@ -32,10 +32,7 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
       </DateBlock>
 
       <Info>
-        <TitleRow>
-          <Title>{title}</Title>
-          {joined && <JoinedPill>Apuntado</JoinedPill>}
-        </TitleRow>
+        <Title>{title}</Title>
         <Meta>
           <MetaItem>
             <Clock />
@@ -48,11 +45,14 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
             </MetaItem>
           )}
         </Meta>
-        <Availability $full={full}>
-          {/* Green and alive while there is room; plain coral when it is full */}
-          <PulsatingDot size={7} color={full ? theme.colors.coral : theme.colors.online} pulse={!full} />
-          {availability}
-        </Availability>
+        <StatusRow>
+          <Availability $full={full}>
+            {/* Green and alive while there is room; plain coral when it is full */}
+            <PulsatingDot size={7} color={full ? theme.colors.coral : theme.colors.online} pulse={!full} />
+            {availability}
+          </Availability>
+          {joined && <JoinedPill>Apuntado</JoinedPill>}
+        </StatusRow>
       </Info>
 
       {locked ? <Lock /> : <ArrowRight />}
@@ -119,7 +119,8 @@ const Info = styled.div`
   gap: 0.25rem;
 `
 
-const TitleRow = styled.div`
+// Availability on the left, the "Apuntado" pill on the right: same spot on every card
+const StatusRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -140,7 +141,6 @@ const JoinedPill = styled.span`
 `
 
 const Title = styled.h3`
-  min-width: 0;
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 1rem;
