@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
 import { MAX_RESERVES } from '@/lib/event-capacity'
-import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
+import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_NOTES_MAX, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
 
 // Un evento in_progress deja de mostrarse en cuanto TODOS sus partidos están
@@ -619,7 +619,7 @@ export async function addParticipant(eventId: string, userId: string) {
 // Partidos: events a player publishes to look for players
 // ---------------------------------------------------------------------------
 
-type MatchInput = { start_time: string; club_id: string; needed: number }
+type MatchInput = { start_time: string; club_id: string; needed: number; notes?: string }
 
 function validateMatchInput(input: MatchInput) {
   if (!Number.isInteger(input.needed) || input.needed < 1 || input.needed > MATCH_MAX_NEEDED) {
@@ -629,7 +629,10 @@ function validateMatchInput(input: MatchInput) {
   const start = new Date(input.start_time).getTime()
   if (isNaN(start)) throw new Error('Fecha u hora no válidas')
   if (start <= Date.now()) throw new Error('El partido tiene que ser en el futuro')
+  if ((input.notes ?? '').trim().length > MATCH_NOTES_MAX) throw new Error(`El comentario admite como máximo ${MATCH_NOTES_MAX} caracteres`)
 }
+
+const cleanNotes = (notes?: string) => notes?.trim() || null
 
 function formatMatchWhen(startTime: string) {
   return new Intl.DateTimeFormat('es-ES', {
@@ -689,6 +692,7 @@ export async function createMatchEvent(input: MatchInput) {
       is_test: false,
       kind: 'match',
       club_id: club.id,
+      notes: cleanNotes(input.notes),
     })
     .select('id, start_time')
     .single()
@@ -727,7 +731,7 @@ export async function updateMatchEvent(eventId: string, input: MatchInput) {
 
   const { error } = await admin
     .from('events')
-    .update({ start_time: input.start_time, club_id: input.club_id, max_spots: maxSpots })
+    .update({ start_time: input.start_time, club_id: input.club_id, max_spots: maxSpots, notes: cleanNotes(input.notes) })
     .eq('id', eventId)
   if (error) throw new Error(error.message)
 

@@ -17,9 +17,10 @@ interface EditPartidoDialogProps {
   startTime: string
   clubId: string | null
   maxSpots: number
+  notes: string | null
 }
 
-export function EditPartidoDialog({ open, onOpenChange, eventId, startTime, clubId, maxSpots }: EditPartidoDialogProps) {
+export function EditPartidoDialog({ open, onOpenChange, eventId, startTime, clubId, maxSpots, notes }: EditPartidoDialogProps) {
   const router = useRouter()
   const [clubs, setClubs] = useState<{ id: string; name: string }[] | null>(null)
 
@@ -55,6 +56,7 @@ export function EditPartidoDialog({ open, onOpenChange, eventId, startTime, club
             date,
             time,
             needed: Math.min(Math.max(neededForSpots(maxSpots), 1), 3) as 1 | 2 | 3,
+            notes: notes ?? '',
           }}
           submitLabel="Guardar cambios"
           submittingLabel="Guardando…"
