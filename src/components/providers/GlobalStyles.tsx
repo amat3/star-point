@@ -54,6 +54,19 @@ const styles = css`
     display: none;
   }
 
+  /* Touch devices: no scrollbar anywhere (page, dialogs, lists), scrolling still works */
+  @media (hover: none) and (pointer: coarse) {
+    html,
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
   h1,
   h2,
   h3,

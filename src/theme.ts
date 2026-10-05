@@ -2,11 +2,15 @@ export const lightTheme = {
   colors: {
     background: '#fbfaf6',
     surface: '#edf0e7',    
+    // Raised cards sitting on the page background
+    card: '#fffefa',
     forest: '#123d32',
     forestDeep: '#0b2b24',
     lime: '#d9f36a',
     ink: '#17221e',
     muted: '#7c8780',
+    // Secondary text that must stay readable on cards (a bit darker than muted)
+    subtle: '#68766e',
     line: '#e6e9e1',
     coral: '#f2795b',
     online: '#70bb6a',
@@ -71,11 +75,13 @@ export const darkTheme: Theme = {
   colors: {
     background: '#0b1512',
     surface: '#142019',
+    card: '#142019',
     forest: '#2f7a62',
     forestDeep: '#1f5745',
     lime: '#e3ff7a',
     ink: '#f3f5ef',
     muted: '#8fa39a',
+    subtle: '#8fa39a',
     line: '#24332c',
     coral: '#ff8a68',
     online: '#7fd078',
