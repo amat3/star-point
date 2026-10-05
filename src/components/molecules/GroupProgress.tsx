@@ -5,9 +5,11 @@ import styled from '@emotion/styled'
 interface GroupProgressProps {
   confirmed: number
   total: number
+  // People on the waiting list, beyond the confirmed ones
+  reserves?: number
 }
 
-function GroupProgress({ confirmed, total }: GroupProgressProps) {
+function GroupProgress({ confirmed, total, reserves = 0 }: GroupProgressProps) {
   const free = Math.max(total - confirmed, 0)
   const percent = total > 0 ? Math.min((confirmed / total) * 100, 100) : 0
 
@@ -24,7 +26,7 @@ function GroupProgress({ confirmed, total }: GroupProgressProps) {
         <Count>
           <strong>{confirmed} confirmados</strong> de {total}
         </Count>
-        <Note>Se asigna por orden de inscripción</Note>
+        {reserves > 0 && <Reserves>{reserves} en reserva</Reserves>}
       </Row>
     </Root>
   )
@@ -96,9 +98,10 @@ const Count = styled.span`
   }
 `
 
-const Note = styled.span`
-  color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+const Reserves = styled.span`
+  color: ${({ theme }) => theme.colors.coral};
+  font-size: 0.75rem;
+  font-weight: 700;
 `
 
 export default GroupProgress

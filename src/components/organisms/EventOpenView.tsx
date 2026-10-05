@@ -152,7 +152,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
           players={String(total)}
         />
 
-        <GroupProgress confirmed={confirmed} total={total} />
+        <GroupProgress confirmed={confirmed} total={total} reserves={Math.max(count - total, 0)} />
 
         <PlayerList
           title="Ya vienen"
