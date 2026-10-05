@@ -37,7 +37,7 @@ const Root = styled.section`
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  background-color: #fffefa;
+  background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
