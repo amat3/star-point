@@ -37,6 +37,7 @@ const Root = styled('div', {
   padding: 0.25rem;
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.surface};
 `
 
 const Option = styled.button`

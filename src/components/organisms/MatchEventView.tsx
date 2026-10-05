@@ -27,6 +27,8 @@ interface MatchEventViewProps {
   maxSpots: number
   // Names of the players the organizer already has settled (may be shorter than needed)
   knownPlayers: string[]
+  // Free comment of the organizer
+  notes: string | null
   heroTitle: string
   startsAt: string
   players: PlayerListItem[]
@@ -41,7 +43,7 @@ type PendingConfirm = { title: string; description: string; confirmLabel: string
 
 // A published match: who is in, how many are missing, and join / leave.
 function MatchEventView({
-  eventId, startTime, clubId, clubName, maxSpots, knownPlayers, heroTitle, startsAt, players, isJoined, isOrganizer, canManage, userRole,
+  eventId, startTime, clubId, clubName, maxSpots, knownPlayers, notes, heroTitle, startsAt, players, isJoined, isOrganizer, canManage, userRole,
 }: MatchEventViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -136,6 +138,7 @@ function MatchEventView({
         startTime={startTime}
         clubId={clubId}
         maxSpots={maxSpots}
+        notes={notes}
       />
       <PlayerProfileDialog
         userId={selectedProfileId}
@@ -168,6 +171,8 @@ function MatchEventView({
           courts={1}
           players="4"
         />
+
+        {notes && <Note>{notes}</Note>}
 
         <PlayerList
           title="Quién juega"
@@ -223,6 +228,21 @@ const Manage = styled.section`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+`
+
+// The organizer's comment: what the match is looking for
+const Note = styled.p`
+  margin: 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid ${({ theme }) => theme.colors.line};
+  border-left: 3px solid ${({ theme }) => theme.colors.forest};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.ink};
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: pre-line;
 `
 
 const SecondaryActions = styled.div`

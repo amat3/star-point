@@ -4,6 +4,9 @@
 export const MATCH_TITLE = 'Partido'
 export const MATCH_DURATION_MINUTES = 90
 export const MATCH_MAX_NEEDED = 3
+// Free comment of a match ("necesitamos una chica", "buscamos jugador de revés"…)
+export const MATCH_NOTES_MAX = 140
+export const MATCH_NOTE_SUGGESTIONS = ['Partido femenino', 'Partido mixto', 'Necesitamos una chica', 'Buscamos jugador de revés', 'Buscamos jugador de drive']
 
 export const spotsForNeeded = (needed: number) => needed + 1
 export const neededForSpots = (maxSpots: number) => Math.max(maxSpots - 1, 0)
