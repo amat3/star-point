@@ -12,6 +12,8 @@ export function reserveSpotsLeft(signedUp: number, maxSpots: number) {
 export function mixingAvailability(signedUp: number, maxSpots: number) {
   const free = maxSpots - signedUp
   if (free > 0) return `${free} ${free === 1 ? 'plaza disponible' : 'plazas disponibles'}`
+  const reserves = signedUp - maxSpots
+  if (reserves > 0) return `Completo · ${reserves} en reserva`
   return reserveSpotsLeft(signedUp, maxSpots) > 0 ? 'Completo · apúntate en reserva' : 'Completo'
 }
 
