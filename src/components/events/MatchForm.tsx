@@ -11,7 +11,7 @@ import Select from '@/components/atoms/Select'
 import Textarea from '@/components/atoms/Textarea'
 import Field from '@/components/molecules/Field'
 import SegmentedControl from '@/components/molecules/SegmentedControl'
-import { MATCH_DURATION_MINUTES, MATCH_NOTES_MAX, MATCH_NOTE_SUGGESTIONS } from '@/lib/match-events'
+import { MATCH_NOTES_MAX, MATCH_NOTE_SUGGESTIONS } from '@/lib/match-events'
 import { madridDateTimeToUTC } from '@/lib/utils'
 
 const formSchema = z.object({
@@ -98,7 +98,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
         </Field>
       </Row>
 
-      <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed" hint={`Partido de 4 jugadores y ${MATCH_DURATION_MINUTES} minutos.`}>
+      <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed">
         <SegmentedControl
           label="Jugadores que buscas"
           fill

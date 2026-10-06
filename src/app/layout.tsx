@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { InstallBanner } from "@/components/layout/InstallBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import AppShell from "@/components/molecules/AppShell";
+import SplashScreen, { SPLASH_GUARD_SCRIPT } from "@/components/molecules/SplashScreen";
 import { EmotionProvider } from "@/components/providers/EmotionProvider";
 
 const dmSans = DM_Sans({
@@ -49,8 +50,11 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${spaceGrotesk.variable}`}
       >
+        {/* Decides before the first paint whether the splash shows */}
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_GUARD_SCRIPT }} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <EmotionProvider>
+            <SplashScreen />
             <AppShell>{children}</AppShell>
             <InstallBanner />
             <ServiceWorkerRegister />
