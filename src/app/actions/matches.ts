@@ -243,7 +243,7 @@ export async function getMatchHistory(page: number): Promise<{ matches: HistoryM
     event: { title: string; start_time: string; club: { name: string } | { name: string }[] | null } | null
   }
   const rows = (data ?? []) as unknown as Row[]
-  const firstName = (name: string | null | undefined) => toTitleCase(name).split(' ')[0] || 'Jugador'
+  const fullName = (name: string | null | undefined) => toTitleCase(name) || 'Jugador'
 
   const matches = rows.slice(0, HISTORY_PAGE_SIZE).map((m): HistoryMatch => {
     const inTeamA = m.player_a1 === user.id || m.player_a2 === user.id
@@ -258,8 +258,8 @@ export async function getMatchHistory(page: number): Promise<{ matches: HistoryM
       title: m.event?.title?.trim() ?? null,
       clubName: club?.name ?? null,
       outcome: games.mine > games.theirs ? 'win' : games.mine < games.theirs ? 'loss' : 'draw',
-      myTeam: mine.map(p => firstName(p?.full_name)),
-      opponents: theirs.map(p => firstName(p?.full_name)),
+      myTeam: mine.map(p => fullName(p?.full_name)),
+      opponents: theirs.map(p => fullName(p?.full_name)),
       games,
     }
   })
@@ -402,7 +402,7 @@ export async function getPendingActions(userId: string): Promise<PendingActionsR
     .order('created_at', { ascending: false })
 
   const rows = (data ?? []) as unknown as PendingRow[]
-  const firstName = (name: string | null | undefined) => toTitleCase(name).split(' ')[0] || 'Jugador'
+  const fullName = (name: string | null | undefined) => toTitleCase(name) || 'Jugador'
 
   const now = Date.now()
   let nextReveal: number | null = null
@@ -431,9 +431,9 @@ export async function getPendingActions(userId: string): Promise<PendingActionsR
         id: m.id,
         kind: hasScore ? 'confirm' as const : 'record' as const,
         when: formatRelativeDay(m.event?.start_time ?? m.created_at),
-        partnerName: partner?.full_name ? firstName(partner.full_name) : null,
-        myTeam: [firstName(me?.full_name), firstName(partner?.full_name)],
-        opponents: [firstName(rival1?.full_name), firstName(rival2?.full_name)],
+        partnerName: partner?.full_name ? fullName(partner.full_name) : null,
+        myTeam: [fullName(me?.full_name), fullName(partner?.full_name)],
+        opponents: [fullName(rival1?.full_name), fullName(rival2?.full_name)],
         games,
         courtLabel: [courtName(m), m.round_number ? `Ronda ${m.round_number}` : null].filter(Boolean).join(' · ') || null,
         match: {

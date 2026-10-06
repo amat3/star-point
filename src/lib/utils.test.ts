@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase, roundStartsAt, roundEndsAt } from './utils'
+import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase, firstName, roundStartsAt, roundEndsAt } from './utils'
 
 describe('madridDateTimeToUTC', () => {
   it('convierte 20:00 Madrid en verano (CEST, +2) a 18:00 UTC', () => {
@@ -67,5 +67,24 @@ describe('roundEndsAt', () => {
 
   it('la última ronda acaba cuando acaba el evento', () => {
     expect(roundEndsAt(start, 90, 3, 3).toISOString()).toBe('2026-10-14T19:30:00.000Z')
+  })
+})
+
+describe('firstName', () => {
+  it('returns the first word of a normal name', () => {
+    expect(firstName('juanan amate')).toBe('Juanan')
+    expect(firstName('Antonio Fernández')).toBe('Antonio')
+  })
+
+  it('keeps the next word when the first one is only an initial', () => {
+    expect(firstName('M Carmen Ramos')).toBe('M Carmen')
+    expect(firstName('m. angeles')).toBe('M. Angeles')
+  })
+
+  it('handles single words and empty values', () => {
+    expect(firstName('Pilar')).toBe('Pilar')
+    expect(firstName('M')).toBe('M')
+    expect(firstName('')).toBe('')
+    expect(firstName(null)).toBe('')
   })
 })

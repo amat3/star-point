@@ -86,6 +86,8 @@ const Side = styled.div`
 const Names = styled.span`
   color: ${({ theme }) => theme.colors.muted};
   font-size: 0.75rem;
+  /* full names can be long: they wrap instead of overflowing the sheet */
+  overflow-wrap: anywhere;
 `
 
 const Big = styled.span`

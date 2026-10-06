@@ -246,8 +246,8 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }
         <ResultReviewDialog
           open
           onOpenChange={(open) => { if (!open) setReviewing(null) }}
-          myTeam={reviewing.teamA.map(p => p.name.split(' ')[0])}
-          opponents={reviewing.teamB.map(p => p.name.split(' ')[0])}
+          myTeam={reviewing.teamA.map(p => p.name)}
+          opponents={reviewing.teamB.map(p => p.name)}
           games={{ mine: reviewing.games.a, theirs: reviewing.games.b }}
           onConfirm={() => {
             const id = reviewing.id

@@ -21,7 +21,7 @@ import { isAdminView } from '@/lib/view-mode'
 import { MATCH_DURATION_MINUTES, missingLabel } from '@/lib/match-events'
 import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
-import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
+import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase, firstName } from '@/lib/utils'
 
 // Public home: visitors see the open events (counts only, no names);
 // signing in is required to open them.
@@ -63,7 +63,7 @@ export default async function HomePage() {
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <Greeting
         date={formatTodayLong()}
-        name={userName ? toTitleCase(userName.split(' ')[0]) : undefined}
+        name={userName ? firstName(userName) : undefined}
       />
       <Content $clearTabBar={false}>
         <PendingActions actions={pendingActions} nextRevealAt={nextRevealAt} />

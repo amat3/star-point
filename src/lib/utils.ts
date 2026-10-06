@@ -4,6 +4,17 @@ export function toTitleCase(name: string | null | undefined) {
   return (name ?? '').toLowerCase().split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+/**
+ * First name for short labels ("Hola, Juanan"). When the first word is only an initial
+ * ("M Carmen Ramos", "M. Angeles") the next word is kept too, so it never reads just "M".
+ */
+export function firstName(name: string | null | undefined) {
+  const parts = toTitleCase(name).split(' ').filter(Boolean)
+  if (parts.length === 0) return ''
+  if (parts[0].replace('.', '').length <= 1 && parts.length > 1) return `${parts[0]} ${parts[1]}`
+  return parts[0]
+}
+
 export function isStandaloneMode() {
   const nav = window.navigator as Navigator & { standalone?: boolean }
   return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true

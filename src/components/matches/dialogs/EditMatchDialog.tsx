@@ -26,7 +26,7 @@ const parseScore = (score: string) => {
 }
 
 const pairLabel = (first?: { full_name?: string | null } | null, second?: { full_name?: string | null } | null) =>
-  [first, second].map(p => toTitleCase(p?.full_name).split(' ')[0] || 'Jugador').join(' + ')
+  [first, second].map(p => toTitleCase(p?.full_name) || 'Jugador').join(' + ')
 
 // Total games of each pair (no sets): the only thing that is recorded.
 export function EditMatchDialog({ match, open, onOpenChange, mode = 'record' }: EditMatchDialogProps) {
