@@ -38,10 +38,11 @@ const Root = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.layout.maxWidth};
   display: flex;
-  flex: 0 0 ${({ theme }) => theme.layout.headerHeight};
+  /* Extra room on top: iOS blurs the strip under the status bar and it reached the logo and the avatar */
+  flex: 0 0 calc(${({ theme }) => theme.layout.headerHeight} + 0.75rem);
   justify-content: space-between;
   align-items: center;
-  padding: 0 1.5rem;
+  padding: 0.75rem 1.5rem 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.hairline};
   background: ${({ theme }) => theme.colors.glass};
 `
