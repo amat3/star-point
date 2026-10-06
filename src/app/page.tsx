@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
+import { TimeRefresher } from '@/components/dashboard/TimeRefresher'
 import Content from '@/components/molecules/Content'
 import EmptyEvents from '@/components/molecules/EmptyEvents'
 import EventListItem from '@/components/molecules/EventListItem'
@@ -17,7 +18,7 @@ import { Footer } from '@/components/layout/Footer'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
-import { missingLabel } from '@/lib/match-events'
+import { MATCH_DURATION_MINUTES, missingLabel } from '@/lib/match-events'
 import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
@@ -44,10 +45,21 @@ export default async function HomePage() {
   const lastMatch = user ? await getLastMatch(user.id) : null
   const events = user ? await getOpenEvents() : await getPublicEvents()
 
+  // What changes by itself on this page: a partido disappears when it ends, a published
+  // draw goes from "Partidos creados" to "En juego" when it starts
+  const refreshTimes = events.flatMap(event =>
+    event.kind === 'match'
+      ? [new Date(new Date(event.start_time).getTime() + MATCH_DURATION_MINUTES * 60_000).toISOString()]
+      : event.status === 'in_progress'
+        ? [event.start_time]
+        : []
+  )
+
   return (
     <>
       {user && <RealtimeRefresher />}
       {user && <NotificationListener userId={user.id} />}
+      <TimeRefresher times={refreshTimes} />
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <Greeting
         date={formatTodayLong()}

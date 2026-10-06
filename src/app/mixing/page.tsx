@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
+import { TimeRefresher } from '@/components/dashboard/TimeRefresher'
 import AdminToolbar from '@/components/molecules/AdminToolbar'
 import Content from '@/components/molecules/Content'
 import EmptyState from '@/components/molecules/EmptyState'
@@ -107,6 +108,8 @@ export default async function MixingPage() {
     <>
       <RealtimeRefresher />
       <NotificationListener userId={user.id} />
+      {/* A published draw goes from "Partidos creados" to "En juego" when it starts */}
+      <TimeRefresher times={inProgress.map(e => e.start_time)} />
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <PageIntro title="Mixing" subtitle="Tus partidos semanales" />
 
