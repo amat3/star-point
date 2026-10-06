@@ -5,7 +5,7 @@ export const revalidate = 0
 import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
 import { NotificationListener } from '@/components/dashboard/NotificationListener'
 import Content from '@/components/molecules/Content'
-import EmptyState from '@/components/molecules/EmptyState'
+import EmptyEvents from '@/components/molecules/EmptyEvents'
 import EventListItem from '@/components/molecules/EventListItem'
 import PendingActions from '@/components/molecules/PendingActions'
 import LastMatchRow from '@/components/molecules/LastMatchRow'
@@ -56,7 +56,7 @@ export default async function HomePage() {
       <Content $clearTabBar={false}>
         <PendingActions actions={pendingActions} nextRevealAt={nextRevealAt} />
         <SectionHeader title="Lo que viene" />
-        {events.length === 0 && <EmptyState>Aún no hay mixings abiertos.</EmptyState>}
+        {events.length === 0 && <EmptyEvents canPublish={!!user} />}
         {events.map(event => {
           const spotsLeft = event.max_spots - (event.participants_count ?? 0)
           const eventPath = `/events/${event.id}`
