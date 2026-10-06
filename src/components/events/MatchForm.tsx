@@ -112,8 +112,10 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
         />
       </Field>
 
-      <Field label="Comentarios (opcional)" htmlFor="match-notes" error={errors.notes?.message} hint={`${notes.length}/${MATCH_NOTES_MAX}`}>
+      <Field label="Comentarios (opcional)" htmlFor="match-notes" error={errors.notes?.message}>
         <Textarea id="match-notes" rows={3} maxLength={MATCH_NOTES_MAX} placeholder="Ej.: buscamos un revés" {...register('notes')} />
+       <div>
+        <Counter>{notes.length}/{MATCH_NOTES_MAX}</Counter>
         <Suggestions>
           {MATCH_NOTE_SUGGESTIONS.map(suggestion => (
             <Chip
@@ -125,6 +127,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
             </Chip>
           ))}
         </Suggestions>
+        </div>
       </Field>
 
       <Button type="submit" $size="lg" disabled={submitting}>
@@ -144,6 +147,13 @@ const Row = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+`
+
+const Counter = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.6875rem;
+  text-align: right;
 `
 
 const Suggestions = styled.div`
