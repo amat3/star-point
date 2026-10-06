@@ -1,6 +1,10 @@
-# StarPoint 🎾
+<p align="center">
+  <img src="docs/social-preview.png" alt="starpoint · Tu app de Pádel" width="720">
+</p>
 
-**StarPoint** es una PWA para un grupo de pádel: mixings semanales con sorteo de parejas, partidos publicados para buscar jugadores, ranking ELO y validación de resultados. Construida con **Next.js 16**, **Supabase** y **Emotion**, pensada solo para móvil.
+# starpoint 🎾
+
+**starpoint** es una PWA para un grupo de pádel: mixings semanales con sorteo de parejas, partidos publicados para buscar jugadores, ranking ELO y validación de resultados. Construida con **Next.js 16**, **Supabase** y **Emotion**, pensada solo para móvil.
 
 ---
 
