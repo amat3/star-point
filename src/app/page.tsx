@@ -18,7 +18,7 @@ import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
 import { missingLabel } from '@/lib/match-events'
-import { drawAvailability, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase } from '@/lib/utils'
 
@@ -83,7 +83,8 @@ export default async function HomePage() {
                       : missingLabel(spotsLeft)
                     : mixingAvailability(event.participants_count ?? 0, event.max_spots)
               }
-              full={event.status === 'open' && (joined ? position >= event.max_spots : spotsLeft <= 0)}
+              full={event.status === 'open' && spotsLeft <= 0}
+              created={event.status === 'in_progress' && isDrawCreated(event.start_time)}
               joined={joined}
             />
           )

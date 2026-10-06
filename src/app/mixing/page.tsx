@@ -14,7 +14,7 @@ import PageIntro from '@/components/molecules/PageIntro'
 import SectionHeader from '@/components/molecules/SectionHeader'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents } from '@/app/actions/events'
-import { drawAvailability, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventDay, formatEventMonth, formatEventTime } from '@/lib/utils'
 import type { MixingEvent } from '@/types/events'
@@ -78,7 +78,8 @@ export default async function MixingPage() {
     if (event.status === 'in_progress') {
       availability = playingIn.has(event.id) ? 'Tienes partidos' : drawAvailability(event.start_time)
     } else if (position >= 0) {
-      warn = position >= event.max_spots
+      // Full is full, also for the ones who are in: coral
+      warn = spotsLeft <= 0
       availability = joinedAvailability(position, count, event.max_spots)
     } else {
       availability = mixingAvailability(count, event.max_spots)
@@ -96,6 +97,7 @@ export default async function MixingPage() {
         venue={event.club?.name}
         availability={availability}
         full={warn}
+        created={event.status === 'in_progress' && isDrawCreated(event.start_time)}
         joined={position >= 0}
       />
     )

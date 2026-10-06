@@ -20,7 +20,12 @@ export function mixingAvailability(signedUp: number, maxSpots: number) {
 // A published draw only becomes "En juego" when the event starts; before that
 // the matches are just created.
 export function drawAvailability(startTime: string, now: number = Date.now()): string {
-  return new Date(startTime).getTime() <= now ? 'En juego' : 'Partidos creados'
+  return isDrawCreated(startTime, now) ? 'Partidos creados' : 'En juego'
+}
+
+/** True while a published draw has not started yet. */
+export function isDrawCreated(startTime: string, now: number = Date.now()): boolean {
+  return new Date(startTime).getTime() > now
 }
 
 // Availability line for an event the viewer is signed up for (position is 0-based).
