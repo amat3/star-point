@@ -7,11 +7,15 @@ import { lightTheme } from '@/theme'
 
 const SHOW_MS = 3100
 const FADE_MS = 500
+// The lime screen has shrunk below the tile around here: the bars go back to cream
+const CREAM_AFTER_MS = 600
 
 // Runs before the first paint (inline, in the layout): marks the page so the splash
 // is hidden by CSS when it should not appear, instead of flashing and then going away.
 // It only shows on the first load of the session, on the home, and without reduced motion.
-export const SPLASH_GUARD_SCRIPT = `try{var d=document.documentElement;if(location.pathname!=='/'||sessionStorage.getItem('sp-splash')||matchMedia('(prefers-reduced-motion: reduce)').matches)d.setAttribute('data-splash','skip')}catch(e){document.documentElement.setAttribute('data-splash','skip')}`
+// It also paints the browser bars (theme-color) lime from the very first frame, because the
+// splash starts as a lime screen; SplashScreen switches them to cream when the lime has contracted.
+export const SPLASH_GUARD_SCRIPT = `try{var d=document.documentElement;if(location.pathname!=='/'||sessionStorage.getItem('sp-splash')||matchMedia('(prefers-reduced-motion: reduce)').matches){d.setAttribute('data-splash','skip')}else{document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute('data-sp-original',m.content);m.content='${lightTheme.colors.lime}'})}}catch(e){document.documentElement.setAttribute('data-splash','skip')}`
 
 type Phase = 'show' | 'leave' | 'done'
 
@@ -24,17 +28,25 @@ function SplashScreen({ hold = false }: { hold?: boolean }) {
   // Review mode: the animation restarts every few seconds
   const [cycle, setCycle] = useState(0)
 
-  // The browser bars (status bar, notch area) take the dark theme-color on dark devices:
-  // paint them light while the splash is up, then give them back.
+  // The browser bars (status bar, notch area) follow what the screen shows: lime while the lime
+  // screen contracts (set by the inline script before the first paint), cream once it is gone,
+  // and their own color back when the splash ends.
   const visible = phase !== 'done'
   useEffect(() => {
     if (!visible) return
     if (!hold && document.documentElement.getAttribute('data-splash') === 'skip') return
     const metas = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'))
-    const original = metas.map(meta => meta.content)
-    metas.forEach(meta => { meta.content = lightTheme.colors.background })
-    return () => metas.forEach((meta, index) => { meta.content = original[index] })
-  }, [visible, hold])
+    const original = metas.map(meta => meta.getAttribute('data-sp-original') ?? meta.content)
+    metas.forEach(meta => { meta.content = lightTheme.colors.lime })
+    const toCream = setTimeout(() => metas.forEach(meta => { meta.content = lightTheme.colors.background }), CREAM_AFTER_MS)
+    return () => {
+      clearTimeout(toCream)
+      metas.forEach((meta, index) => {
+        meta.content = original[index]
+        meta.removeAttribute('data-sp-original')
+      })
+    }
+  }, [visible, hold, cycle])
 
   useEffect(() => {
     if (hold) {
