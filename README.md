@@ -13,12 +13,17 @@
 ### 🔄 Mixing semanal
 - Convocatorias con club, fecha, hora, pistas y rondas; inscripción con lista de espera (titulares y reservas por orden de inscripción).
 - **Sorteo** de parejas y rivales para todas las rondas del evento, con un algoritmo que prioriza, por este orden: respetar las exclusiones, no repetir pareja ni pista dentro del evento, igualar el nivel de los partidos y, por último, no repetir lo del evento anterior. Las posiciones drive y revés sirven de desempate.
-- El admin elige las pistas del club que se usan ese día, genera (o vuelve a generar) el sorteo, revisa un resumen de reencuentros y avisos, y lo publica de una vez.
+- El admin elige las pistas del club que se usan ese día (Padel Indoor empieza por Blanca Impresores, Joyería Pósito, Hacienda La Laguna y Estrella Damm), genera (o vuelve a generar) el sorteo, revisa un resumen de reencuentros y avisos, y lo publica de una vez.
+- **Con el sorteo ya publicado** el admin puede editar el evento (título, fecha, hora y duración no tocan el sorteo; cambiar pistas, rondas o club lo deshace para generarlo de nuevo), rehacerlo, anularlo y cambiar las parejas de una pista cuando los cuatro jugadores lo deciden. Nada de esto es posible en cuanto hay un resultado.
+- La vista del sorteo **sigue el reloj**: cada jugador ve su ronda actual y la pestaña pasa sola a la siguiente. Las tarjetas dicen "Partidos creados" hasta la hora de inicio y "En juego" después.
+- La lista de espera se ve en "Así va el grupo" y en las tarjetas ("Completo · 2 en reserva"); los eventos en los que estás apuntado llevan la pill "Apuntado".
 - **Cron semanal**: cada miércoles a las 22:00 (hora de España) se crea el evento de la semana siguiente en Padel Indoor, con manejo del cambio de hora verano/invierno.
 - Los jugadores ven los cambios en tiempo real, sin recargar.
 
 ### ➕ Partidos
-Cualquier jugador puede publicar un **partido** (club, fecha, hora y cuántos jugadores busca, de 1 a 3) para completar sus 4 jugadores y 90 minutos. Se avisa al grupo por notificación push, aparece en "Lo que viene" y los demás se apuntan o se borran. Sin sorteo ni resultados. El organizador puede editarlo o cancelarlo; desaparece al terminar.
+Cualquier jugador puede publicar un **partido** (club, fecha, hora y cuántas palas busca, de 1 a 3) para completar sus 4 jugadores y 90 minutos, con un **comentario opcional** ("necesitamos una chica", "buscamos un revés"…). Se avisa al grupo por notificación push, aparece en "Lo que viene" y los demás se apuntan o se borran. Sin sorteo ni resultados.
+
+La pantalla del partido muestra siempre los **4 puestos**: el organizador, los jugadores que ya tiene cerrados fuera de la app (con el nombre que él les ponga), los que se apuntan y las plazas libres. El organizador puede **añadir jugadores de fuera del grupo**, renombrarlos o quitarlos, editar el partido o cancelarlo; desaparece al terminar.
 
 ### ⚔️ Resultados y ranking
 - Cada jugador ve **solo su partido** del sorteo. El resultado se guarda como **juegos totales** (sin sets).
@@ -33,10 +38,10 @@ Cualquier jugador puede publicar un **partido** (club, fecha, hora y cuántos ju
 | **Jugador** | Inscribirse a mixings y partidos, publicar partidos, introducir y confirmar resultados, ver su historial |
 | **Admin** | Todo lo anterior, más: crear y editar eventos, gestionar participantes e invitados, sorteo, partidos pendientes de todo el grupo, exclusiones y jugadores |
 
-Un admin empieza en la **vista de jugador** y cambia a la de administración desde el menú del avatar. El registro de usuarios está cerrado: solo existen cuentas creadas por un admin.
+Un admin empieza en la **vista de jugador** y cambia a la de administración desde el menú del avatar (solo los admins tienen ese menú; el resto usa la pestaña Perfil). El registro de usuarios está cerrado: solo existen cuentas creadas por un admin.
 
 ### ⚡ Tiempo real y PWA
-Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; instalable en pantalla de inicio.
+Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; instalable en pantalla de inicio. Al abrir la app desde cero se ve una **splash** animada (una vez por sesión) y los enlaces compartidos llevan una imagen de marca.
 
 ---
 
@@ -98,6 +103,7 @@ CRON_SECRET=...                       # protege /api/cron/*
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...      # notificaciones push
 VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:...
+PUSH_DISABLED=true                    # opcional, solo en local: no se envía ninguna notificación
 ```
 
 ### Base de datos
