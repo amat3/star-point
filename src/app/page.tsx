@@ -45,11 +45,11 @@ export default async function HomePage() {
   const lastMatch = user ? await getLastMatch(user.id) : null
   const events = user ? await getOpenEvents() : await getPublicEvents()
 
-  // What changes by itself on this page: a partido disappears when it ends, a published
+  // What changes by itself on this page: a partido starts ("En juego") and disappears when it ends, a published
   // draw goes from "Partidos creados" to "En juego" when it starts
   const refreshTimes = events.flatMap(event =>
     event.kind === 'match'
-      ? [new Date(new Date(event.start_time).getTime() + MATCH_DURATION_MINUTES * 60_000).toISOString()]
+      ? [event.start_time, new Date(new Date(event.start_time).getTime() + MATCH_DURATION_MINUTES * 60_000).toISOString()]
       : event.status === 'in_progress'
         ? [event.start_time]
         : []
@@ -74,6 +74,8 @@ export default async function HomePage() {
           const eventPath = `/events/${event.id}`
           const position = 'participants' in event ? (event.participants ?? []).findIndex(p => p.user_id === user?.id) : -1
           const joined = !!user && position >= 0
+          // A partido that is complete and has already started is being played
+          const playing = event.kind === 'match' && spotsLeft <= 0 && !isDrawCreated(event.start_time)
           return (
             <EventListItem
               key={event.id}
@@ -85,7 +87,9 @@ export default async function HomePage() {
               time={formatEventTime(event.start_time)}
               venue={event.club?.name}
               availability={
-                event.status === 'in_progress'
+                playing
+                  ? 'En juego'
+                  : event.status === 'in_progress'
                   ? drawAvailability(event.start_time)
                   : joined
                     ? joinedAvailability(position, event.participants_count ?? 0, event.max_spots)
@@ -95,7 +99,7 @@ export default async function HomePage() {
                       : missingLabel(spotsLeft)
                     : mixingAvailability(event.participants_count ?? 0, event.max_spots)
               }
-              full={event.status === 'open' && spotsLeft <= 0}
+              full={event.status === 'open' && spotsLeft <= 0 && !playing}
               created={event.status === 'in_progress' && isDrawCreated(event.start_time)}
               joined={joined}
             />
