@@ -19,6 +19,8 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
+  // Absolute base for the share image (og:image) and other metadata URLs
+  metadataBase: new URL("https://star-point.vercel.app"),
   title: "starpoint",
   description: "Tu app de Pádel",
   manifest: "/manifest.json",
