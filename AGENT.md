@@ -1,11 +1,11 @@
-# StarPoint — Agent Context
+# starpoint — Agent Context
 
 ## Project Overview
 
-**StarPoint** is a mobile-only PWA for a padel group: weekly **mixing** events (a draw of partners/opponents), **partidos** (a player publishes a match to look for players), ELO-style player ratings and match history.
+**starpoint** (lowercase is the brand spelling everywhere in the UI) is a mobile-only PWA for a padel group: weekly **mixing** events (a draw of partners/opponents), **partidos** (a player publishes a match to look for players), ELO-style player ratings and match history.
 Tagline: _"Tu app de Pádel"_.
 Language of the UI and business copy: **Spanish**. Code, identifiers and comments: **English**.
-Branch with the full redesign: `fix/repetitions` (see "Redesign status").
+Branch with the full redesign: `fix/repetitions` (see "Release status").
 
 ---
 
@@ -39,18 +39,21 @@ star-point/
 │   │   └── api/cron/                # create-weekly-event, close-pending-matches
 │   ├── components/
 │   │   ├── atoms/                   # Avatar, Badge, Button(+ButtonLink), Card, HandTag, HeroCard,
-│   │   │                            #   Input, Label, Logo, PulsatingDot, Select, Switch
+│   │   │                            #   Input, Label, Logo, PulsatingDot, Select, Switch, Textarea
 │   │   ├── molecules/               # Header, TabBar, AvatarMenu, Dialog, ConfirmDialog, Field,
-│   │   │                            #   PlayerList, CourtCard, EventListItem, StatsRow, ... (stateless/light)
+│   │   │                            #   PlayerList, CourtCard, EventListItem, StatsRow, SegmentedControl, GroupProgress,
+│   │   │                            #   EmptyEvents, SplashScreen, ... (stateless/light)
 │   │   ├── organisms/               # Screens' main blocks with state/actions: EventOpenView,
 │   │   │                            #   EventDrawView, EventGenerator, MatchEventView, AdminMatchesList,
 │   │   │                            #   HistoryList, ExclusionsManager, PlayersAdminList
 │   │   ├── events/ profile/ dashboard/ layout/   # Feature components (forms, dialogs, listeners)
 │   │   └── providers/               # EmotionProvider (cache + theme), GlobalStyles
+│   │   (+ app/opengraph-image.tsx: share image of the links, 1200x630, drawn from code; app/pwa-icon/[size]: app icon)
 │   ├── lib/                         # Pure logic and server helpers (see below)
 │   ├── types/                       # index.ts, events.ts, draw.ts
 │   ├── theme.ts                     # light/dark design tokens (+ emotion.d.ts typing)
 │   └── utils/supabase/              # client.ts, server.ts, admin.ts (service role)
+├── docs/social-preview.png          # brand image used by the README (and GitHub social preview if the repo goes public)
 ├── supabase_*.sql                   # Migrations/jobs, applied by hand (see Database)
 ├── vercel.json                      # Weekly-event cron
 └── AGENT.md
@@ -76,6 +79,7 @@ Key `lib/` files: `rating-logic.ts` + `config.ts` (ELO), `mixing-algorithm.ts` (
 | `/admin/events/new`, `/admin/matches`, `/admin/players`, `/admin/exclusions`, `/admin/events/[id]/generate` | Admin tools, reached from where they are used: the admin-view toolbar on `/mixing` (create event, pending matches with a counter, players), the event page (generate draw) and the generator (draw exclusions). There is no `/admin` hub | **Real** admin role (checked in `app/admin/layout.tsx`) |
 | `/dashboard` | Redirects to `/` (kept for old links/bookmarks) | — |
 | `/api/cron/*` | Cron endpoints, `Authorization: Bearer $CRON_SECRET` | Secret |
+| `/opengraph-image`, `/pwa-icon/[size]` | Images generated with `next/og`. `metadataBase` is `https://star-point.vercel.app` so `og:image` is always the production URL | Public |
 
 Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. Guests see Inicio and Entrar.
 
@@ -84,7 +88,7 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 ## Roles and the admin/player view
 
 - Real role: `profiles.role` (`player` | `admin`). Permissions are **always** checked against the real role on the server.
-- **Admin view** is a display preference stored in the `sp_view` cookie (`lib/view-mode.ts`, `setAdminView` action). Admins start in the *player view*; the avatar menu switches it. It decides what is *shown* (levels, admin tools, all matches in the draw); it never grants permissions.
+- **Admin view** is a display preference stored in the `sp_view` cookie (`lib/view-mode.ts`, `setAdminView` action). Admins start in the *player view*; the avatar menu switches it. **The avatar menu exists only for admins and only holds that switch** (everyone else has the Perfil tab, which also has "Cerrar sesión"; for them the avatar is a plain image). It decides what is *shown* (levels, admin tools, all matches in the draw); it never grants permissions.
 - Admin pages call `requireAdmin()`; `app/admin/layout.tsx` guards the whole `/admin` subtree.
 
 ---
@@ -92,20 +96,22 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 ## Database (Supabase)
 
 Migrations/jobs live at the repo root as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
-Applied: `clubs_courts`, `matches_auto_close`, `events_kind`. **Not applied yet** (wait for the deploy): `supabase_migration_security_hardening.sql`, `supabase_migration_court_names.sql`, `supabase_cron_close_pending_matches.sql` (needs the user's `CRON_SECRET`).
+Applied: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`; both additive, applied ahead of the deploy because local dev uses the production database). **Not applied yet** (wait for the deploy): `supabase_migration_security_hardening.sql` and `supabase_cron_close_pending_matches.sql` (needs the user's `CRON_SECRET`, which the user pastes directly in the Supabase SQL editor, never in the chat).
+The MCP `execute_sql` tool may be refused for production DDL/DML the user has not clearly approved; when it is, give the user the SQL file to run in the SQL editor instead of retrying.
 
 ### Tables (public)
 - `profiles`: `id` (= auth user), `full_name`, `email`, `avatar_url`, `rating`, `role`, `matches_played`, `matches_won`, `win_ratio`, `gender`, `preferred_hand`, `court_position` (`reves|drive|ambos`), `is_guest`.
-- `events`: `title`, `start_time` (timestamptz), `max_spots`, `rounds`, `duration_minutes`, `status` (`open|in_progress`), `created_by`, `is_test`, `club_id` (nullable), **`kind`** (`mixing` default | `match`).
+- `events`: `title`, `start_time` (timestamptz), `max_spots`, `rounds`, `duration_minutes`, `status` (`open|in_progress`), `created_by`, `is_test`, `club_id` (nullable), **`kind`** (`mixing` default | `match`), `known_players` (`text[]`: names of the players a partido's organizer already has settled), `notes` (`text`: the organizer's free comment on a partido).
 - `event_participants`: `event_id`, `user_id`, `joined_at` (order = sign-up order; positions beyond `max_spots` are reserves).
 - `matches`: `creator_id`, `match_type` (`match|mixing`), `status` (`pending|confirmed|disputed|expired`), `event_id`, `player_a1/a2/b1/b2`, `score_details`, `rating_change`, `court_number`, `court_id` (→ courts), `court_name` (legacy text), `round_number`, `last_updated_by`, **`result_updated_at`** (set by trigger when the score changes).
-- `clubs` / `courts` (`club_id`, `name`, `position`): 8 clubs in Jaén seeded; non-Indoor courts are generic "Pista N" until named. Public read, admin write.
+- `clubs` / `courts` (`club_id`, `name`, `position`): 8 clubs in Jaén seeded; Padel Indoor, Padel Akademia and Padel Premium have their real court names, the rest are generic "Pista N". **`position` is the default order**: the generator preselects the first N courts, so Padel Indoor starts with Blanca Impresores, Joyería Pósito, Hacienda La Laguna, Estrella Damm. Public read, admin write.
 - `rating_history`, `notifications`, `push_subscriptions`, `mixing_exclusions` (`no_partner|no_opponent|no_contact`), `mixing_incentives` (unused by the UI).
 - RPCs (SECURITY DEFINER): `confirm_match_atomic` (the only writer of ratings/stats), `leave_event_atomic` (also promotes the first reserve).
 
 ### Security notes (important)
 - RLS: events/clubs/courts/event_participants are publicly readable (the public home needs counts). **Known issues pending the hardening migration**: anon can execute the two RPCs and, because `auth.uid()` is NULL for anon, their authorization checks are bypassed; `profiles` (with emails), `matches` and `rating_history` have public SELECT policies. The migration also allows the service role explicitly (cron/auto-close run with `auth.uid()` NULL).
 - `matches` UPDATE policy lets any participant update any column of their match (including `status`). Not fixed.
+- **`matches` has no DELETE policy for users.** A delete with the normal client returns no error and removes nothing (this left stale matches behind and made the generator say "ya tiene partidos generados"). Every action that deletes matches (`deleteEvent`, `reopenDraw`, `updateEvent` when it undoes a draw, `saveAllRounds` when it clears leftovers) deletes with the **admin client after authorizing the caller**.
 - Never trust ids coming from the client in Server Actions: derive the user from the session (see `getMatchHistory`, which ignores any id).
 - Files with `'use server'` may **only export async functions** (types are fine). Put constants/helpers in a plain module (e.g. `lib/match-events.ts`).
 - Use the service-role client (`utils/supabase/admin.ts`) only after authorizing the caller (players cannot insert events directly: `createMatchEvent` validates and then writes as admin).
@@ -122,6 +128,7 @@ CRON_SECRET                      # protects /api/cron/*
 NEXT_PUBLIC_VAPID_PUBLIC_KEY     # push
 VAPID_PRIVATE_KEY
 VAPID_SUBJECT
+PUSH_DISABLED=true               # optional, local only: no push is sent (testing against the real DB without bothering the group). Never set it on Vercel
 ```
 
 ---
@@ -180,18 +187,23 @@ Two layers: (1) plan groups of 4 per round (random start + local search over swa
 
 - Data model: `partner_history` = partners in the *previous* event (soft); `session_partner_history` = partners in *this* event (hard); built in `getEventMixingData` (`app/actions/mixing-generator.ts`, admin only).
 - Level and position are always on (`CONFIG` in `EventGenerator`); there are no switches. `genderMode` is unused.
-- Warnings are only about repeats **within this event** (and forced exclusions/partner repeats); never about the previous event.
+- Warnings are only about repeats **within this event** (and forced exclusions/partner repeats); never about the previous event. A pair that were partners and are now rivals (or the reverse) is **not** a warning: only meeting again in the **same relation** is (rival meetings = total meetings minus the one as partners).
 - Math to keep in mind: with groups of 4, 12 players / 3 rounds cannot avoid repeats (minimum 9 re-meetings); 16 players can reach 0 for up to 5 rounds. Typical event: 12 players, 3 rounds, 90 min.
 - Simulation workflow used to tune it: build a throwaway `*.test.ts` that runs the real algorithm many times with a prior event's history, writes metrics to a file, then delete it. Tests in `mixing-algorithm.test.ts` fix the guarantees (no partner repeats; 12/3 ≤ 10 re-meetings; 16/3 ~0).
-- Admin flow (`EventGenerator`): "Pistas de hoy" (courts of the event's club, first N preselected) → generate / regenerate → summary (`summarizeRounds`) → publish (`saveAllRounds`: admin only, status must be `open`, refuses a second draw, validates the courts belong to the club, saves `court_id`+`court_name`, pushes "¡Sorteo listo!").
-- The manual player swap was removed (recoverable from git, commit `00c9018`); if ever revived it must be restricted to the same court.
+- Admin flow (`EventGenerator`): "Pistas de hoy" (courts of the event's club, first N preselected) → generate / regenerate → summary (`summarizeRounds`) → publish (`saveAllRounds`: admin only, status must be `open`, refuses a draw on top of one with results (leftover matches without a result, e.g. from an undone draw, are replaced), validates the courts belong to the club, saves `court_id`+`court_name`, pushes "¡Sorteo listo!").
+- The generator's manual player swap was removed (recoverable from git, commit `00c9018`); if ever revived it must be restricted to the same court.
 
 ---
 
 ## Events: mixing and partido
 
 - **Mixing** (`kind = 'mixing'`): created by the weekly cron or by an admin (`/admin/events/new`, with club). Lifecycle: `open` (sign-up, reserves up to `max_spots + 6`) → admin generates and publishes the draw → `in_progress` → hidden once all its matches are confirmed (`isEventFullyConfirmed`; there is no `finished` status).
+  - **Admin tools once the draw is published** (panel "Administrar evento" in `EventDrawView`): *Editar evento* (`updateEvent`: title/date/time/duration keep the draw; changing courts, rounds or club **undoes the draw**), *Rehacer* (`reopenDraw`: deletes the matches and goes back to `open`), *Anular* (`deleteEvent`, also valid for `in_progress`), and *Cambiar parejas* on each pending match (`rotateMatchPairs` cycles the 3 possible pairings; blocked once a result exists). Everything that undoes a draw is blocked as soon as any result is entered.
+  - **Draw view**: the round tab follows the clock (`roundStartsAt`; re-checked every 15 s and on `visibilitychange`) and moves to the next round after confirming a result. Event cards say "Partidos creados" until the start time and "En juego" after it (`drawAvailability`). "Así va el grupo" and the cards show the waiting list ("N en reserva").
 - **Partido** (`kind = 'match'`, `lib/match-events.ts`): any player publishes club + date + time + how many players are missing (1–3). Always 90 min, 4 players, title "Partido". `max_spots = organizer + needed`, **no reserves**, no draw, no results. Shown in "Lo que viene" (also to visitors, no names), hidden after start + 90 min, not listed in `/mixing`. The organizer can edit/cancel (not leave without cancelling); an admin can cancel too. Publishing pushes the whole group. Actions: `createMatchEvent`, `updateMatchEvent`, `cancelMatchEvent`.
+  - **Always 4 rows** in the list: the organizer, the players the organizer already has settled outside the app (`4 - max_spots` rows, shown as "Jugador confirmado" or with the name saved in `events.known_players` via `setMatchKnownPlayer`), the players who sign up, and free spots. The settled rows are display-only: they do not count in `max_spots` and cannot be opened or removed.
+  - **Players from outside the group**: the organizer (or an admin) adds them with "Añadir jugador" (`addGuestToMatch`: a guest profile named by the organizer that takes a real spot), renames them (`renameMatchGuest`) or removes them (`removeGuestFromMatch`, which also deletes the guest). No "Inv." tag and no hand pills in partidos.
+  - **Comment** (optional, 140 chars, `MATCH_NOTES_MAX`, suggestion chips in `MATCH_NOTE_SUGGESTIONS`): stored in `events.notes` and shown on the partido page. The partido page says "palas" for missing players ("Faltan 2 palas…"); the home card and the join bar still say "jugadores".
 - Weekly cron (`vercel.json`, Wednesdays 20:00 and 21:00 UTC; the route only acts when it is 22:xx in Madrid, covering DST) creates next Wednesday's event titled "Mixing Padel y Risas" at **Padel Indoor** (club looked up by name) at 20:00; it refuses to create a duplicate.
 - Round times are **derived**: the event duration is split evenly between its rounds (`roundStartsAt` / `roundEndsAt` in `lib/utils.ts`).
 
@@ -227,7 +239,12 @@ disputed = legacy/admin state; players have no UI to dispute anymore
 - `EmotionProvider` = SSR style cache (`lib/emotion-registry.tsx`) + theme from next-themes. `GlobalStyles` sets the reset and colors through CSS variables switched by the `.dark` class, so there is no light→dark flash. Emotion `theme` itself starts light until mounted.
 - Fonts: DM Sans (body) and Space Grotesk (titles) via `next/font`.
 - Conventions: styled components with transient props (`$variant`, `$size`) + `shouldForwardProp` for custom props; `Button` variants: primary, accent, outline, ghost, danger, warn, link (`ButtonLink` for links); `Dialog` is a bottom sheet; page shells follow `Header` → `PageIntro`/intro → `Content` → `TabBar`. `Content` reserves room for the fixed TabBar (pages that render something after it opt out with `$clearTabBar={false}`).
+- Colors added for dark mode: `card` (raised cards such as "Así va el grupo") and `subtle` (secondary text on cards). A hardcoded color is a dark-mode bug waiting to happen.
 - The footer is shown **only on the home**.
+- **Splash** (`SplashScreen`, mounted in the root layout): lime screen that contracts into the logo's dot, the tile spins to -7deg, letters rise, credits. Shown once per session (`sessionStorage`), only on `/`, never with `prefers-reduced-motion`; an inline script marks `<html data-splash="skip">` before first paint so it never flashes. It always uses `lightTheme` and sets the `theme-color` meta to light while visible. It has a `hold` prop to keep it on screen for design review.
+- Home with nothing scheduled: `EmptyEvents` ("Aún no hay nada programado" + a "Crear partido" button for signed-in players).
+- Event cards: a pill "Apuntado" on the status line (never next to the title: long titles wrap) and no highlight border.
+- Touch devices (`hover: none` and `pointer: coarse`) hide every scrollbar. Date/time `Input`s are reset for iOS Safari and two-column grids use `minmax(0, 1fr)` (otherwise the two fields overlap).
 - UI text in Spanish; the user dislikes filler copy — keep texts short and useful, and don't repeat information (e.g. a pill that repeats the title).
 - Atoms → molecules → organisms: put stateless/presentational pieces in `molecules`, screen blocks that own state/actions in `organisms`; server pages build DTOs and pass plain props.
 
@@ -258,8 +275,9 @@ npm run test      # vitest run
 - Branch: all redesign work is on `fix/repetitions`. Conventional commit messages in Spanish (`feat(...)`, `fix(...)`, `chore:`), ending with the Co-Authored-By line given by the harness.
 - **Only commit/push when the user asks** ("ok/sí" to "¿hago commit y push?"). Stage files explicitly when something must stay out (e.g. `supabase_migration_security_hardening.sql` is intentionally uncommitted until deploy).
 - **Before considering a change done**, run: `npx tsc --noEmit`, `npm run lint`, `npm run test`, and `npm run build` for larger changes. State plainly what was and wasn't verified (most screens need a logged-in session, which the agent does not have).
-- **Deploy**: manual, `vercel --prod --yes`. It publishes **everything** in the working tree; ask first.
-- **Deploy checklist** (not done yet): QA the UI → apply `security_hardening` and `court_names` → schedule `pg_cron` for the auto-close with the user's `CRON_SECRET` → disable public sign-ups in Supabase → check `CRON_SECRET` in Vercel → deploy.
+- **Deploy**: the Git integration builds a Preview on every push of the branch; merging a PR from `fix/repetitions` to `main` should trigger the Production deploy. Past automatic deploys failed silently, so always check that a Production deployment reaches "Ready" and, if not, run `vercel --prod --yes` (it publishes **everything** in the working tree; ask first). Preview and Production use the production database; `CRON_SECRET` and the VAPID keys exist only in Production.
+- The agent's shell does not have the user's PATH: run the CLI through `zsh -ic 'vercel …'`. If the token expires (`The specified token is not valid`) the user runs `! vercel login` (interactive, in the browser).
+- **Release plan**: deploy on **Wednesday 2026-10-07 around 10:00** (the real mixing is that night, so generate its draw in the afternoon) → test in production → apply `supabase_migration_security_hardening.sql` (after the new code is live) → schedule `pg_cron` (the user pastes their `CRON_SECRET` in the SQL editor) → disable public sign-ups in Supabase. Already done: QA, `court_names`, `match_known_players`, and `CRON_SECRET` / `SUPABASE_SERVICE_ROLE_KEY` (as Secret) verified in Vercel. Then tag `v1.0.0` (bump `package.json`, still `0.3.0`; the repo has no tags).
 - CI (`.github/workflows/ci.yml`) runs the same steps on push to `main` and PRs.
 
 ## Testing
@@ -276,7 +294,7 @@ All displayed dates/times are formatted with `timeZone: 'Europe/Madrid'` on the 
 
 - Create: `supabase.auth.admin.createUser({ email: 'x@guest.local', password: randomUUID(), email_confirm: true })`, then update the auto-created `profiles` row (`full_name`, `rating: 3.5`, `role: 'player'`, `is_guest: true`, stats zeroed).
 - Delete: `supabase.auth.admin.deleteUser(id)` (cascades to `profiles`).
-- Admin can rename a guest from `PlayerProfileDialog` (`renameGuest`).
+- Admin can rename a guest from `PlayerProfileDialog` (`renameGuest`). In partidos the organizer manages their own guests (see "Events").
 
 ## Safety when operating locally / maintenance scripts
 
@@ -287,6 +305,8 @@ All displayed dates/times are formatted with `timeZone: 'Europe/Madrid'` on the 
 - Before any irreversible production data migration take a Supabase backup (`pg_dump` of `public` + `auth.users`).
 - zsh gotcha: `env $VAR_STRING cmd` does not word-split; use `bash -c "export A=1 B=2; cmd"` when sweeping parameters.
 
-## Redesign status (2026-10-02)
+## Release status (2026-10-06)
 
-Done on `fix/repetitions`: Emotion design system, every screen migrated, Tailwind/shadcn removed, partidos, auto-close of pending matches, clubs/courts, admin hub. **Not yet verified with a logged-in session** — manual QA is the next step. Replaced/removed on purpose: the old dashboard UI, `ValidationList`, `EventCard`, `CreateEventDialog`, the old "new result" form (`NewMixingForm`, see git history `1f87763^`), `PlayerRankingPanel`, the manual swap in the generator.
+The branch `fix/repetitions` (46 commits ahead of `main` before the last batch) holds the whole redesign and everything built since: Emotion design system, every screen migrated, Tailwind/shadcn removed, partidos (comment, guests, settled players), auto-close of pending matches, clubs/courts with real names, waiting list, editable/redoable published draws, splash and share image. Manual QA was done by the user; the deploy is planned for 2026-10-07 (see "Workflow").
+Replaced/removed on purpose: the old dashboard UI, `ValidationList`, `EventCard`, `CreateEventDialog`, the old "new result" form (`NewMixingForm`, see git history `1f87763^`), `PlayerRankingPanel`, the manual swap in the generator, the `/admin` hub.
+Parked: a blank list reported after confirming a result in the draw view could not be reproduced without a session (the user asked to leave it until they say otherwise). Cleanup to do **after** the deploy settles: stale "Legacy dialog (Tailwind)" comments, unused `public/*.svg`, one-off scripts in `src/scripts` (keep `retroactive-match-weight.ts` and `create-admin.js`), maybe rename `components/dashboard`.
