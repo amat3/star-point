@@ -50,7 +50,9 @@ function CourtCard({ title, mine, teamA, teamB, footer }: CourtCardProps) {
       </Header>
       <Teams>
         <Team players={teamA} />
-        <Versus>vs</Versus>
+        <Divider>
+          <Versus>vs</Versus>
+        </Divider>
         <Team players={teamB} />
       </Teams>
       {footer && <Footer>{footer}</Footer>}
@@ -98,7 +100,7 @@ const MineTag = styled.span`
 const Teams = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  align-items: stretch;
   gap: 0.625rem;
 `
 
@@ -106,6 +108,7 @@ const TeamColumn = styled.div`
   display: flex;
   min-width: 0;
   flex-direction: column;
+  justify-content: center;
   gap: 0.75rem;
 `
 
@@ -143,7 +146,24 @@ const Level = styled.span`
   font-size: 0.6875rem;
 `
 
-// A filled badge: the two pairs face each other, so "vs" must read as the dividing point
+// Line + "vs" + line: a vertical wall between the two pairs, so it is clear who plays together
+const Divider = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    min-height: 0.5rem;
+    width: 2px;
+    border-radius: 1px;
+    background: ${({ theme }) => theme.colors.fieldBorder};
+  }
+`
+
 const Versus = styled.span`
   display: grid;
   flex-shrink: 0;
