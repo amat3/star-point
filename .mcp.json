@@ -7,10 +7,7 @@
     },
     "supabase": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=idnovsdkodfxaumkbosy",
-      "headers": {
-        "Authorization": "Bearer ***REMOVED***"
-      }
+      "url": "https://mcp.supabase.com/mcp?project_ref=idnovsdkodfxaumkbosy"
     }
   }
 }
