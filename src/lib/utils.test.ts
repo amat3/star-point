@@ -73,16 +73,16 @@ describe('roundEndsAt', () => {
 describe('firstName', () => {
   it('returns the first word of a normal name', () => {
     expect(firstName('juanan amate')).toBe('Juanan')
-    expect(firstName('Antonio Fernández')).toBe('Antonio')
+    expect(firstName('Luis Ortega')).toBe('Luis')
   })
 
   it('keeps the next word when the first one is only an initial', () => {
-    expect(firstName('M Carmen Ramos')).toBe('M Carmen')
-    expect(firstName('m. angeles')).toBe('M. Angeles')
+    expect(firstName('M Dolores Vega')).toBe('M Dolores')
+    expect(firstName('m. rosa')).toBe('M. Rosa')
   })
 
   it('handles single words and empty values', () => {
-    expect(firstName('Pilar')).toBe('Pilar')
+    expect(firstName('Lola')).toBe('Lola')
     expect(firstName('M')).toBe('M')
     expect(firstName('')).toBe('')
     expect(firstName(null)).toBe('')

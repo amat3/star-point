@@ -9,7 +9,6 @@ const ROUNDS = 3
 const DURATION_MINUTES = 90
 const EVENT_TITLE = 'Mixing Padel y Risas'
 const DEFAULT_CLUB_NAME = 'Padel Indoor'
-const CREATED_BY = 'cb288b22-8fdb-4744-a421-c05646c37454' // Juanan
 
 function getMadridHour(): number {
   return parseInt(
@@ -132,6 +131,16 @@ export async function GET(request: Request) {
     .eq('name', DEFAULT_CLUB_NAME)
     .maybeSingle()
 
+  // Owner of the weekly event: WEEKLY_EVENT_CREATED_BY, or else the first admin
+  let createdBy = process.env.WEEKLY_EVENT_CREATED_BY
+  if (!createdBy) {
+    const { data: admin } = await supabase.from('profiles').select('id').eq('role', 'admin').order('id').limit(1).maybeSingle()
+    createdBy = admin?.id
+  }
+  if (!createdBy) {
+    return NextResponse.json({ error: 'No admin to own the weekly event' }, { status: 500 })
+  }
+
   const { error } = await supabase.from('events').insert({
     title: EVENT_TITLE,
     club_id: club?.id ?? null,
@@ -139,7 +148,7 @@ export async function GET(request: Request) {
     max_spots: COURTS * PLAYERS_PER_COURT,
     rounds: ROUNDS,
     duration_minutes: DURATION_MINUTES,
-    created_by: CREATED_BY,
+    created_by: createdBy,
     status: 'open',
   })
 

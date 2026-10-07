@@ -129,6 +129,8 @@ CRON_SECRET                      # protects /api/cron/*
 NEXT_PUBLIC_VAPID_PUBLIC_KEY     # push
 VAPID_PRIVATE_KEY
 VAPID_SUBJECT
+TEST_PUSH_USER_IDS               # optional: comma-separated user ids that receive the pushes of is_test events (none set = nobody)
+WEEKLY_EVENT_CREATED_BY          # optional: owner of the weekly event (none set = the first admin)
 PUSH_DISABLED=true               # optional, local only: no push is sent (testing against the real DB without bothering the group). Never set it on Vercel
 ```
 

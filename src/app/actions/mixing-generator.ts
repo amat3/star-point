@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { MixingParticipant, MatchProposal, ExclusionRule } from '@/lib/mixing-algorithm'
 import { getAdminClient } from '@/utils/supabase/admin'
-import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
+import { sendPushToUsers, getTestPushAudience } from '@/lib/push'
 
 // 🆕 Ventana de historial: cuántos eventos recientes (incluyendo el actual,
 // si ya tiene rondas guardadas) se usan para calcular el historial de
@@ -243,7 +243,7 @@ export async function saveAllRounds(
   if (event) {
     let playerIds: string[]
     if (event.is_test) {
-      playerIds = TEST_PUSH_AUDIENCE
+      playerIds = getTestPushAudience()
     } else {
       const { data: participants } = await supabase
         .from('event_participants')

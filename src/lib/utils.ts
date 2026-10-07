@@ -6,7 +6,7 @@ export function toTitleCase(name: string | null | undefined) {
 
 /**
  * First name for short labels ("Hola, Juanan"). When the first word is only an initial
- * ("M Carmen Ramos", "M. Angeles") the next word is kept too, so it never reads just "M".
+ * ("M Dolores Vega", "M. Rosa") the next word is kept too, so it never reads just "M".
  */
 export function firstName(name: string | null | undefined) {
   const parts = toTitleCase(name).split(' ').filter(Boolean)

@@ -8,12 +8,15 @@ type PushPayload = {
 }
 
 // Eventos de prueba (is_test): en vez de omitir el push por completo, se
-// restringe a esta audiencia reducida para poder verificar el flujo sin
-// molestar al resto del club. Juanan (admin) + Paula (player).
-export const TEST_PUSH_AUDIENCE = [
-  'cb288b22-8fdb-4744-a421-c05646c37454',
-  '733d4e30-e5c4-41b9-bbc8-b1f0509f8bba',
-]
+// restringe a una audiencia reducida para poder verificar el flujo sin
+// molestar al resto del grupo. Sus ids vienen de TEST_PUSH_USER_IDS (separados
+// por comas); sin la variable, un evento de prueba no avisa a nadie.
+export function getTestPushAudience(): string[] {
+  return (process.env.TEST_PUSH_USER_IDS ?? '')
+    .split(',')
+    .map(id => id.trim())
+    .filter(Boolean)
+}
 
 let vapidReady = false
 

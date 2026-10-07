@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
-import { sendPushToUsers, TEST_PUSH_AUDIENCE } from '@/lib/push'
+import { sendPushToUsers, getTestPushAudience } from '@/lib/push'
 import { MAX_RESERVES } from '@/lib/event-capacity'
 import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_NOTES_MAX, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
@@ -233,7 +233,7 @@ export async function leaveEvent(eventId: string) {
   if (error) throw error instanceof Error ? error : new Error(String(error))
 
   if (promotion?.promoted_user_id) {
-    const recipients = event.is_test ? TEST_PUSH_AUDIENCE : [promotion.promoted_user_id]
+    const recipients = event.is_test ? getTestPushAudience() : [promotion.promoted_user_id]
     sendPushToUsers(recipients, {
       title: '¡Pasas a titular!',
       body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
@@ -288,7 +288,7 @@ export async function createEvent(data: { title: string, start_time: string, max
 
     let playerIds: string[]
     if (data.is_test) {
-      playerIds = TEST_PUSH_AUDIENCE
+      playerIds = getTestPushAudience()
     } else {
       const adminSupabase = getAdminClient()
       const { data: players } = await adminSupabase
@@ -460,7 +460,7 @@ export async function removeParticipant(eventId: string, userId: string) {
 
     if (promotion?.promoted_user_id) {
       const { data: eventInfo } = await supabase.from('events').select('is_test').eq('id', eventId).single()
-      const recipients = eventInfo?.is_test ? TEST_PUSH_AUDIENCE : [promotion.promoted_user_id]
+      const recipients = eventInfo?.is_test ? getTestPushAudience() : [promotion.promoted_user_id]
       sendPushToUsers(recipients, {
         title: '¡Pasas a titular!',
         body: `Has pasado a titular en "${promotion.promoted_event_title}"`,

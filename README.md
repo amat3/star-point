@@ -120,6 +120,8 @@ CRON_SECRET=...                       # protege /api/cron/*
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...      # notificaciones push
 VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:...
+TEST_PUSH_USER_IDS=id1,id2            # opcional: quién recibe los avisos de los eventos de prueba
+WEEKLY_EVENT_CREATED_BY=id            # opcional: autor del evento semanal (por defecto, el primer admin)
 PUSH_DISABLED=true                    # opcional, solo en local: no se envía ninguna notificación
 ```
 
