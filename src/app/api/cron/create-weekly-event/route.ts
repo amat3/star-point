@@ -85,6 +85,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // The demo deployment shares this code but must never create events by itself
+  if (process.env.NEXT_PUBLIC_DEMO === 'true') {
+    return NextResponse.json({ skipped: true, reason: 'Demo deployment' })
+  }
+
   // Only execute when Madrid clock shows 22:xx
   const madridHour = getMadridHour()
   if (madridHour !== 22) {
