@@ -53,7 +53,7 @@ function EventHeroCard({ title, startsAt, statusLabel, durationMinutes, courts, 
         </Stat>
         <Stat>
           <MapPin />
-          {courts} pistas
+          {courts} {courts === 1 ? 'pista' : 'pistas'}
         </Stat>
         <Stat>
           <Users />

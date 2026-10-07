@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Raw screen recordings: huge, kept out of git (only the optimized files in docs/img are committed)
+docs/img/*.mov
+docs/img/*.MOV
+docs/img/raw/
