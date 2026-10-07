@@ -99,7 +99,7 @@ const Teams = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
 `
 
 const TeamColumn = styled.div`
@@ -143,11 +143,20 @@ const Level = styled.span`
   font-size: 0.6875rem;
 `
 
+// A filled badge: the two pairs face each other, so "vs" must read as the dividing point
 const Versus = styled.span`
-  color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.onForest};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 `
 
