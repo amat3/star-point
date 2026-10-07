@@ -5,7 +5,7 @@
 **starpoint** (lowercase is the brand spelling everywhere in the UI) is a mobile-only PWA for a padel group: weekly **mixing** events (a draw of partners/opponents), **partidos** (a player publishes a match to look for players), ELO-style player ratings and match history.
 Tagline: _"Tu app de Pádel"_.
 Language of the UI and business copy: **Spanish**. Code, identifiers and comments: **English**.
-Branch with the full redesign: `fix/repetitions` (see "Release status").
+`main` is the only branch and the only source of truth (see "Workflow" and "Release status"). There is a fictional **demo** deployment of the same code (see "Demo environment").
 
 ---
 
@@ -54,6 +54,7 @@ star-point/
 │   ├── theme.ts                     # light/dark design tokens (+ emotion.d.ts typing)
 │   └── utils/supabase/              # client.ts, server.ts, admin.ts (service role)
 ├── docs/social-preview.png          # brand image used by the README (and GitHub social preview if the repo goes public)
+├── supabase_schema_full.sql         # Complete schema (structure only), validated by building the demo from scratch
 ├── supabase_*.sql                   # Migrations/jobs, applied by hand (see Database)
 ├── vercel.json                      # Weekly-event cron
 └── AGENT.md
@@ -96,7 +97,7 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 ## Database (Supabase)
 
 Migrations/jobs live at the repo root as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
-Applied: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`; both additive, applied ahead of the deploy because local dev uses the production database). **Not applied yet** (wait for the deploy): `supabase_migration_security_hardening.sql` and `supabase_cron_close_pending_matches.sql` (needs the user's `CRON_SECRET`, which the user pastes directly in the Supabase SQL editor, never in the chat).
+All applied in production: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`), `security_hardening` and the hourly `pg_cron` job of `supabase_cron_close_pending_matches.sql` (it carries `CRON_SECRET`: the user pastes it in the Supabase SQL editor, never in the chat, and the file in git keeps the `<CRON_SECRET>` placeholder). `supabase_schema_full.sql` is the whole structure in one file (it does not replace the incremental migrations, which are the history).
 The MCP `execute_sql` tool may be refused for production DDL/DML the user has not clearly approved; when it is, give the user the SQL file to run in the SQL editor instead of retrying.
 
 ### Tables (public)
@@ -272,12 +273,12 @@ npm run test      # vitest run
 
 ## Workflow
 
-- Branch: all redesign work is on `fix/repetitions`. Conventional commit messages in Spanish (`feat(...)`, `fix(...)`, `chore:`), ending with the Co-Authored-By line given by the harness.
+- **Branches**: only `main`. Work on it directly; for something that needs a Preview first, create a short-lived branch and **delete it as soon as it is merged** (local and remote). Last time forgetting this left 40 stale branches. Before deleting anything, check `git rev-list --count origin/main..<branch>` and take a backup (`git bundle create <file> --all`). Conventional commit messages in Spanish (`feat(...)`, `fix(...)`, `chore:`), ending with the Co-Authored-By line given by the harness.
 - **Only commit/push when the user asks** ("ok/sí" to "¿hago commit y push?"). Stage files explicitly when something must stay out (e.g. `supabase_migration_security_hardening.sql` is intentionally uncommitted until deploy).
 - **Before considering a change done**, run: `npx tsc --noEmit`, `npm run lint`, `npm run test`, and `npm run build` for larger changes. State plainly what was and wasn't verified (most screens need a logged-in session, which the agent does not have).
-- **Deploy**: the Git integration builds a Preview on every push of the branch; merging a PR from `fix/repetitions` to `main` should trigger the Production deploy. Past automatic deploys failed silently, so always check that a Production deployment reaches "Ready" and, if not, run `vercel --prod --yes` (it publishes **everything** in the working tree; ask first). Preview and Production use the production database; `CRON_SECRET` and the VAPID keys exist only in Production.
+- **Deploy**: a push to `main` deploys **both** Vercel projects (`star-point`, production, and `star-point-demo`, the fictional demo), so they stay identical. Past automatic deploys failed silently: always check that the Production deployment reaches "Ready" and, if not, run `vercel --prod --yes` (it publishes **everything** in the working tree; ask first). `CRON_SECRET` and the VAPID keys exist only in the production project. If a push of a feature branch produces no Preview, run `vercel deploy --yes` (a Preview, not production).
 - The agent's shell does not have the user's PATH: run the CLI through `zsh -ic 'vercel …'`. If the token expires (`The specified token is not valid`) the user runs `! vercel login` (interactive, in the browser).
-- **Release plan**: deploy on **Wednesday 2026-10-07 around 10:00** (the real mixing is that night, so generate its draw in the afternoon) → test in production → apply `supabase_migration_security_hardening.sql` (after the new code is live) → schedule `pg_cron` (the user pastes their `CRON_SECRET` in the SQL editor) → disable public sign-ups in Supabase. Already done: QA, `court_names`, `match_known_players`, and `CRON_SECRET` / `SUPABASE_SERVICE_ROLE_KEY` (as Secret) verified in Vercel. Then tag `v1.0.0` (bump `package.json`, still `0.3.0`; the repo has no tags).
+- **Releases**: bump `package.json`, tag `vX.Y.Z` and push the tag. `v1.0.0` (2026-10-07) is the redesign. The user rotates `CRON_SECRET` later (it was exposed once in a conversation): new value in Vercel (Secret), redeploy, then `cron.alter_job` in Supabase.
 - CI (`.github/workflows/ci.yml`) runs the same steps on push to `main` and PRs.
 
 ## Testing
@@ -303,10 +304,20 @@ All displayed dates/times are formatted with `timeZone: 'Europe/Madrid'` on the 
 - `src/scripts/` holds one-off maintenance scripts (ESLint-ignored). Disposable test scripts live outside git with a `.tmp-` prefix and are deleted afterwards, along with any rows they created.
 - Never touch the real production event when testing: use `is_test = true` events and clean up everything created (matches → participants → event → guests).
 - Before any irreversible production data migration take a Supabase backup (`pg_dump` of `public` + `auth.users`).
-- zsh gotcha: `env $VAR_STRING cmd` does not word-split; use `bash -c "export A=1 B=2; cmd"` when sweeping parameters.
+- zsh gotcha: unquoted variables are **not** word-split (`git push origin --delete $LIST` silently did nothing, and `env $VAR_STRING cmd` does not work either): use a `for` loop, or `bash -c "export A=1 B=2; cmd"` when sweeping parameters.
 
-## Release status (2026-10-06)
+## Release status (2026-10-07)
 
-The branch `fix/repetitions` (46 commits ahead of `main` before the last batch) holds the whole redesign and everything built since: Emotion design system, every screen migrated, Tailwind/shadcn removed, partidos (comment, guests, settled players), auto-close of pending matches, clubs/courts with real names, waiting list, editable/redoable published draws, splash and share image. Manual QA was done by the user; the deploy is planned for 2026-10-07 (see "Workflow").
-Replaced/removed on purpose: the old dashboard UI, `ValidationList`, `EventCard`, `CreateEventDialog`, the old "new result" form (`NewMixingForm`, see git history `1f87763^`), `PlayerRankingPanel`, the manual swap in the generator, the `/admin` hub.
-Parked: a blank list reported after confirming a result in the draw view could not be reproduced without a session (the user asked to leave it until they say otherwise). Cleanup to do **after** the deploy settles: stale "Legacy dialog (Tailwind)" comments, unused `public/*.svg`, one-off scripts in `src/scripts` (keep `retroactive-match-weight.ts` and `create-admin.js`), maybe rename `components/dashboard`.
+`v1.0.0` is in production: the redesign (Emotion, public home, partidos with comment/guests/settled players, waiting list, editable and redoable published draws, auto-close of pending matches, clubs/courts, splash, share image). Done on release day: security hardening applied and verified, hourly `pg_cron` close job scheduled, public sign-ups disabled, weekly cron registered (it fires Wednesdays at 22:xx Madrid and creates next Wednesday's event), 40 branches deleted (backup bundle kept by the user). A historic match was corrected (score 2-0 to 4-6) by replaying its rating chain with a backup first.
+Parked: a blank list reported after confirming a result in the draw view could not be reproduced without a session (the user asked to leave it until they say otherwise). Cleanup to do now that it has settled: stale "Legacy dialog (Tailwind)" comments, unused `public/*.svg`, one-off scripts in `src/scripts` (keep `retroactive-match-weight.ts`, `create-admin.js` and `seed-demo.ts`), maybe rename `components/dashboard`. Rotate `CRON_SECRET`, revoke the Supabase access token used for the demo.
+
+---
+
+## Demo environment
+
+A fictional copy for showing the app (portfolio, recruiters) without exposing the real group: **https://star-point-demo.vercel.app**.
+- **Data**: Supabase project `dibjelontnvnqdqaljqo` (the real one is `idnovsdkodfxaumkbosy`; never mix them up). Built from `supabase_schema_full.sql` plus `src/scripts/seed-demo.ts`: 16 Springfield characters, 8 past mixings with a real draw and real ELO (the shown ratings are an Elo replay, so they match what the app would compute), a published draw, an open mixing, two partidos, one exclusion and 3 fictional clubs. Accounts: `demo@example.com` (player) and `admin-demo@example.com` (admin), password = `DEMO_PASSWORD`. Public sign-up is disabled.
+- **Seed script**: `npx -y tsx src/scripts/seed-demo.ts` (dry run, writes nothing), `--apply`, `--apply --reset` to rebuild. It reads **only** `.env.demo.local` (git-ignored: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PUSH_DISABLED=true`, `DEMO_PASSWORD`) and refuses to run unless the URL is the demo project's.
+- **Deployment**: Vercel project `star-point-demo`, connected to the same repository, so a push to `main` deploys both. Its env vars are the demo's own, plus `NEXT_PUBLIC_DEMO=true`, which shows `DemoBanner` and makes `create-weekly-event` skip. No VAPID keys, no `pg_cron`.
+- **Never run `vercel link` in this directory** (it would point production deploys to the demo). Target the demo only per command with `VERCEL_ORG_ID=<team> VERCEL_PROJECT_ID=<demo project id>`; project settings and env vars go through `vercel api` (the CLI's own session). Secrets are piped from the env file to Vercel, never printed.
+- **MCP**: two Supabase servers with different names: `supabase` (production) and `supabase-demo` (user scope, `--project-ref` of the demo). **Name the project before every change** and double-check it with `get_project_url`. Production data and DDL need the user's explicit approval; the demo is for experiments.
