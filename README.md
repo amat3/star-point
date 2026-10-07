@@ -161,4 +161,8 @@ Un cambio de parámetros puede recalcularse con carácter retroactivo sobre todo
 
 ---
 
+## 📄 Licencia
+
+Código publicado **solo para consulta**, como muestra de portfolio. **Todos los derechos reservados**: no se permite copiarlo, modificarlo ni reutilizarlo sin autorización por escrito. Ver [LICENSE](LICENSE).
+
 Creado con ❤️ para la comunidad de pádel.
