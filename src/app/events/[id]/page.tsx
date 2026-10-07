@@ -189,6 +189,10 @@ export default async function EventPage(props: EventPageProps) {
   if (fullEvent.status === 'in_progress') {
     const isAdmin = userRole === 'admin'
     const rounds = await getEventDraw(supabase, fullEvent.id, user.id, isAdmin)
+    // Admin only: the courts of the club, to move a match to another one in situ
+    const clubCourts = isAdmin && fullEvent.club_id
+      ? ((await supabase.from('courts').select('id, name').eq('club_id', fullEvent.club_id).order('position', { ascending: true })).data ?? [])
+      : []
     const club = Array.isArray(event.club) ? event.club[0] : event.club
     const playing = Math.min(formattedParticipants.length, fullEvent.max_spots)
 
@@ -210,6 +214,7 @@ export default async function EventPage(props: EventPageProps) {
           summary={`${fullEvent.rounds} ${fullEvent.rounds === 1 ? 'ronda' : 'rondas'} · ${playing} jugadores`}
           rounds={rounds}
           isAdmin={isAdmin}
+          clubCourts={clubCourts}
         />
         <TabBar loggedIn />
       </>

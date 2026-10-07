@@ -20,6 +20,8 @@ interface CourtCardProps {
   teamA: CourtPlayer[]
   teamB: CourtPlayer[]
   footer?: React.ReactNode
+  // Small control at the right of the title (admin: change the court)
+  headerAction?: React.ReactNode
 }
 
 function Team({ players }: { players: CourtPlayer[] }) {
@@ -41,12 +43,13 @@ function Team({ players }: { players: CourtPlayer[] }) {
   )
 }
 
-function CourtCard({ title, mine, teamA, teamB, footer }: CourtCardProps) {
+function CourtCard({ title, mine, teamA, teamB, footer, headerAction }: CourtCardProps) {
   return (
     <Root $mine={mine}>
       <Header>
         <Title>{title}</Title>
         {mine && <MineTag>Tu partido</MineTag>}
+        {headerAction && <HeaderAction>{headerAction}</HeaderAction>}
       </Header>
       <Teams>
         <Team players={teamA} />
@@ -77,6 +80,10 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+`
+
+const HeaderAction = styled.div`
+  margin-left: auto;
 `
 
 const Title = styled.h3`

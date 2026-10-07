@@ -10,6 +10,9 @@ export interface DrawMatch {
   round: number
   title: string
   mine: boolean
+  // Needed by the admin to move the match to another court of the club
+  courtNumber: number | null
+  courtId: string | null
   status: DrawMatchStatus
   // Total games as shown (teamA vs teamB); null while there is no result
   games: { a: number; b: number } | null

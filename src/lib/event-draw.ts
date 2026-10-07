@@ -16,6 +16,7 @@ type DrawRow = {
   round_number: number | null
   court_number: number | null
   court_name: string | null
+  court_id: string | null
   score_details: string | null
   status: DrawMatch['status']
   last_updated_by: string | null
@@ -57,7 +58,7 @@ export async function getEventDraw(
   let query = supabase
     .from('matches')
     .select(`
-      id, round_number, court_number, court_name, score_details, status, last_updated_by,
+      id, round_number, court_number, court_name, court_id, score_details, status, last_updated_by,
       player_a1, player_a2, player_b1, player_b2,
       p_a1:profiles!player_a1(${fields}),
       p_a2:profiles!player_a2(${fields}),
@@ -98,6 +99,8 @@ export async function getEventDraw(
       round: row.round_number ?? 1,
       title: court?.name ?? row.court_name ?? (row.court_number ? `Pista ${row.court_number}` : 'Pista por asignar'),
       mine,
+      courtNumber: row.court_number,
+      courtId: row.court_id,
       status: row.status,
       games: games ? { a: games.mine, b: games.theirs } : null,
       waitingForMe: mine && row.status === 'pending' && hasScore && row.last_updated_by !== userId,

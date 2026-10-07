@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import styled from '@emotion/styled'
 import { useRouter } from 'next/navigation'
-import { Check, Pencil, RefreshCw, Shuffle, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Check, Pencil, RefreshCw, Shuffle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../atoms/Button'
 import CourtCard from '../molecules/CourtCard'
@@ -16,6 +16,7 @@ import { confirmMatch } from '@/app/actions/matches'
 import { deleteEvent, reopenDraw } from '@/app/actions/events'
 import { rotateMatchPairs } from '@/app/actions/mixing-generator'
 import { EditEventDialog } from '@/components/events/EditEventDialog'
+import { ChangeCourtDialog, type ChangeCourtTarget } from '@/components/events/ChangeCourtDialog'
 import type { MixingEvent } from '@/types/events'
 import { roundStartsAt } from '@/lib/utils'
 // Legacy dialog (Tailwind) until the Dialog molecule exists.
@@ -31,9 +32,11 @@ interface EventDrawViewProps {
   summary: string
   rounds: DrawRound[]
   isAdmin: boolean
+  // Admin: courts of the club, to change the court of a match
+  clubCourts?: { id: string; name: string }[]
 }
 
-function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }: EventDrawViewProps) {
+function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, clubCourts = [] }: EventDrawViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeRound, setActiveRound] = useState(rounds[0]?.number ?? 1)
@@ -43,6 +46,7 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }
   const [cancelOpen, setCancelOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [redoOpen, setRedoOpen] = useState(false)
+  const [courtTarget, setCourtTarget] = useState<ChangeCourtTarget | null>(null)
   const eventId = event.id
 
   // Follows the clock: the tab switches by itself when the next round starts
@@ -196,6 +200,17 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }
             mine={m.mine}
             teamA={m.teamA}
             teamB={m.teamB}
+            headerAction={isAdmin && clubCourts.length > 0 && m.status !== 'confirmed' ? (
+              <Button
+                $variant="ghost"
+                $size="sm"
+                aria-label={`Cambiar la pista de ${m.title}`}
+                onClick={() => setCourtTarget({ matchId: m.id, courtNumber: m.courtNumber, courtId: m.courtId, title: m.title })}
+              >
+                <ArrowLeftRight />
+                Pista
+              </Button>
+            ) : undefined}
             footer={isAdmin ? adminFooterFor(m) : footerFor(m)}
           />
         ))}
@@ -222,6 +237,14 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin }
         )}
       </Body>
 
+      <ChangeCourtDialog
+        open={courtTarget !== null}
+        onOpenChange={(open) => { if (!open) setCourtTarget(null) }}
+        eventId={eventId}
+        courts={clubCourts}
+        target={courtTarget}
+        onChanged={() => router.refresh()}
+      />
       <EditEventDialog open={editOpen} onOpenChange={setEditOpen} event={event} published />
 
       <ConfirmDialog
