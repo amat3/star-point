@@ -7,6 +7,18 @@
   🎾 <a href="https://star-point-demo.vercel.app"><b>Demo con datos ficticios</b></a> (jugadores de Los Simpson): pide las cuentas de prueba
 </p>
 
+<p align="center">
+  <img src="docs/img/02-inicio.png" alt="Inicio: tus eventos y partidos" width="190">
+  <img src="docs/img/03-mixing.png" alt="Un mixing: quién viene y apuntarse" width="190">
+  <img src="docs/img/04-sorteo.png" alt="El sorteo: tu pista, tu pareja y tus rivales" width="190">
+  <img src="docs/img/05-publicar-partido.png" alt="Publicar un partido con comentario" width="190">
+</p>
+
+<p align="center">
+  <sub>Inicio · Mixing · Sorteo · Publicar partido &nbsp;(demo con datos ficticios)</sub><br>
+  ▶ <a href="docs/img/demo.mp4"><b>Recorrido en vídeo</b></a> (67 s) · <img src="docs/img/splash.gif" alt="Animación de entrada" width="70" align="middle">
+</p>
+
 # starpoint 🎾
 
 **starpoint** es una PWA para un grupo de pádel: mixings semanales con sorteo de parejas, partidos publicados para buscar jugadores, ranking ELO y validación de resultados. Construida con **Next.js 16**, **Supabase** y **Emotion**, pensada solo para móvil.

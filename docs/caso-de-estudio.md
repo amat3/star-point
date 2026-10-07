@@ -6,6 +6,18 @@
   <img src="social-preview.png" alt="starpoint · Tu app de Pádel" width="640">
 </p>
 
+<p align="center">
+  <img src="img/02-inicio.png" alt="Inicio: tus eventos y partidos" width="190">
+  <img src="img/03-mixing.png" alt="Un mixing: quién viene y apuntarse" width="190">
+  <img src="img/04-sorteo.png" alt="El sorteo: tu pista, tu pareja y tus rivales" width="190">
+  <img src="img/05-publicar-partido.png" alt="Publicar un partido con comentario" width="190">
+</p>
+
+<p align="center">
+  <sub>Inicio · Mixing · Sorteo · Publicar partido &nbsp;(demo con datos ficticios)</sub><br>
+  ▶ <a href="img/demo.mp4"><b>Recorrido en vídeo</b></a> (67 s) · <img src="img/splash.gif" alt="Animación de entrada" width="70" align="middle">
+</p>
+
 | | |
 |---|---|
 | **Estado** | En producción · versión 1.0.0 (octubre de 2026) |
