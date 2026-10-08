@@ -6,7 +6,6 @@ import Avatar from '../atoms/Avatar'
 import HandTag, { type Hand } from '../atoms/HandTag'
 import EmptyState from '../molecules/EmptyState'
 import SegmentedControl from '../molecules/SegmentedControl'
-// Legacy dialog (Tailwind) until the Dialog molecule exists.
 import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
 import { toTitleCase } from '@/lib/utils'
 

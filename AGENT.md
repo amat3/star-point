@@ -54,8 +54,9 @@ star-point/
 │   ├── theme.ts                     # light/dark design tokens (+ emotion.d.ts typing)
 │   └── utils/supabase/              # client.ts, server.ts, admin.ts (service role)
 ├── docs/social-preview.png          # brand image used by the README (and GitHub social preview if the repo goes public)
-├── supabase_schema_full.sql         # Complete schema (structure only), validated by building the demo from scratch
-├── supabase_*.sql                   # Migrations/jobs, applied by hand (see Database)
+├── supabase/                        # SQL applied by hand (see Database)
+│   ├── supabase_schema_full.sql     # Complete schema (structure only), validated by building the demo from scratch
+│   └── supabase_*.sql               # Migrations and the hourly cron job
 ├── vercel.json                      # Weekly-event cron
 └── AGENT.md
 ```
@@ -96,8 +97,8 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 
 ## Database (Supabase)
 
-Migrations/jobs live at the repo root as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
-All applied in production: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`), `security_hardening` and the hourly `pg_cron` job of `supabase_cron_close_pending_matches.sql` (it carries `CRON_SECRET`: the user pastes it in the Supabase SQL editor, never in the chat, and the file in git keeps the `<CRON_SECRET>` placeholder). `supabase_schema_full.sql` is the whole structure in one file (it does not replace the incremental migrations, which are the history).
+Migrations/jobs live in `supabase/` as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
+All applied in production: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`), `security_hardening` and the hourly `pg_cron` job of `supabase/supabase_cron_close_pending_matches.sql` (it carries `CRON_SECRET`: the user pastes it in the Supabase SQL editor, never in the chat, and the file in git keeps the `<CRON_SECRET>` placeholder). `supabase_schema_full.sql` is the whole structure in one file (it does not replace the incremental migrations, which are the history).
 The MCP `execute_sql` tool may be refused for production DDL/DML the user has not clearly approved; when it is, give the user the SQL file to run in the SQL editor instead of retrying.
 
 ### Tables (public)
@@ -276,7 +277,7 @@ npm run test      # vitest run
 ## Workflow
 
 - **Branches**: only `main`. Work on it directly; for something that needs a Preview first, create a short-lived branch and **delete it as soon as it is merged** (local and remote). Last time forgetting this left 40 stale branches. Before deleting anything, check `git rev-list --count origin/main..<branch>` and take a backup (`git bundle create <file> --all`). Conventional commit messages in Spanish (`feat(...)`, `fix(...)`, `chore:`), ending with the Co-Authored-By line given by the harness.
-- **Only commit/push when the user asks** ("ok/sí" to "¿hago commit y push?"). Stage files explicitly when something must stay out (e.g. `supabase_migration_security_hardening.sql` is intentionally uncommitted until deploy).
+- **Only commit/push when the user asks** ("ok/sí" to "¿hago commit y push?"). Stage files explicitly when something must stay out of a commit.
 - **Before considering a change done**, run: `npx tsc --noEmit`, `npm run lint`, `npm run test`, and `npm run build` for larger changes. State plainly what was and wasn't verified (most screens need a logged-in session, which the agent does not have).
 - **Deploy**: a push to `main` deploys **both** Vercel projects (`star-point`, production, and `star-point-demo`, the fictional demo), so they stay identical. Past automatic deploys failed silently: always check that the Production deployment reaches "Ready" and, if not, run `vercel --prod --yes` (it publishes **everything** in the working tree; ask first). `CRON_SECRET` and the VAPID keys exist only in the production project. If a push of a feature branch produces no Preview, run `vercel deploy --yes` (a Preview, not production).
 - The agent's shell does not have the user's PATH: run the CLI through `zsh -ic 'vercel …'`. If the token expires (`The specified token is not valid`) the user runs `! vercel login` (interactive, in the browser).
@@ -318,7 +319,7 @@ Parked: a blank list reported after confirming a result in the draw view could n
 ## Demo environment
 
 A fictional copy for showing the app (portfolio, recruiters) without exposing the real group: **https://star-point-demo.vercel.app**.
-- **Data**: Supabase project `dibjelontnvnqdqaljqo` (the real one is `idnovsdkodfxaumkbosy`; never mix them up). Built from `supabase_schema_full.sql` plus `src/scripts/seed-demo.ts`: 16 Springfield characters, 8 past mixings with a real draw and real ELO (the shown ratings are an Elo replay, so they match what the app would compute), a published draw, an open mixing, two partidos, one exclusion and 3 fictional clubs. Accounts: `demo@example.com` (player) and `admin-demo@example.com` (admin), password = `DEMO_PASSWORD`. Public sign-up is disabled.
+- **Data**: Supabase project `dibjelontnvnqdqaljqo` (the real one is `idnovsdkodfxaumkbosy`; never mix them up). Built from `supabase/supabase_schema_full.sql` plus `src/scripts/seed-demo.ts`: 16 Springfield characters, 8 past mixings with a real draw and real ELO (the shown ratings are an Elo replay, so they match what the app would compute), a published draw, an open mixing, two partidos, one exclusion and 3 fictional clubs. Accounts: `demo@example.com` (player) and `admin-demo@example.com` (admin), password = `DEMO_PASSWORD`. Public sign-up is disabled.
 - **Seed script**: `npx -y tsx src/scripts/seed-demo.ts` (dry run, writes nothing), `--apply`, `--apply --reset` to rebuild. It reads **only** `.env.demo.local` (git-ignored: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PUSH_DISABLED=true`, `DEMO_PASSWORD`) and refuses to run unless the URL is the demo project's.
 - **Deployment**: Vercel project `star-point-demo`, connected to the same repository, so a push to `main` deploys both. Its env vars are the demo's own, plus `NEXT_PUBLIC_DEMO=true`, which shows `DemoBanner` and makes `create-weekly-event` skip. No VAPID keys, no `pg_cron`.
 - **Never run `vercel link` in this directory** (it would point production deploys to the demo). Target the demo only per command with `VERCEL_ORG_ID=<team> VERCEL_PROJECT_ID=<demo project id>`; project settings and env vars go through `vercel api` (the CLI's own session). Secrets are piped from the env file to Vercel, never printed.

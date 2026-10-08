@@ -33,7 +33,6 @@ const Root = styled.div`
 const Title = styled.h2`
   margin: 0;
   padding: 0;
-  border: 0; /* reset the global Tailwind h2 border-b while it's still loaded */
   color: ${({ theme }) => theme.colors.ink};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 1.125rem;

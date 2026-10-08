@@ -7,7 +7,7 @@
 -- which stay as the history of how production got here.
 --
 -- Not included on purpose: data (clubs, courts, profiles... go in a seed), the hourly
--- pg_cron job (`supabase_cron_close_pending_matches.sql`, it carries a secret) and anything
+-- pg_cron job (`supabase/supabase_cron_close_pending_matches.sql`, it carries a secret) and anything
 -- Supabase creates by itself (auth, storage and realtime schemas).
 
 -- 1. Extensions -----------------------------------------------------------------------------

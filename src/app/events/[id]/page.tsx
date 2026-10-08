@@ -150,7 +150,7 @@ export default async function EventPage(props: EventPageProps) {
     )
   }
 
-  // Open events (sign-up phase) use the new design; later phases keep the legacy view for now.
+  // Open events (sign-up phase) show the sign-up view; later phases show the draw.
   if (fullEvent.status === 'open') {
     const total = fullEvent.max_spots
     const players = formattedParticipants.map((p, index) => ({

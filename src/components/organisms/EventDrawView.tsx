@@ -19,7 +19,6 @@ import { EditEventDialog } from '@/components/events/EditEventDialog'
 import { ChangeCourtDialog, type ChangeCourtTarget } from '@/components/events/ChangeCourtDialog'
 import type { MixingEvent } from '@/types/events'
 import { roundStartsAt } from '@/lib/utils'
-// Legacy dialog (Tailwind) until the Dialog molecule exists.
 import { EditMatchDialog } from '@/components/matches/dialogs/EditMatchDialog'
 import type { Match } from '@/types'
 import type { DrawMatch, DrawRound } from '@/types/draw'

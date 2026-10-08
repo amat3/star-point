@@ -8,7 +8,6 @@ import Button from '../atoms/Button'
 import PendingActionCard from './PendingActionCard'
 import ResultReviewDialog from './ResultReviewDialog'
 import { confirmMatch, type PendingAction } from '@/app/actions/matches'
-// Legacy dialog (Tailwind) until the Dialog molecule exists.
 import { EditMatchDialog } from '@/components/matches/dialogs/EditMatchDialog'
 import type { Match } from '@/types'
 
