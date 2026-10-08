@@ -1,0 +1,20 @@
+# Files that the build and the app do not need. They only matter for `vercel deploy` from the CLI
+# (Git deployments clone the repository, where the raw recording is already ignored): without
+# this file the CLI uploads them too and a single screen recording is enough to pass the size limit.
+
+# Case study, screenshots and videos
+docs
+*.mov
+*.mp4
+
+# Local environment files (the variables live in the Vercel project settings)
+.env*
+
+# Tooling and repository metadata
+.claude
+.github
+.mcp.json
+skills-lock.json
+
+# SQL snapshots and migrations (applied by hand in Supabase)
+supabase_*.sql
