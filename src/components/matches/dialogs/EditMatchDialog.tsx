@@ -89,11 +89,17 @@ export function EditMatchDialog({ match, open, onOpenChange, mode = 'record' }: 
   )
 }
 
+// One pair under the other: side by side the two counters do not fit on a narrow phone
 const Scores = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   padding: 0.5rem 0;
+
+  > * + * {
+    padding-top: 1.25rem;
+    border-top: 1px solid ${({ theme }) => theme.colors.line};
+  }
 `
 
 const Hint = styled.p`

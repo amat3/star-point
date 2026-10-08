@@ -31,7 +31,7 @@ type DrawRow = {
   court: { name: string } | { name: string }[] | null
 }
 
-// Level is only included when the viewer may see it (admins).
+// Level is only included when asked for (the admin generator preview); the draw and review cards leave it out.
 export function toCourtPlayer(id: string, profile: DrawProfile, showLevel: boolean): CourtPlayer {
   return {
     userId: id,
@@ -44,8 +44,8 @@ export function toCourtPlayer(id: string, profile: DrawProfile, showLevel: boole
 
 /**
  * Builds the draw of an event for one viewer. Players only receive their own
- * matches; admins receive every match plus each player's level. Filtering and
- * level stripping happen here, so other people's data never reach the browser.
+ * matches; admins receive every match. Filtering happens here, so other people's
+ * data never reach the browser.
  */
 export async function getEventDraw(
   supabase: SupabaseClient,
@@ -53,7 +53,7 @@ export async function getEventDraw(
   userId: string,
   isAdmin: boolean
 ): Promise<DrawRound[]> {
-  const fields = `full_name, avatar_url, court_position${isAdmin ? ', rating' : ''}`
+  const fields = 'full_name, avatar_url, court_position'
 
   let query = supabase
     .from('matches')
@@ -77,7 +77,7 @@ export async function getEventDraw(
   const { data } = await query
   const rows = (data ?? []) as unknown as DrawRow[]
 
-  const toPlayer = (id: string, profile: DrawProfile) => toCourtPlayer(id, profile, isAdmin)
+  const toPlayer = (id: string, profile: DrawProfile) => toCourtPlayer(id, profile, false)
 
   const rounds = new Map<number, DrawMatch[]>()
 

@@ -26,13 +26,13 @@ function ResultReviewDialog({ open, onOpenChange, myTeam, opponents, games, conf
     <Dialog open={open} onOpenChange={onOpenChange} title="Confirma el resultado">
       <Summary>
         <Side>
-          <Names>{myTeam.join(' + ')}</Names>
           <Big>{games.mine}</Big>
+          <Names>{myTeam.join(' + ')}</Names>
         </Side>
         <Versus>vs</Versus>
         <Side>
-          <Names>{opponents.join(' + ')}</Names>
           <Big>{games.theirs}</Big>
+          <Names>{opponents.join(' + ')}</Names>
         </Side>
       </Summary>
 
@@ -63,15 +63,16 @@ function ResultReviewDialog({ open, onOpenChange, myTeam, opponents, games, conf
   )
 }
 
+// The score is the point of this step: a forest panel with big lime numbers, like the pending-action card
 const Summary = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: end;
+  align-items: center;
   gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.line};
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ theme }) => theme.colors.surface};
+  padding: 1.5rem 1rem;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.hero};
+  color: ${({ theme }) => theme.colors.onForest};
 `
 
 const Side = styled.div`
@@ -79,29 +80,32 @@ const Side = styled.div`
   min-width: 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.75rem;
   text-align: center;
 `
 
 const Names = styled.span`
-  color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  opacity: 0.85;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
   /* full names can be long: they wrap instead of overflowing the sheet */
   overflow-wrap: anywhere;
 `
 
 const Big = styled.span`
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.lime};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 2.25rem;
+  font-size: 4rem;
   font-weight: 700;
+  letter-spacing: -0.04em;
   line-height: 1;
 `
 
 const Versus = styled.span`
   align-self: center;
-  color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  opacity: 0.6;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;

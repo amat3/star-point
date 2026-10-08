@@ -64,7 +64,7 @@ const one = <T,>(value: T | T[] | null | undefined): T | null =>
 
 /** Every pending or disputed match, grouped by event and round (admin view, with levels). */
 export async function getAdminPendingMatches(supabase: SupabaseClient): Promise<AdminEventGroup[]> {
-  const fields = 'full_name, avatar_url, court_position, rating'
+  const fields = 'full_name, avatar_url, court_position'
 
   const { data } = await supabase
     .from('matches')
@@ -127,8 +127,8 @@ export async function getAdminPendingMatches(supabase: SupabaseClient): Promise<
       title: court?.name ?? row.court_name ?? (row.court_number ? `Pista ${row.court_number}` : 'Pista por asignar'),
       status: row.status,
       games: raw !== '0-0' && !isNaN(a) && !isNaN(b) ? { a, b } : null,
-      teamA: [toCourtPlayer(row.player_a1, row.p_a1, true), toCourtPlayer(row.player_a2, row.p_a2, true)],
-      teamB: [toCourtPlayer(row.player_b1, row.p_b1, true), toCourtPlayer(row.player_b2, row.p_b2, true)],
+      teamA: [toCourtPlayer(row.player_a1, row.p_a1, false), toCourtPlayer(row.player_a2, row.p_a2, false)],
+      teamB: [toCourtPlayer(row.player_b1, row.p_b1, false), toCourtPlayer(row.player_b2, row.p_b2, false)],
       dialogMatch: { id: row.id, score_details: raw, p_a1: row.p_a1, p_a2: row.p_a2, p_b1: row.p_b1, p_b2: row.p_b2 },
     }
 
