@@ -17,4 +17,4 @@ docs
 skills-lock.json
 
 # SQL snapshots and migrations (applied by hand in Supabase)
-supabase
+/supabase
