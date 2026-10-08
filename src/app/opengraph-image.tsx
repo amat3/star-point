@@ -1,16 +1,26 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 import { lightTheme } from '@/theme'
 
 // Image shown when a link to the app is shared (WhatsApp, social networks, link previews).
 // Same brand as the splash: the tilted forest tile with the lime dot, the name and the tagline.
-export const alt = 'starpoint · Tu app de Pádel'
-export const size = { width: 1200, height: 630 }
+// The demo deployment (shared on LinkedIn and in the portfolio) uses its own image with screenshots.
+const isDemo = process.env.NEXT_PUBLIC_DEMO === 'true'
+
+export const alt = isDemo ? 'starpoint · Demo en vivo con datos ficticios' : 'starpoint · Tu app de Pádel'
+export const size = isDemo ? { width: 1280, height: 640 } : { width: 1200, height: 630 }
 export const contentType = 'image/png'
 export const dynamic = 'force-static'
 
 const { colors } = lightTheme
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  if (isDemo) {
+    const image = await readFile(join(process.cwd(), 'public', 'og-demo.png'))
+    return new Response(image, { headers: { 'Content-Type': 'image/png' } })
+  }
+
   return new ImageResponse(
     (
       <div

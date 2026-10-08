@@ -19,11 +19,15 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
 })
 
+const isDemo = process.env.NEXT_PUBLIC_DEMO === "true";
+
 export const metadata: Metadata = {
-  // Absolute base for the share image (og:image) and other metadata URLs
-  metadataBase: new URL("https://star-point.vercel.app"),
-  title: "starpoint",
-  description: "Tu app de Pádel",
+  // Absolute base for the share image (og:image) and other metadata URLs: each deployment points to itself
+  metadataBase: new URL(isDemo ? "https://star-point-demo.vercel.app" : "https://star-point.vercel.app"),
+  title: isDemo ? "starpoint · Demo" : "starpoint",
+  description: isDemo
+    ? "Demo con datos ficticios de la PWA que usa un grupo real de pádel"
+    : "Tu app de Pádel",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
