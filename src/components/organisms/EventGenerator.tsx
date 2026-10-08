@@ -22,6 +22,7 @@ import {
   type RoundProposal,
 } from '@/lib/mixing-algorithm'
 import { toCourtPlayer } from '@/lib/event-draw'
+import { missingLabel } from '@/lib/match-events'
 
 // Rotation always comes first; level and position only break ties, so there is
 // never a reason to switch them off.
@@ -108,7 +109,7 @@ function EventGenerator({ eventId, participants, maxSpots, rounds, exclusions, c
     <>
       {missingPlayers > 0 && (
         <Notice>
-          Faltan {missingPlayers} {missingPlayers === 1 ? 'jugador' : 'jugadores'} para completar el evento. Añade jugadores
+          {missingLabel(missingPlayers)} para completar el evento. Añade jugadores
           o invitados desde <Link href={`/events/${eventId}`}>el evento</Link> antes de generar.
         </Notice>
       )}

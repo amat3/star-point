@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { toTitleCase, formatRelativeDay, totalGames, roundEndsAt } from '@/lib/utils'
+import { toTitleCase, formatRelativeDay, totalGames, roundEndsAt, roundStartsAt } from '@/lib/utils'
 import { applyMatchConfirmation, parseGames, type ConfirmableMatch } from '@/lib/confirm-match'
 
 export async function getPlayerGameStats(userId: string) {
@@ -109,7 +109,7 @@ export async function updateMatchScore(
   // 1. Get Match to verify permission
   const { data: match, error: fetchError } = await supabase
     .from('matches')
-    .select('creator_id, status, player_a1, player_a2, player_b1, player_b2')
+    .select('creator_id, status, player_a1, player_a2, player_b1, player_b2, round_number, event:events(start_time, duration_minutes, rounds)')
     .eq('id', matchId)
     .single()
 
@@ -129,6 +129,14 @@ export async function updateMatchScore(
   // 3. Status check
   if (match.status !== 'pending' && match.status !== 'disputed') {
     throw new Error('Solo se pueden editar partidos pendientes o disputados')
+  }
+
+  // 4. Not before its round starts (an admin may still fix a score at any time)
+  const event = (Array.isArray(match.event) ? match.event[0] : match.event) as
+    { start_time: string; duration_minutes: number | null; rounds: number | null } | null
+  if (event && Date.now() < roundStartsAt(event.start_time, event.duration_minutes, event.rounds, match.round_number).getTime()) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error('Podrás introducir el resultado cuando empiece el partido')
   }
 
   const updateData = {

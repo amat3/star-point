@@ -18,7 +18,7 @@ import { rotateMatchPairs } from '@/app/actions/mixing-generator'
 import { EditEventDialog } from '@/components/events/EditEventDialog'
 import { ChangeCourtDialog, type ChangeCourtTarget } from '@/components/events/ChangeCourtDialog'
 import type { MixingEvent } from '@/types/events'
-import { roundStartsAt } from '@/lib/utils'
+import { formatEventTime, roundStartsAt } from '@/lib/utils'
 import { EditMatchDialog } from '@/components/matches/dialogs/EditMatchDialog'
 import type { Match } from '@/types'
 import type { DrawMatch, DrawRound } from '@/types/draw'
@@ -51,11 +51,14 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, 
   // Follows the clock: the tab switches by itself when the next round starts
   // (before the event starts it stays on the first round).
   const liveRound = useRef<number | null>(null)
+  // Clock for the record button (null until mounted, so server and client render the same)
+  const [now, setNow] = useState<number | null>(null)
   useEffect(() => {
     const numbers = rounds.map(r => r.number)
     if (numbers.length === 0) return
     const tick = () => {
       const now = Date.now()
+      setNow(now)
       const started = numbers.filter(n => roundStartsAt(event.start_time, event.duration_minutes, event.rounds, n).getTime() <= now)
       const current = started.length > 0 ? Math.max(...started) : numbers[0]
       if (current !== liveRound.current) {
@@ -154,6 +157,11 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, 
     if (m.status === 'expired') return <Status>Partido caducado sin resultado</Status>
     if (m.status === 'disputed') return <Status>Resultado impugnado: lo revisará un admin{score && <Score>{score}</Score>}</Status>
     if (!m.games) {
+      // A score can only be entered once the round has started
+      const startsAt = roundStartsAt(event.start_time, event.duration_minutes, event.rounds, activeRound)
+      if (now === null || now < startsAt.getTime()) {
+        return <Status>Podrás introducir el resultado cuando empiece la ronda, a las {formatEventTime(startsAt.toISOString())}</Status>
+      }
       return (
         <CenteredAction>
           <Button $variant="accent" $size="md" onClick={() => setRecording({ match: m, mode: 'record' })}>

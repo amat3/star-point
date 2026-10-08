@@ -8,6 +8,7 @@ import { Check, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Avatar from '../atoms/Avatar'
 import { setAdminView } from '@/app/actions/view-mode'
+import { useHasMounted } from '@/lib/use-has-mounted'
 
 interface AvatarMenuProps {
   name: string
@@ -20,6 +21,7 @@ interface AvatarMenuProps {
 function AvatarMenu({ name, avatarUrl, isAdmin, adminView }: AvatarMenuProps) {
   const router = useRouter()
   const [, startTransition] = useTransition()
+  const mounted = useHasMounted()
 
   const handleViewChange = (checked: boolean) => {
     startTransition(async () => {
@@ -34,6 +36,17 @@ function AvatarMenu({ name, avatarUrl, isAdmin, adminView }: AvatarMenuProps) {
 
   // The menu only holds the admin view switch: everyone else has the Perfil tab
   if (!isAdmin) return <Avatar src={avatarUrl} name={name} online />
+
+  // Radix ids come from useId, which can differ between the server and the client
+  // under the /admin layout: the menu is mounted only on the client, and the server
+  // renders the same button without it (it could not be opened before hydration anyway).
+  if (!mounted) {
+    return (
+      <Trigger type="button" aria-label="Menú de usuario">
+        <Avatar src={avatarUrl} name={name} online />
+      </Trigger>
+    )
+  }
 
   return (
     <DropdownMenu.Root>

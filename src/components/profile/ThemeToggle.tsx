@@ -1,14 +1,10 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
 import { useTheme } from 'next-themes'
 import { Moon, Sun } from 'lucide-react'
 import Switch from '@/components/atoms/Switch'
 import SettingRow from '@/components/molecules/SettingRow'
-
-function useHasMounted() {
-  return useSyncExternalStore(() => () => {}, () => true, () => false)
-}
+import { useHasMounted } from '@/lib/use-has-mounted'
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
