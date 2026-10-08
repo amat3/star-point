@@ -200,12 +200,12 @@ const BarSpace = styled.div`
 
 const Notice = styled.p`
   margin: 0;
-  padding: 0.875rem 1rem;
+  padding: ${({ theme }) => theme.spacing(4, 4)};
   border: 1px dashed ${({ theme }) => theme.colors.coral};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.coralTint};
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 
   a {
     color: ${({ theme }) => theme.colors.forest};
@@ -218,14 +218,14 @@ const CardTitle = styled.h2`
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.0625rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
 `
 
 const Hint = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 
   a {
     color: ${({ theme }) => theme.colors.forest};
@@ -237,9 +237,9 @@ const ExclusionsLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme }) => theme.colors.forest};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
 
   svg {
@@ -251,17 +251,17 @@ const ExclusionsLink = styled(Link)`
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Chip = styled.button`
-  padding: 0.5rem 0.875rem;
+  padding: ${({ theme }) => theme.spacing(2, 4)};
   border: 1px solid ${({ theme }) => theme.colors.fieldBorder};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.field};
   color: ${({ theme }) => theme.colors.ink};
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
   cursor: pointer;
 
@@ -275,7 +275,7 @@ const Chip = styled.button`
 const Summary = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 
   strong {
     color: ${({ theme }) => theme.colors.forest};
@@ -285,7 +285,7 @@ const Summary = styled.p`
 const Warning = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.danger};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 export default EventGenerator

@@ -1,4 +1,42 @@
+// Spacing scale on a 4px grid (0.5 = 2px, only for hairline offsets such as pill padding).
+// Closed on purpose: components pick a step, never a free value.
+const space = {
+  0: '0',
+  0.5: '0.125rem',
+  1: '0.25rem',
+  2: '0.5rem',
+  3: '0.75rem',
+  4: '1rem',
+  5: '1.25rem',
+  6: '1.5rem',
+  8: '2rem',
+  10: '2.5rem',
+  12: '3rem',
+} as const
+
+export type SpaceStep = keyof typeof space
+
+// Type scale (rem; px in the comments, at the default 16px root size)
+const fontSizes = {
+  '2xs': '0.625rem', // 10
+  xs: '0.6875rem', // 11
+  sm: '0.75rem', // 12
+  md: '0.8125rem', // 13
+  base: '0.875rem', // 14
+  lg: '1rem', // 16
+  xl: '1.125rem', // 18
+  '2xl': '1.25rem', // 20
+  '3xl': '1.75rem', // 28
+  '4xl': '2rem', // 32
+  '5xl': '2.25rem', // 36
+  display: '4rem', // 64
+} as const
+
 export const lightTheme = {
+  space,
+  // One or more steps of the scale, as a CSS value: spacing(3, 4) → '0.75rem 1rem'
+  spacing: (...steps: SpaceStep[]) => steps.map(step => space[step]).join(' '),
+  fontSizes,
   colors: {
     background: '#fbfaf6',
     surface: '#edf0e7',    

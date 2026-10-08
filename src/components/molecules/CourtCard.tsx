@@ -68,8 +68,8 @@ const Root = styled('article', {
 })<{ $mine?: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(4)};
   border: 1px solid ${({ theme, $mine }) => ($mine ? theme.colors.forest : theme.colors.line)};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -79,7 +79,7 @@ const Root = styled('article', {
 const Header = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const HeaderAction = styled.div`
@@ -89,16 +89,16 @@ const HeaderAction = styled.div`
 const Title = styled.h3`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
 `
 
 const MineTag = styled.span`
-  padding: 0.125rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ theme }) => theme.colors.lime};
   color: ${({ theme }) => theme.colors.forestDeep};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -108,7 +108,7 @@ const Teams = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: stretch;
-  gap: 0.625rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const TeamColumn = styled.div`
@@ -116,26 +116,26 @@ const TeamColumn = styled.div`
   min-width: 0;
   flex-direction: column;
   justify-content: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Player = styled.div`
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Info = styled.div`
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
 `
 
 const Name = styled.span`
   overflow: hidden;
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -145,12 +145,12 @@ const Meta = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
 `
 
 const Level = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
 `
 
 // Line + "vs" + line: a vertical wall between the two pairs, so it is clear who plays together
@@ -158,7 +158,7 @@ const Divider = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 
   &::before,
   &::after {
@@ -181,14 +181,14 @@ const Versus = styled.span`
   background: ${({ theme }) => theme.colors.forest};
   color: ${({ theme }) => theme.colors.onForest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 `
 
 const Footer = styled.div`
-  padding-top: 0.75rem;
+  padding-top: ${({ theme }) => theme.spacing(3)};
   border-top: 1px solid ${({ theme }) => theme.colors.line};
 `
 

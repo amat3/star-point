@@ -42,7 +42,7 @@ const Root = styled.div`
   flex: 0 0 calc(${({ theme }) => theme.layout.headerHeight} + 0.75rem);
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1.5rem 0;
+  padding: ${({ theme }) => theme.spacing(3, 6, 0)};
   border-bottom: 1px solid ${({ theme }) => theme.colors.hairline};
   background: ${({ theme }) => theme.colors.glass};
 `
@@ -50,16 +50,16 @@ const Root = styled.div`
 const Actions = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 // Reminder that the admin tools are on, so nobody forgets which view they are in.
 const AdminPill = styled.span`
-  padding: 0.25rem 0.625rem;
+  padding: ${({ theme }) => theme.spacing(1, 3)};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.lime};
   color: ${({ theme }) => theme.colors.forestDeep};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;

@@ -24,18 +24,18 @@ const Root = styled.footer`
   align-items: center;
   /* auto on top pushes the footer to the bottom when the page is short */
   margin-top: auto;
-  margin-bottom: 1rem;
-  gap: 0.25rem;
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  gap: ${({ theme }) => theme.spacing(1)};
   width: 100%;
-  padding: 1.5rem 1rem calc(${({ theme }) => theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + 0.5rem);
+  padding: ${({ theme }) => `${theme.spacing(6, 4)} calc(${theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + ${theme.space[2]})`};
 `
 
 const Author = styled.a`
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   text-decoration: none;
   transition: color 150ms ease;
 
@@ -52,5 +52,5 @@ const Author = styled.a`
 const Copyright = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `

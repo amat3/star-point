@@ -212,5 +212,5 @@ export function SignOutButton() {
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `

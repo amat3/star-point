@@ -63,9 +63,9 @@ const Root = styled.nav`
   height: ${({ theme }) => theme.layout.tabBarHeight};
   width: 100%;
   max-width: ${({ theme }) => theme.layout.maxWidth};
-  padding-top: 8px;
+  padding-top: ${({ theme }) => theme.spacing(2)};
   padding-bottom: env(safe-area-inset-bottom);
-  padding-inline: 13px;
+  padding-inline: ${({ theme }) => theme.spacing(3)};
   border-top: 1px solid ${({ theme }) => theme.colors.hairline};
   background: ${({ theme }) => theme.colors.glass};
   backdrop-filter: blur(12px);
@@ -78,9 +78,9 @@ const tabStyles = (theme: Theme) => css`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: ${theme.spacing(1)};
   color: ${theme.colors.tabInactive};
-  font-size: 10px;
+  font-size: ${theme.fontSizes['2xs']};
   font-weight: 600;
   text-decoration: none;
 

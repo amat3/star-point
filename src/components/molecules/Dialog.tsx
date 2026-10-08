@@ -97,9 +97,9 @@ const Content = styled(DialogPrimitive.Content)`
   max-width: ${({ theme }) => theme.layout.maxWidth};
   max-height: 90dvh;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
   overflow-y: auto;
-  padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+  padding: ${({ theme }) => `${theme.spacing(6, 6)} calc(${theme.space[6]} + env(safe-area-inset-bottom))`};
   border-radius: ${({ theme }) => theme.radii.lg} ${({ theme }) => theme.radii.lg} 0 0;
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.ink};
@@ -127,7 +127,7 @@ const Header = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Title = styled.h2`
@@ -136,7 +136,7 @@ const Title = styled.h2`
   border: 0;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -145,7 +145,7 @@ const Title = styled.h2`
 const Description = styled.p`
   margin: -0.5rem 0 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 const CloseButton = styled.button`
@@ -169,7 +169,7 @@ const CloseButton = styled.button`
 
 const Footer = styled.div`
   display: flex;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 
   > * {
     flex: 1;

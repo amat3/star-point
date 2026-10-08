@@ -162,34 +162,34 @@ const Root = styled.main`
   flex: 1;
   flex-direction: column;
   justify-content: center;
-  gap: 2.5rem;
-  padding: 2rem 1.5rem;
+  gap: ${({ theme }) => theme.spacing(10)};
+  padding: ${({ theme }) => theme.spacing(8, 6)};
 `
 
 const Brand = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Tagline = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Heading = styled.h1`
-  margin: 0 0 0.25rem;
+  margin: ${({ theme }) => theme.spacing(0, 0, 1)};
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.75rem;
+  font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.15;
@@ -198,7 +198,7 @@ const Heading = styled.h1`
 const Field = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const TextButton = styled.button`
@@ -208,7 +208,7 @@ const TextButton = styled.button`
   background: transparent;
   color: ${({ theme }) => theme.colors.forest};
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
   cursor: pointer;
 
@@ -222,5 +222,5 @@ const Message = styled('p', {
 })<{ $error?: boolean }>`
   margin: 0;
   color: ${({ theme, $error }) => ($error ? theme.colors.alert : theme.colors.forest)};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 `

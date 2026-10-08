@@ -45,8 +45,8 @@ const Root = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.layout.maxWidth};
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1.5rem 1.5rem 0.75rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(6, 6, 3)};
   background: linear-gradient(to bottom, transparent, ${({ theme }) => theme.colors.background} 1.25rem);
   transform: translateX(-50%);
 `
@@ -54,10 +54,10 @@ const Root = styled.div`
 const Shield = styled.p`
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   line-height: 1.35;
 
   svg {
@@ -71,7 +71,7 @@ const Shield = styled.p`
 const Note = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   text-align: center;
 `
 

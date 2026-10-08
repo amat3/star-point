@@ -131,22 +131,22 @@ const Celebration = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2, 0)};
   text-align: center;
 
   svg {
     width: 3.5rem;
     height: 3.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: ${({ theme }) => theme.spacing(2)};
     color: ${({ theme }) => theme.colors.forest};
   }
   p {
     margin: 0;
     color: ${({ theme }) => theme.colors.muted};
-    font-size: 0.9375rem;
+    font-size: ${({ theme }) => theme.fontSizes.base};
   }
   strong {
-    font-size: 1.0625rem;
+    font-size: ${({ theme }) => theme.fontSizes.xl};
   }
 `

@@ -31,28 +31,28 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.5rem 1rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(6, 4)};
   border: 1px dashed ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
   text-align: center;
 
   a {
-    margin-top: 0.5rem;
+    margin-top: ${({ theme }) => theme.spacing(2)};
   }
 `
 
 const Text = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
 `
 
 const Hint = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 export default EmptyEvents

@@ -71,8 +71,8 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
 const Root = styled(Link)`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(4)};
   border: 1px solid ${({ theme }) => theme.colors.hairline};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -98,22 +98,22 @@ const DateBlock = styled.div`
   flex-direction: column;
   align-items: center;
   width: 3.5rem;
-  padding-right: .75rem;
+  padding-right: ${({ theme }) => theme.spacing(3)};
   border-right: 1px solid ${({ theme }) => theme.colors.hairline};
 `
 
 const Day = styled.span`
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 2rem;
+  font-size: ${({ theme }) => theme.fontSizes['4xl']};
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
 `
 
 const Month = styled.span`
-  margin-top: 0.25rem;
+  margin-top: ${({ theme }) => theme.spacing(1)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -124,7 +124,7 @@ const Info = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
 `
 
 // Availability on the left, the "Apuntado" pill on the right: same spot on every card
@@ -132,17 +132,17 @@ const StatusRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 // Marks the events the viewer is signed up for
 const JoinedPill = styled.span`
   flex-shrink: 0;
-  padding: 0.125rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.lime};
   color: ${({ theme }) => theme.colors.forestDeep};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -151,7 +151,7 @@ const JoinedPill = styled.span`
 const Title = styled.h3`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
   letter-spacing: -0.01em;
   color: ${({ theme }) => theme.colors.ink};
@@ -160,15 +160,15 @@ const Title = styled.h3`
 const Meta = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
+  gap: ${({ theme }) => theme.spacing(2, 3)};
+  font-size: ${({ theme }) => theme.fontSizes.md};
   color: ${({ theme }) => theme.colors.subtle};
 `
 
 const MetaItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
 
   svg {
     width: 0.875rem;
@@ -182,9 +182,9 @@ const Availability = styled('span', {
   display: inline-flex;
   align-items: center;
   /* wider than the dot's ring so the pulse never touches the text */
-  gap: 0.625rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme, $full, $created, $pending }) => ($full ? theme.colors.coral : $pending ? theme.colors.amber : $created ? theme.colors.subtle : theme.colors.forest)};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
 `
 

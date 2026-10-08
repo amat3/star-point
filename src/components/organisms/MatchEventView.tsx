@@ -227,19 +227,19 @@ const Body = styled(Content, {
 const Manage = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 // The organizer's comment: what the match is looking for
 const Note = styled.p`
   margin: 0;
-  padding: 0.875rem 1rem;
+  padding: ${({ theme }) => theme.spacing(4, 4)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-left: 3px solid ${({ theme }) => theme.colors.forest};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
   line-height: 1.4;
   white-space: pre-line;
@@ -248,7 +248,7 @@ const Note = styled.p`
 const SecondaryActions = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 export default MatchEventView

@@ -15,7 +15,7 @@ const Select = styled.select`
   background-position: right 0.75rem center;
   color: ${({ theme }) => theme.colors.ink};
   font-family: inherit;
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   appearance: none;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 

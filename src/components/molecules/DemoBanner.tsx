@@ -16,10 +16,10 @@ const Root = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.layout.maxWidth};
   margin: 0 auto;
-  padding: 0.375rem 1rem;
+  padding: ${({ theme }) => theme.spacing(2, 4)};
   background: ${({ theme }) => theme.colors.lime};
   color: ${({ theme }) => theme.colors.forestDeep};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   text-align: center;
 
   strong {

@@ -304,31 +304,31 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, 
 const Intro = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1.25rem 1.5rem 0;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(5, 6, 0)};
 `
 
 const Row = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Eyebrow = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 `
 
 const Chip = styled.span`
-  padding: 0.25rem 0.75rem;
+  padding: ${({ theme }) => theme.spacing(1, 3)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.pill};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   letter-spacing: 0.04em;
 `
@@ -337,7 +337,7 @@ const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 2rem;
+  font-size: ${({ theme }) => theme.fontSizes['4xl']};
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -346,7 +346,7 @@ const Title = styled.h1`
 const Summary = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 const Body = Content
@@ -354,15 +354,15 @@ const Body = Content
 const AdminPanel = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding-top: 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding-top: ${({ theme }) => theme.spacing(4)};
   border-top: 1px solid ${({ theme }) => theme.colors.line};
 `
 
 const AdminCaption = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -372,16 +372,16 @@ const Status = styled.p`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 `
 
 const SecondaryActions = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const CenteredAction = styled.div`
@@ -392,13 +392,13 @@ const CenteredAction = styled.div`
 const Action = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Score = styled.strong`
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.125rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
 `
 

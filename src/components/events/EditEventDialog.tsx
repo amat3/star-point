@@ -151,17 +151,17 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
 const Note = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 `
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Row = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `

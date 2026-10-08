@@ -66,8 +66,8 @@ const Root = styled('article', {
 })<{ $outcome: MatchOutcome }>`
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding: 1rem 1rem 1rem 1.125rem;
+  gap: ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(4, 4, 4, 4)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-left: 5px solid ${({ theme, $outcome }) => outcomeColors(theme, $outcome).stripe};
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -79,25 +79,25 @@ const Top = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const When = styled.div`
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const DateLabel = styled.span`
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 700;
 `
 
 const Context = styled.span`
   overflow: hidden;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   text-overflow: ellipsis;
   white-space: nowrap;
 `
@@ -106,7 +106,7 @@ const Teams = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Names = styled('div', {
@@ -115,9 +115,9 @@ const Names = styled('div', {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
   text-align: ${({ $end }) => ($end ? 'right' : 'left')};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
 
   span {
@@ -132,7 +132,7 @@ const Score = styled('div', {
 })<{ $outcome: MatchOutcome }>`
   color: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).score};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.75rem;
+  font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -140,7 +140,7 @@ const Score = styled('div', {
 `
 
 const Dash = styled.span`
-  margin: 0 0.25rem;
+  margin: ${({ theme }) => theme.spacing(0, 1)};
   color: ${({ theme }) => theme.colors.muted};
   font-weight: 500;
 `

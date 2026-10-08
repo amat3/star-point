@@ -18,11 +18,11 @@ function HandTag({ hand }: { hand: Hand | null | undefined }) {
 
 const Tag = styled.span`
   flex-shrink: 0;
-  padding: 0.125rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.forest};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
 `
 

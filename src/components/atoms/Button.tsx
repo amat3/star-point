@@ -18,12 +18,12 @@ const variants = (t: Theme): Record<ButtonVariant, string> => ({
   link: `background: transparent; color: ${t.colors.forest}; border-color: transparent; text-decoration: underline; text-underline-offset: 4px;`,
 })
 
-const sizes: Record<ButtonSize, string> = {
-  sm: 'height: 2.25rem; padding: 0 0.75rem;',
-  md: 'height: 2.75rem; padding: 0 1.5rem;',
-  lg: 'height: 3.25rem; padding: 0 1.75rem;',
+const sizes = (t: Theme): Record<ButtonSize, string> => ({
+  sm: `height: 2.25rem; padding: ${t.spacing(0, 3)};`,
+  md: `height: 2.75rem; padding: ${t.spacing(0, 6)};`,
+  lg: `height: 3.25rem; padding: ${t.spacing(0, 8)};`,
   icon: 'height: 2.5rem; width: 2.5rem; padding: 0;',
-}
+})
 
 const Button = styled('button', {
   shouldForwardProp: (prop) => prop !== '$variant' && prop !== '$size',
@@ -32,17 +32,17 @@ const Button = styled('button', {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   white-space: nowrap;
   border: 1px solid transparent;
   border-radius: ${({ theme }) => theme.radii.md};
   font-family: inherit;
-  font-size: 12px;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
   cursor: pointer;
   transition: opacity 150ms ease, transform 100ms ease;
   ${({ theme, $variant = 'primary' }) => variants(theme)[$variant]}
-  ${({ $size = 'md' }) => sizes[$size]}
+  ${({ theme, $size = 'md' }) => sizes(theme)[$size]}
 
   svg {
     width: 15px;

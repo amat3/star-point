@@ -93,11 +93,11 @@ export function EditMatchDialog({ match, open, onOpenChange, mode = 'record' }: 
 const Scores = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 0.5rem 0;
+  gap: ${({ theme }) => theme.spacing(5)};
+  padding: ${({ theme }) => theme.spacing(2, 0)};
 
   > * + * {
-    padding-top: 1.25rem;
+    padding-top: ${({ theme }) => theme.spacing(5)};
     border-top: 1px solid ${({ theme }) => theme.colors.line};
   }
 `
@@ -105,6 +105,6 @@ const Scores = styled.div`
 const Hint = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   text-align: center;
 `

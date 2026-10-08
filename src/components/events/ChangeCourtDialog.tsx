@@ -104,15 +104,15 @@ function ChangeCourtForm({ eventId, courts, target, onDone }: {
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Check = styled.label`
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: ${({ theme }) => theme.spacing(3)};
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
 
   input {
@@ -125,5 +125,5 @@ const Check = styled.label`
 const Note = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 `

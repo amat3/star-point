@@ -55,8 +55,8 @@ const Root = styled.div`
   width: calc(100% - 1.5rem);
   max-width: calc(${({ theme }) => theme.layout.maxWidth} - 1.5rem);
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.875rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(4)};
   border: 1px solid ${({ theme }) => theme.colors.fieldBorder};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.background};
@@ -66,7 +66,7 @@ const Root = styled.div`
 
 const Emoji = styled.span`
   flex-shrink: 0;
-  font-size: 1.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   line-height: 1;
 `
 
@@ -77,14 +77,14 @@ const Text = styled.div`
 
 const Title = styled.p`
   margin: 0;
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 700;
 `
 
 const Description = styled.p`
-  margin: 0.125rem 0 0;
+  margin: ${({ theme }) => theme.spacing(0.5, 0, 0)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   line-height: 1.35;
 `
 

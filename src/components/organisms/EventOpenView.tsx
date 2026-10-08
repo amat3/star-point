@@ -208,15 +208,15 @@ const Body = styled(Content)`
 const AdminPanel = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding-top: 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding-top: ${({ theme }) => theme.spacing(4)};
   border-top: 1px solid ${({ theme }) => theme.colors.line};
 `
 
 const AdminCaption = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -226,7 +226,7 @@ const AdminActions = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: space-evenly;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 // Admin actions: bigger, filled buttons so they stand out from the player-facing UI.

@@ -212,13 +212,13 @@ function EventGroupView({ group, busyId, onEdit, onDelete, onRotate, onConfirm, 
 const Group = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const GroupHeader = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const GroupTitle = styled.h2`
@@ -226,43 +226,43 @@ const GroupTitle = styled.h2`
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.125rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 600;
 `
 
 const GroupSubtitle = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const Footer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Status = styled.p`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
 
   strong {
-    margin-left: 0.25rem;
+    margin-left: ${({ theme }) => theme.spacing(1)};
     color: ${({ theme }) => theme.colors.forest};
     font-family: ${({ theme }) => theme.fonts.display};
-    font-size: 1rem;
+    font-size: ${({ theme }) => theme.fontSizes.lg};
   }
 `
 
 const Actions = styled.div`
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 export default AdminMatchesList

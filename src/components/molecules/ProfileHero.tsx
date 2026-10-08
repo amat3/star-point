@@ -22,15 +22,15 @@ const Root = styled.section`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0 0.25rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2, 0, 1)};
 `
 
 const Name = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.75rem;
+  font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -40,7 +40,7 @@ const Name = styled.h1`
 const Caption = styled.p`
   margin: -0.25rem 0 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 export default ProfileHero

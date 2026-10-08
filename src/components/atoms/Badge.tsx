@@ -20,13 +20,13 @@ const Badge = styled('span', {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
   overflow: hidden;
   white-space: nowrap;
-  padding: 0.125rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border: 1px solid transparent;
   border-radius: ${({ theme }) => theme.radii.pill};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
   ${({ theme, $variant = 'default' }) => variants(theme)[$variant]}
 

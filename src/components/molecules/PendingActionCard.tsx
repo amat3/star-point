@@ -58,15 +58,15 @@ const Top = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Eyebrow = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme }) => theme.colors.lime};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -74,28 +74,28 @@ const Eyebrow = styled.span`
 
 const When = styled.span`
   opacity: 0.6;
-  font-size: .625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
 `
 
 const Title = styled.h3`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.3rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.15;
 `
 
 const Description = styled.p`
-  margin: 0.375rem 0 0;
+  margin: ${({ theme }) => theme.spacing(2, 0, 0)};
   opacity: 0.7;
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const Context = styled.p`
-  margin: 0 0 0.5rem;
+  margin: ${({ theme }) => theme.spacing(0, 0, 2)};
   opacity: 0.6;
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
 `
 
@@ -103,8 +103,8 @@ const Summary = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
-  gap: 0.75rem;
-  padding: 0.875rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(4)};
   border: 1px solid ${({ theme }) => theme.colors.heroTint};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.heroTint};
@@ -115,7 +115,7 @@ const Side = styled.div`
   min-width: 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
   text-align: center;
 `
 
@@ -124,7 +124,7 @@ const Names = styled.div`
   max-width: 100%;
   flex-direction: column;
   opacity: 0.6;
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   line-height: 1.3;
 
   span {
@@ -136,7 +136,7 @@ const Names = styled.div`
 
 const Big = styled.span`
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.75rem;
+  font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -144,9 +144,9 @@ const Big = styled.span`
 
 const Versus = styled.span`
   align-self: end;
-  padding-bottom: 0.25rem;
+  padding-bottom: ${({ theme }) => theme.spacing(1)};
   color: ${({ theme }) => theme.colors.lime};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;

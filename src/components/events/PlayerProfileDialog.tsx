@@ -157,14 +157,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const Center = styled.div`
   display: flex;
   justify-content: center;
-  padding: 2rem 0;
+  padding: ${({ theme }) => theme.spacing(8, 0)};
 `
 
 const Message = styled.p`
   margin: 0;
-  padding: 2rem 0;
+  padding: ${({ theme }) => theme.spacing(8, 0)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   text-align: center;
 `
 
@@ -172,25 +172,25 @@ const Identity = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const NameRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const PlayerName = styled.span`
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   font-weight: 700;
 `
 
 const EditButton = styled.button`
   display: grid;
   place-items: center;
-  padding: 0.25rem;
+  padding: ${({ theme }) => theme.spacing(1)};
   border: 0;
   background: transparent;
   color: ${({ theme }) => theme.colors.muted};
@@ -207,7 +207,7 @@ const NameEditor = styled.div`
   width: 100%;
   max-width: 18rem;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 
   button {
     flex-shrink: 0;
@@ -217,8 +217,8 @@ const NameEditor = styled.div`
 const Info = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 0;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(3, 0)};
   border-top: 1px solid ${({ theme }) => theme.colors.line};
   border-bottom: 1px solid ${({ theme }) => theme.colors.line};
 `
@@ -227,8 +227,8 @@ const Row = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.875rem;
+  gap: ${({ theme }) => theme.spacing(4)};
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 const Label = styled.span`

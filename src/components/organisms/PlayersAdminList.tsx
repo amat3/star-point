@@ -85,12 +85,12 @@ const Toolbar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Count = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
 `
 
@@ -104,8 +104,8 @@ const Row = styled.button`
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(3, 4)};
   border: 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.line};
   background: transparent;
@@ -123,7 +123,7 @@ const Rank = styled.span`
   width: 1.25rem;
   flex-shrink: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
 `
 
@@ -132,12 +132,12 @@ const Info = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
 `
 
 const Name = styled.span`
   overflow: hidden;
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -146,16 +146,16 @@ const Name = styled.span`
 const Meta = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
 `
 
 const Rating = styled.span`
   flex-shrink: 0;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
 `
 

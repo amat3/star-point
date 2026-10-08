@@ -29,7 +29,7 @@ function LastMatchRow({ title, meta, score, outcome }: LastMatchRowProps) {
 const Root = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 // Same code as the history cards: green win, red loss, neutral draw.
@@ -63,20 +63,20 @@ const Info = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const Title = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 600;
 `
 
 const Meta = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
 `
 
 const Score = styled('span', {
@@ -85,7 +85,7 @@ const Score = styled('span', {
   flex-shrink: 0;
   color: ${({ theme, $outcome }) => outcomeColors(theme, $outcome).score};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
 `
 

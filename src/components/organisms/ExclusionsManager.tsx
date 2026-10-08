@@ -148,28 +148,28 @@ const Title = styled.h2`
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.0625rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
 `
 
 const Row = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const List = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Item = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem 3rem 1rem 1rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(4, 12, 4, 4)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -179,8 +179,8 @@ const Names = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.fontSizes.lg};
 
   span {
     color: ${({ theme }) => theme.colors.muted};
@@ -191,12 +191,12 @@ const Meta = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Note = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const Remove = styled.button`

@@ -26,7 +26,7 @@ function SettingRow({ icon, title, description, control }: SettingRowProps) {
 const Root = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const IconBox = styled.div`
@@ -50,17 +50,17 @@ const Text = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const Title = styled.span`
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 600;
 `
 
 const Description = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   line-height: 1.35;
 `
 

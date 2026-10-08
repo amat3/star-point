@@ -58,7 +58,7 @@ function StatsRow({ matchesPlayed, matchesWon, winRatio, gamesWon, gamesLost }: 
 const Root = styled.section`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 type Tone = 'brand' | 'win' | 'loss'
@@ -72,8 +72,8 @@ const Tile = styled('div', {
 })<{ $tone: Tone }>`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(4)};
   border: 1.5px solid ${({ theme, $tone }) => toneColor(theme, $tone)};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -82,9 +82,9 @@ const Tile = styled('div', {
 const Caption = styled.span`
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 600;
 
   svg {
@@ -98,22 +98,22 @@ const Value = styled.span`
   align-self: center;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 2.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['5xl']};
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
 `
 
 const Unit = styled.span`
-  margin-left: 0.125rem;
-  font-size: 1.25rem;
+  margin-left: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   letter-spacing: 0;
 `
 
 const Detail = styled.span`
   align-self: center;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
 `
 
 export default StatsRow

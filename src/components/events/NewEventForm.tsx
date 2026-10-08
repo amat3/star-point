@@ -139,11 +139,11 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Row = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `

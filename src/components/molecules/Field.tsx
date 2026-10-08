@@ -26,7 +26,7 @@ const Root = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Message = styled('p', {
@@ -34,7 +34,7 @@ const Message = styled('p', {
 })<{ $error?: boolean }>`
   margin: 0;
   color: ${({ theme, $error }) => ($error ? theme.colors.danger : theme.colors.muted)};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 export default Field

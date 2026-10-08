@@ -28,21 +28,21 @@ function RoundTabs({ rounds, active, onChange }: RoundTabsProps) {
 
 const Root = styled.div`
   display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
 `
 
 const Tab = styled.button`
   flex: 1;
-  padding: 0.625rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(3, 2)};
   border: 0;
   border-radius: ${({ theme }) => theme.radii.md};
   background: transparent;
   color: ${({ theme }) => theme.colors.muted};
   font-family: inherit;
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;

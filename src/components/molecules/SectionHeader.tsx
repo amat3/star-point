@@ -27,7 +27,7 @@ const Root = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Title = styled.h2`
@@ -35,7 +35,7 @@ const Title = styled.h2`
   padding: 0;
   color: ${({ theme }) => theme.colors.ink};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.125rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 600;
   letter-spacing: -0.01em;
 `
@@ -43,9 +43,9 @@ const Title = styled.h2`
 const Action = styled(Link)`
   display: inline-flex;
   align-items: center;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
   color: ${({ theme }) => theme.colors.ink};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
   text-decoration: none;
 

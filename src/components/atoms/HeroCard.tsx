@@ -8,9 +8,9 @@ const HeroCard = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
   overflow: hidden;
-  padding: 1.25rem;
+  padding: ${({ theme }) => theme.spacing(5)};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
   background: ${({ theme }) => theme.colors.forest};

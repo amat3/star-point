@@ -104,13 +104,13 @@ const Option = styled.button`
   align-items: center;
   justify-content: space-between;
   min-height: 2.75rem;
-  padding: 0 1rem;
+  padding: ${({ theme }) => theme.spacing(0, 4)};
   border: 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.line};
   background: transparent;
   color: inherit;
   font-family: inherit;
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   text-align: left;
   cursor: pointer;
 
@@ -128,8 +128,8 @@ const Option = styled.button`
 
 const Empty = styled.p`
   margin: 0;
-  padding: 1rem;
+  padding: ${({ theme }) => theme.spacing(4)};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   text-align: center;
 `

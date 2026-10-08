@@ -35,14 +35,14 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Caption = styled.span`
   max-width: 100%;
   overflow: hidden;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
   letter-spacing: 0.04em;
   text-overflow: ellipsis;
@@ -53,7 +53,7 @@ const Caption = styled.span`
 const Controls = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Step = styled.button`
@@ -85,7 +85,7 @@ const Value = styled.span`
   min-width: 3rem;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 2.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['5xl']};
   font-weight: 700;
   line-height: 1;
   text-align: center;

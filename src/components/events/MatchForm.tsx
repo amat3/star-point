@@ -140,19 +140,19 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing(4)};
 `
 
 const Row = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const Counter = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   text-align: right;
 `
 
@@ -160,17 +160,17 @@ const Suggestions = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Chip = styled.button`
-  padding: 0.25rem 0.625rem;
+  padding: ${({ theme }) => theme.spacing(1, 3)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.ink};
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
   cursor: pointer;
 

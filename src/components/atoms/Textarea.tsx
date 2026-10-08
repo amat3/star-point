@@ -6,13 +6,13 @@ const Textarea = styled.textarea`
   width: 100%;
   min-width: 0;
   min-height: 5rem;
-  padding: 0.625rem 0.75rem;
+  padding: ${({ theme }) => theme.spacing(3, 3)};
   border: 1px solid ${({ theme }) => theme.colors.fieldBorder};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.field};
   color: ${({ theme }) => theme.colors.ink};
   font-family: inherit;
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   line-height: 1.4;
   resize: vertical;
   transition: border-color 150ms ease, box-shadow 150ms ease;

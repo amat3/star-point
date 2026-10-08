@@ -69,8 +69,8 @@ const Top = styled.div`
   /* on very narrow screens the status drops to its own line instead of overlapping the title */
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding-bottom: 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding-bottom: ${({ theme }) => theme.spacing(4)};
   border-bottom: 1px solid rgba(255, 255, 255, .14);
 `
 
@@ -102,7 +102,7 @@ const Info = styled.div`
 // so it works as a separator between the header and the stats.
 const Status = styled(Badge)`
   flex: 1 0 6rem;
-  padding: 0.375rem 0.625rem;
+  padding: ${({ theme }) => theme.spacing(1, 3)};
   line-height: 1.2;
   text-align: center;
   white-space: normal;
@@ -111,7 +111,7 @@ const Status = styled(Badge)`
 const Title = styled.h3`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.25rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xl']};
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -122,16 +122,16 @@ const TitleLine = styled.span`
 `
 
 const Subtitle = styled.p`
-  margin: 0.25rem 0 0;
+  margin: ${({ theme }) => theme.spacing(1, 0, 0)};
   color: ${({ theme }) => theme.colors.lime};
   opacity: 0.75;
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 const Stats = styled.div`
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem 1rem;
+  gap: ${({ theme }) => theme.spacing(2, 4)};
   /* lets Stat react to the card's own width instead of the screen's */
   container: stats / inline-size;
 `
@@ -139,8 +139,8 @@ const Stats = styled.div`
 const Stat = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8125rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.fontSizes.md};
 
   svg {
     width: 1rem;
@@ -151,7 +151,7 @@ const Stat = styled.span`
   /* Narrow card (small phones): the icon goes above its text, three columns */
   @container stats (max-width: 17rem) {
     flex-direction: column;
-    gap: 0.25rem;
+    gap: ${({ theme }) => theme.spacing(1)};
     text-align: center;
   }
 `

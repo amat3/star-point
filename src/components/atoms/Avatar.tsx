@@ -74,7 +74,7 @@ const Fallback = styled(AvatarPrimitive.Fallback)`
   background: #efe8dc;
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 11px;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
   line-height: 1;
 `

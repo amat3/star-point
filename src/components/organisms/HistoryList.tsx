@@ -67,7 +67,7 @@ function HistoryList({ initialMatches, initialHasMore }: HistoryListProps) {
 const List = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 export default HistoryList

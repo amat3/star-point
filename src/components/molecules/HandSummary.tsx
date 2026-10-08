@@ -22,15 +22,15 @@ function HandSummary({ counts }: { counts: HandCounts }) {
 const Root = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Chip = styled.span`
-  padding: 0.125rem 0.5rem;
+  padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.pill};
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
 
   strong {
     color: ${({ theme }) => theme.colors.forest};

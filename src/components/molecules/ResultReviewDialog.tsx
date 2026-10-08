@@ -68,8 +68,8 @@ const Summary = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(6, 4)};
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.hero};
   color: ${({ theme }) => theme.colors.onForest};
@@ -80,13 +80,13 @@ const Side = styled.div`
   min-width: 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
   text-align: center;
 `
 
 const Names = styled.span`
   opacity: 0.85;
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
   font-weight: 600;
   line-height: 1.3;
   /* full names can be long: they wrap instead of overflowing the sheet */
@@ -96,7 +96,7 @@ const Names = styled.span`
 const Big = styled.span`
   color: ${({ theme }) => theme.colors.lime};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 4rem;
+  font-size: ${({ theme }) => theme.fontSizes.display};
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
@@ -105,7 +105,7 @@ const Big = styled.span`
 const Versus = styled.span`
   align-self: center;
   opacity: 0.6;
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -114,20 +114,20 @@ const Versus = styled.span`
 const Actions = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 `
 
 const HelpToggle = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   padding: 0;
   border: 0;
   background: transparent;
   color: ${({ theme }) => theme.colors.muted};
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
   cursor: pointer;
 
@@ -140,7 +140,7 @@ const HelpToggle = styled.button`
 const Help = styled.p`
   margin: -0.25rem 0 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   line-height: 1.45;
   text-align: center;
 `
@@ -148,10 +148,10 @@ const Help = styled.p`
 const Tagline = styled.p`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
   margin: 0;
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.6875rem;
+  font-size: ${({ theme }) => theme.fontSizes.xs};
 
   &::before,
   &::after {

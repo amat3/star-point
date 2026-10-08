@@ -35,8 +35,8 @@ function GroupProgress({ confirmed, total, reserves = 0 }: GroupProgressProps) {
 const Root = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(4)};
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -49,13 +49,13 @@ const Row = styled.div`
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(3)};
 
   /* Narrow card (small phones): stack the two texts instead of squeezing or wrapping them */
   @container group (max-width: 19rem) {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.125rem;
+    gap: ${({ theme }) => theme.spacing(0.5)};
   }
 `
 
@@ -64,13 +64,13 @@ const Title = styled.h2`
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
 `
 
 const Free = styled.span`
   color: ${({ theme }) => theme.colors.forest};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 700;
 `
 
@@ -91,7 +91,7 @@ const Fill = styled.div`
 
 const Count = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 
   strong {
     color: ${({ theme }) => theme.colors.forest};
@@ -100,7 +100,7 @@ const Count = styled.span`
 
 const Reserves = styled.span`
   color: ${({ theme }) => theme.colors.coral};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
 `
 

@@ -9,10 +9,10 @@ const Content = styled('main', {
 })<{ $clearTabBar?: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem
+  gap: ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(5, 6)}
     ${({ theme, $clearTabBar = true }) =>
-      $clearTabBar ? `calc(${theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + 1rem)` : '0'};
+      $clearTabBar ? `calc(${theme.layout.tabBarHeight} + env(safe-area-inset-bottom) + ${theme.space[4]})` : '0'};
 `
 
 export default Content

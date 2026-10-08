@@ -68,7 +68,7 @@ const Trigger = styled.button`
 const Content = styled(DropdownMenu.Content)`
   z-index: 50;
   min-width: 13rem;
-  padding: 0.375rem;
+  padding: ${({ theme }) => theme.spacing(2)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.background};
@@ -79,12 +79,12 @@ const itemStyles = ({ theme }: { theme: import('@/theme').Theme }) => `
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: ${theme.spacing(3)};
   min-height: 2.75rem;
-  padding: 0 0.75rem;
+  padding: ${theme.spacing(0, 3)};
   border-radius: ${theme.radii.sm};
   color: ${theme.colors.ink};
-  font-size: 0.875rem;
+  font-size: ${theme.fontSizes.base};
   font-weight: 600;
   text-decoration: none;
   outline: none;

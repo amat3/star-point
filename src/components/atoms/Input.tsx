@@ -6,13 +6,13 @@ const Input = styled.input`
   width: 100%;
   min-width: 0;
   height: 2.75rem;
-  padding: 0 0.75rem;
+  padding: ${({ theme }) => theme.spacing(0, 3)};
   border: 1px solid ${({ theme }) => theme.colors.fieldBorder};
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.field};
   color: ${({ theme }) => theme.colors.ink};
   font-family: inherit;
-  font-size: 1rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   transition: border-color 150ms ease, box-shadow 150ms ease;
 
   /* iOS Safari gives date/time fields their own intrinsic width and look: make them behave like text fields */

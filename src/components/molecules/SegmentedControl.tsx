@@ -33,8 +33,8 @@ const Root = styled('div', {
   shouldForwardProp: (prop) => prop !== '$fill',
 })<{ $fill: boolean }>`
   display: ${({ $fill }) => ($fill ? 'flex' : 'inline-flex')};
-  gap: 0.25rem;
-  padding: 0.25rem;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)};
   border: 1px solid ${({ theme }) => theme.colors.line};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.surface};
@@ -43,13 +43,13 @@ const Root = styled('div', {
 const Option = styled.button`
   flex: 1 1 auto;
   text-align: center;
-  padding: 0.375rem 0.875rem;
+  padding: ${({ theme }) => theme.spacing(2, 4)};
   border: 0;
   border-radius: ${({ theme }) => theme.radii.pill};
   background: transparent;
   color: ${({ theme }) => theme.colors.muted};
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;

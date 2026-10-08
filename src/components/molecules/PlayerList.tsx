@@ -121,13 +121,13 @@ const Header = styled.div`
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
 `
 
 // The waiting list is its own list, tinted like the "no confirmed yet" state it represents
 const Waitlist = styled.div`
-  margin-top: 0.75rem;
+  margin-top: ${({ theme }) => theme.spacing(3)};
   overflow: hidden;
   border: 1px dashed ${({ theme }) => theme.colors.coral};
   border-radius: ${({ theme }) => theme.radii.lg};
@@ -148,8 +148,8 @@ const Waitlist = styled.div`
 const WaitHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(4, 4)};
   border-bottom: 1px solid transparent;
 `
 
@@ -170,24 +170,24 @@ const WaitText = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const WaitTitle = styled.span`
   color: ${({ theme }) => theme.colors.coral};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 700;
 `
 
 const WaitDetail = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const WaitCount = styled.span`
   flex-shrink: 0;
   color: ${({ theme }) => theme.colors.coral};
-  font-size: 0.8125rem;
+  font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 700;
 `
 
@@ -195,7 +195,7 @@ const Tags = styled.div`
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
 `
 
 const Title = styled.h2`
@@ -203,7 +203,7 @@ const Title = styled.h2`
   padding: 0;
   border: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.125rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 600;
 `
 
@@ -229,8 +229,8 @@ const Main = styled.button`
   flex: 1;
   min-width: 0;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(3, 4)};
   border: 0;
   background: transparent;
   color: inherit;
@@ -248,15 +248,15 @@ const Info = styled.div`
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `
 
 const Name = styled.span`
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: ${({ theme }) => theme.spacing(2)};
   overflow: hidden;
-  font-size: 0.9375rem;
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -264,26 +264,26 @@ const Name = styled.span`
 
 const Guest = styled.span`
   flex-shrink: 0;
-  padding: 0 0.25rem;
+  padding: ${({ theme }) => theme.spacing(0, 1)};
   border-radius: 4px;
   background: ${({ theme }) => theme.colors.coralTint};
   color: ${({ theme }) => theme.colors.coral};
-  font-size: 0.625rem;
+  font-size: ${({ theme }) => theme.fontSizes['2xs']};
   font-weight: 700;
 `
 
 const Status = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const Level = styled.span`
   flex-shrink: 0;
-  padding: 0.25rem 0.625rem;
+  padding: ${({ theme }) => theme.spacing(1, 3)};
   border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.forest};
-  font-size: 0.75rem;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
 `
 
@@ -310,7 +310,7 @@ const Remove = styled.button`
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  margin-right: 0.5rem;
+  margin-right: ${({ theme }) => theme.spacing(2)};
   border: 0;
   background: transparent;
   color: ${({ theme }) => theme.colors.muted};
@@ -326,8 +326,8 @@ const Free = styled.div`
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(3, 4)};
 `
 
 const Placeholder = styled.span`
@@ -341,14 +341,14 @@ const Placeholder = styled.span`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.forest};
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.125rem;
+  font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
   line-height: 1;
 `
 
 const FreeLabel = styled.span`
   color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.875rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
 `
 
 export default PlayerList
