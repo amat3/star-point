@@ -19,7 +19,7 @@ import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents, getPublicEvents } from '@/app/actions/events'
 import { isAdminView } from '@/lib/view-mode'
 import { MATCH_DURATION_MINUTES, missingLabel } from '@/lib/match-events'
-import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, isDrawCreated, isDrawFinished, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { getLastMatch, getPendingActions } from '@/app/actions/matches'
 import { formatEventDay, formatEventMonth, formatEventTime, formatRelativeDay, formatTodayLong, toTitleCase, firstName } from '@/lib/utils'
 
@@ -46,12 +46,12 @@ export default async function HomePage() {
   const events = user ? await getOpenEvents() : await getPublicEvents()
 
   // What changes by itself on this page: a partido starts ("En juego") and disappears when it ends, a published
-  // draw goes from "Partidos creados" to "En juego" when it starts
+  // draw goes from "Partidos creados" to "En juego" when it starts and to "Resultados pendientes" when its time is over
   const refreshTimes = events.flatMap(event =>
     event.kind === 'match'
       ? [event.start_time, new Date(new Date(event.start_time).getTime() + MATCH_DURATION_MINUTES * 60_000).toISOString()]
       : event.status === 'in_progress'
-        ? [event.start_time]
+        ? [event.start_time, new Date(new Date(event.start_time).getTime() + (event.duration_minutes || 90) * 60_000).toISOString()]
         : []
   )
 
@@ -90,7 +90,7 @@ export default async function HomePage() {
                 playing
                   ? 'En juego'
                   : event.status === 'in_progress'
-                  ? drawAvailability(event.start_time)
+                  ? drawAvailability(event.start_time, event.duration_minutes || 90)
                   : joined
                     ? joinedAvailability(position, event.participants_count ?? 0, event.max_spots)
                   : event.kind === 'match'
@@ -101,6 +101,7 @@ export default async function HomePage() {
               }
               full={event.status === 'open' && spotsLeft <= 0 && !playing}
               created={event.status === 'in_progress' && isDrawCreated(event.start_time)}
+              pending={event.kind !== 'match' && event.status === 'in_progress' && isDrawFinished(event.start_time, event.duration_minutes || 90)}
               joined={joined}
             />
           )

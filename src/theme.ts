@@ -13,6 +13,8 @@ export const lightTheme = {
     subtle: '#68766e',
     line: '#e6e9e1',
     coral: '#f2795b',
+    // Event over but results still to be saved or confirmed
+    amber: '#b36b00',
     online: '#70bb6a',
     alert: '#ef5d4a',
     danger: '#d4271c',
@@ -84,6 +86,7 @@ export const darkTheme: Theme = {
     subtle: '#8fa39a',
     line: '#24332c',
     coral: '#ff8a68',
+    amber: '#f5b74a',
     online: '#7fd078',
     alert: '#ff6a55',
     danger: '#e5333a',

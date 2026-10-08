@@ -17,15 +17,22 @@ export function mixingAvailability(signedUp: number, maxSpots: number) {
   return reserveSpotsLeft(signedUp, maxSpots) > 0 ? 'Completo · apúntate en reserva' : 'Completo'
 }
 
-// A published draw only becomes "En juego" when the event starts; before that
-// the matches are just created.
-export function drawAvailability(startTime: string, now: number = Date.now()): string {
-  return isDrawCreated(startTime, now) ? 'Partidos creados' : 'En juego'
+// A published draw is "Partidos creados" until the event starts, "En juego" while it is
+// being played, and "Resultados pendientes" once its time is over but the event is still
+// open (some match has no confirmed result yet).
+export function drawAvailability(startTime: string, durationMinutes: number, now: number = Date.now()): string {
+  if (isDrawCreated(startTime, now)) return 'Partidos creados'
+  return isDrawFinished(startTime, durationMinutes, now) ? 'Resultados pendientes' : 'En juego'
 }
 
 /** True while a published draw has not started yet. */
 export function isDrawCreated(startTime: string, now: number = Date.now()): boolean {
   return new Date(startTime).getTime() > now
+}
+
+/** True once the event's time is over (it stays in progress until every result is confirmed). */
+export function isDrawFinished(startTime: string, durationMinutes: number, now: number = Date.now()): boolean {
+  return new Date(startTime).getTime() + durationMinutes * 60_000 <= now
 }
 
 // Availability line for an event the viewer is signed up for (position is 0-based).

@@ -15,7 +15,7 @@ import PageIntro from '@/components/molecules/PageIntro'
 import SectionHeader from '@/components/molecules/SectionHeader'
 import TabBar from '@/components/molecules/TabBar'
 import { getOpenEvents } from '@/app/actions/events'
-import { drawAvailability, isDrawCreated, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
+import { drawAvailability, isDrawCreated, isDrawFinished, joinedAvailability, mixingAvailability } from '@/lib/event-capacity'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventDay, formatEventMonth, formatEventTime } from '@/lib/utils'
 import type { MixingEvent } from '@/types/events'
@@ -56,6 +56,12 @@ export default async function MixingPage() {
   }
   const inProgress = events.filter(e => e.status === 'in_progress')
   const upcoming = events.filter(e => e.status === 'open')
+  const durationOf = (e: MixingEvent) => e.duration_minutes || 90
+  const inProgressTitle = inProgress.every(e => isDrawCreated(e.start_time))
+    ? 'Sorteo listo'
+    : inProgress.every(e => isDrawFinished(e.start_time, durationOf(e)))
+      ? 'Resultados pendientes'
+      : 'En curso'
 
   // Which running events have matches for the viewer
   const playingIn = new Set<string>()
@@ -77,7 +83,7 @@ export default async function MixingPage() {
     let warn = false
 
     if (event.status === 'in_progress') {
-      availability = playingIn.has(event.id) ? 'Tienes partidos' : drawAvailability(event.start_time)
+      availability = playingIn.has(event.id) ? 'Tienes partidos' : drawAvailability(event.start_time, event.duration_minutes || 90)
     } else if (position >= 0) {
       // Full is full, also for the ones who are in: coral
       warn = spotsLeft <= 0
@@ -99,6 +105,7 @@ export default async function MixingPage() {
         availability={availability}
         full={warn}
         created={event.status === 'in_progress' && isDrawCreated(event.start_time)}
+        pending={event.status === 'in_progress' && isDrawFinished(event.start_time, event.duration_minutes || 90)}
         joined={position >= 0}
       />
     )
@@ -108,8 +115,8 @@ export default async function MixingPage() {
     <>
       <RealtimeRefresher />
       <NotificationListener userId={user.id} />
-      {/* A published draw goes from "Partidos creados" to "En juego" when it starts */}
-      <TimeRefresher times={inProgress.map(e => e.start_time)} />
+      {/* A published draw goes from "Partidos creados" to "En juego" when it starts, and to "Resultados pendientes" when its time is over */}
+      <TimeRefresher times={inProgress.flatMap(e => [e.start_time, new Date(new Date(e.start_time).getTime() + (e.duration_minutes || 90) * 60_000).toISOString()])} />
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <PageIntro title="Mixing" subtitle="Tus partidos semanales" />
 
@@ -121,7 +128,7 @@ export default async function MixingPage() {
 
         {inProgress.length > 0 && (
           <>
-            <SectionHeader title={inProgress.some(e => drawAvailability(e.start_time) === 'En juego') ? 'En curso' : 'Sorteo listo'} />
+            <SectionHeader title={inProgressTitle} />
             {inProgress.map(renderEvent)}
           </>
         )}

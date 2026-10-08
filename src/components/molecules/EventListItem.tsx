@@ -17,13 +17,15 @@ interface EventListItemProps {
   full?: boolean
   // Draw published but the event has not started: nothing to do yet, a calm still dot
   created?: boolean
+  // Event over but results still to be saved or confirmed: amber, still dot
+  pending?: boolean
   // Visitors without a session can see the event but not open it
   locked?: boolean
   // The viewer is signed up (as a starter or on the waiting list): highlighted
   joined?: boolean
 }
 
-function EventListItem({ href, day, month, title, time, venue, availability, full, created, locked, joined }: EventListItemProps) {
+function EventListItem({ href, day, month, title, time, venue, availability, full, created, pending, locked, joined }: EventListItemProps) {
   const theme = useTheme()
 
   return (
@@ -48,12 +50,12 @@ function EventListItem({ href, day, month, title, time, venue, availability, ful
           )}
         </Meta>
         <StatusRow>
-          <Availability $full={full} $created={created}>
-            {/* Green and alive while there is room or the event is on; coral and still when it is full; grey and still while the draw waits for its start */}
+          <Availability $full={full} $created={created} $pending={pending}>
+            {/* Green and alive while there is room or the event is on; coral and still when it is full; amber and still when results are pending; grey and still while the draw waits for its start */}
             <PulsatingDot
               size={7}
-              color={full ? theme.colors.coral : created ? theme.colors.muted : theme.colors.online}
-              pulse={!full && !created}
+              color={full ? theme.colors.coral : pending ? theme.colors.amber : created ? theme.colors.muted : theme.colors.online}
+              pulse={!full && !created && !pending}
             />
             {availability}
           </Availability>
@@ -175,13 +177,13 @@ const MetaItem = styled.div`
 `
 
 const Availability = styled('span', {
-  shouldForwardProp: (prop) => prop !== '$full' && prop !== '$created',
-})<{ $full?: boolean; $created?: boolean }>`
+  shouldForwardProp: (prop) => prop !== '$full' && prop !== '$created' && prop !== '$pending',
+})<{ $full?: boolean; $created?: boolean; $pending?: boolean }>`
   display: inline-flex;
   align-items: center;
   /* wider than the dot's ring so the pulse never touches the text */
   gap: 0.625rem;
-  color: ${({ theme, $full, $created }) => ($full ? theme.colors.coral : $created ? theme.colors.subtle : theme.colors.forest)};
+  color: ${({ theme, $full, $created, $pending }) => ($full ? theme.colors.coral : $pending ? theme.colors.amber : $created ? theme.colors.subtle : theme.colors.forest)};
   font-size: 0.75rem;
   font-weight: 600;
 `
