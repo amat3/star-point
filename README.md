@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  📖 <a href="docs/caso-de-estudio.md"><b>Caso de estudio</b></a>: el problema, las decisiones técnicas y lo que aprendí construyéndola<br>
+  📖 <a href="docs/caso-de-estudio.md"><b>Caso de estudio</b></a>: el problema, las decisiones técnicas y lo que aprendí construyéndola · <a href="docs/case-study.md">in English</a><br>
   🎾 <a href="https://star-point-demo.vercel.app"><b>Demo con datos ficticios</b></a> (jugadores de Los Simpson): pide las cuentas de prueba
 </p>
 

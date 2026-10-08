@@ -1,5 +1,7 @@
 # starpoint · Caso de estudio
 
+🌐 [Read in English](case-study.md)
+
 > Una PWA para un grupo real de pádel: sorteos de parejas que evitan repetirse, ranking ELO adaptado a dobles, partidos publicados para buscar jugadores y validación de resultados entre rivales. En producción desde julio de 2026, con unos 30 jugadores.
 
 <p align="center">
@@ -153,9 +155,10 @@ Migré toda la interfaz de **Tailwind + shadcn a Emotion**, con tokens de tema (
 
 ## 7. Qué mejoraría
 
-- Un **entorno de demostración** con datos ficticios, para poder enseñar la aplicación sin tocar datos reales.
 - **Pruebas de extremo a extremo** (hoy se prueba la lógica pura, no los flujos completos).
 - Avisos más finos (recordatorios antes de un partido), si el grupo los pidiera: de momento no hacen falta.
+
+El entorno de demostración con datos ficticios, que figuraba antes en esta lista, ya está en marcha: [star-point-demo.vercel.app](https://star-point-demo.vercel.app).
 
 ## 8. Stack y estructura
 
