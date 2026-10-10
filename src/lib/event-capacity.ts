@@ -43,3 +43,47 @@ export function joinedAvailability(position: number, signedUp: number, maxSpots:
   const standing = free > 0 ? (free === 1 ? 'Queda 1 plaza' : `Quedan ${free} plazas`) : 'Completo'
   return position < maxSpots ? standing : `En reserva (${position - maxSpots + 1}) · ${standing}`
 }
+
+export interface JoinCopy {
+  // Guarantee line under the button (with the shield icon)
+  shield: string
+  // Small grey line under the button
+  note?: string
+  // Text of the confirmation dialog when the viewer leaves
+  leaveDescription: string
+}
+
+/**
+ * Copy of the join bar of an open mixing. `position` is the viewer's 0-based place in the
+ * sign-up order, or -1 when not signed up: the first `total` are starters, the rest the waiting list.
+ */
+export function joinCopy(total: number, count: number, position: number): JoinCopy {
+  if (position >= 0) {
+    if (position < total) {
+      const waiting = count > total
+      return {
+        shield: waiting
+          ? 'Tu plaza está confirmada. Si te borras, la ocupará el primero de la lista de espera.'
+          : 'Tu plaza está confirmada.',
+        leaveDescription: '¿Seguro que quieres salir? Perderás tu plaza y tendrás que volver a apuntarte si cambias de opinión.',
+      }
+    }
+    return {
+      shield: `Estás en la lista de espera (puesto ${position - total + 1}). Si hay una baja, te avisamos si subes a titular.`,
+      leaveDescription: '¿Seguro que quieres salir de la lista de espera? Perderás tu puesto.',
+    }
+  }
+  const leaveDescription = '¿Seguro que quieres salir? Perderás tu plaza y tendrás que volver a apuntarte si cambias de opinión.'
+  // Starters still free: the plaza is guaranteed and there is no waiting list yet
+  if (count < total) {
+    return {
+      shield: 'Tu plaza queda confirmada al apuntarte.',
+      note: `La lista de espera se activa cuando se ocupen las ${total} plazas.`,
+      leaveDescription,
+    }
+  }
+  return {
+    shield: 'Entrarás en la lista de espera. Si hay una baja, te avisamos si subes a titular.',
+    leaveDescription,
+  }
+}

@@ -13,7 +13,7 @@ import HandSummary, { type HandCounts } from '../molecules/HandSummary'
 import JoinBar from '../molecules/JoinBar'
 import Content from '../molecules/Content'
 import ConfirmDialog from '../molecules/ConfirmDialog'
-import { MAX_RESERVES } from '@/lib/event-capacity'
+import { MAX_RESERVES, joinCopy } from '@/lib/event-capacity'
 import { joinEvent, leaveEvent, removeParticipant, deleteEvent, addGuestToEvent } from '@/app/actions/events'
 import { EditEventDialog } from '@/components/events/EditEventDialog'
 import { AddParticipantDialog } from '@/components/events/AddParticipantDialog'
@@ -30,11 +30,13 @@ interface EventOpenViewProps {
   // Participants already formatted for the list, in sign-up order
   players: PlayerListItem[]
   userRole: string
+  // Who is looking: tells the viewer's place (starter or waiting list)
+  viewerId: string
 }
 
 type PendingConfirm = { title: string; description: string; confirmLabel: string; action: () => void }
 
-function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole }: EventOpenViewProps) {
+function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole, viewerId }: EventOpenViewProps) {
   const [isPending, startTransition] = useTransition()
   const [editOpen, setEditOpen] = useState(false)
   const [pending, setPending] = useState<PendingConfirm | null>(null)
@@ -52,6 +54,9 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
   )
   const isJoined = event.is_joined
   const isFull = count >= total + MAX_RESERVES
+  // Place in the sign-up order (the first `total` are starters, the rest the waiting list)
+  const position = isJoined ? Math.max(players.findIndex(p => p.userId === viewerId), 0) : -1
+  const copy = joinCopy(total, count, position)
 
   const run = (fn: () => Promise<unknown>, success?: string) =>
     startTransition(async () => {
@@ -66,7 +71,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
   const handleLeave = () =>
     setPending({
       title: 'Desapuntarme del evento',
-      description: '¿Seguro que quieres salir? Perderás tu plaza y tendrás que volver a apuntarte si cambias de opinión.',
+      description: copy.leaveDescription,
       confirmLabel: 'Sí, desapuntarme',
       action: () => run(() => leaveEvent(event.id), 'Te has dado de baja del evento'),
     })
@@ -95,7 +100,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
         icon: <UserMinus />,
         onClick: handleLeave,
         note: undefined,
-        shield: 'Tu plaza está confirmada. Si te borras, la ocupará el primero de la lista de espera.',
+        shield: copy.shield,
       }
     }
     if (isFull) {
@@ -109,11 +114,8 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole 
           : 'Apuntarme a la lista de espera',
       variant: 'accent' as const,
       onClick: () => run(() => joinEvent(event.id), 'Te has apuntado al evento'),
-      note: free > 0 ? `La lista de espera se activa cuando se ocupen las ${total} plazas.` : undefined,
-      shield:
-        free > 0
-          ? 'Tu plaza queda confirmada al apuntarte. Si hay una baja, te avisamos si subes a titular.'
-          : 'Entrarás en la lista de espera. Si hay una baja, te avisamos si subes a titular.',
+      note: copy.note,
+      shield: copy.shield,
     }
   })()
 

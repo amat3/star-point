@@ -180,6 +180,7 @@ export default async function EventPage(props: EventPageProps) {
           startsAt={formatEventTime(fullEvent.start_time)}
           players={players}
           userRole={userRole}
+          viewerId={user.id}
         />
         <TabBar loggedIn />
       </>
