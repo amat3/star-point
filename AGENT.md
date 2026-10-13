@@ -99,7 +99,6 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 
 Migrations/jobs live in `supabase/` as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
 All applied in production: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`), `security_hardening` and the hourly `pg_cron` job of `supabase/supabase_cron_close_pending_matches.sql` (it carries `CRON_SECRET`: the user pastes it in the Supabase SQL editor, never in the chat, and the file in git keeps the `<CRON_SECRET>` placeholder). `supabase_schema_full.sql` is the whole structure in one file (it does not replace the incremental migrations, which are the history).
-**Pending in production (2026-10-13), in this order, before the automatic draw works:** 1) `supabase_migration_events_draw_published_at.sql` (adds `events.draw_published_at`; apply it BEFORE deploying the code that writes it), 2) the pg_cron job in `supabase_cron_generate_draws.sql` (with the real CRON_SECRET, never committed). Remove this note once both are applied.
 The MCP `execute_sql` tool may be refused for production DDL/DML the user has not clearly approved; when it is, give the user the SQL file to run in the SQL editor instead of retrying.
 
 ### Tables (public)

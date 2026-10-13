@@ -31,9 +31,10 @@
 - Convocatorias con club, fecha, hora, pistas y rondas; inscripción con lista de espera (titulares y reservas por orden de inscripción).
 - **Sorteo** de parejas y rivales para todas las rondas del evento, con un algoritmo que prioriza, por este orden: respetar las exclusiones, no repetir pareja ni pista dentro del evento, igualar el nivel de los partidos y, por último, no repetir lo del evento anterior. Las posiciones drive y revés sirven de desempate.
 - El admin elige las pistas del club que se usan ese día (Padel Indoor empieza por Blanca Impresores, Joyería Pósito, Hacienda La Laguna y Estrella Damm), genera (o vuelve a generar) el sorteo, revisa un resumen de reencuentros y avisos, y lo publica de una vez.
-- **Con el sorteo ya publicado** el admin puede editar el evento (título, fecha, hora y duración no tocan el sorteo; cambiar pistas, rondas o club lo deshace para generarlo de nuevo), rehacerlo, anularlo y cambiar las parejas de una pista cuando los cuatro jugadores lo deciden. Nada de esto es posible en cuanto hay un resultado.
-- La vista del sorteo **sigue el reloj**: cada jugador ve su ronda actual y la pestaña pasa sola a la siguiente. Las tarjetas dicen "Partidos creados" hasta la hora de inicio y "En juego" después.
-- La lista de espera se ve en "Así va el grupo" y en las tarjetas ("Completo · 2 en reserva"); los eventos en los que estás apuntado llevan la pill "Apuntado".
+- **Sorteo automático, 3 horas antes del inicio**: un job de `pg_cron` llama cada 15 minutos a `/api/cron/generate-draws`, que sortea y publica los mixing abiertos y completos (se queda con el mejor de 10 intentos, con las primeras pistas del club) y avisa a jugadores y admins. Si faltan jugadores no genera nada, avisa a los admins y reintenta hasta el inicio. El admin puede sortear a mano antes, y tras un *Rehacer* el automático no vuelve a actuar. Se apaga con `AUTO_DRAW=false`.
+- **Con el sorteo ya publicado** el admin puede editar el evento (título, fecha, hora y duración no tocan el sorteo; cambiar pistas, rondas o club lo deshace para generarlo de nuevo), rehacerlo, anularlo, cambiar la pista de un partido (o de todas las rondas de esa pista) y cambiar las parejas de una pista cuando los cuatro jugadores lo deciden. Nada de esto es posible en cuanto hay un resultado.
+- La vista del sorteo **sigue el reloj**: cada jugador ve su ronda actual y la pestaña pasa sola a la siguiente. Las tarjetas dicen "Partidos creados" hasta la hora de inicio, "En juego" mientras se juega y "Resultados pendientes" (en ámbar) cuando el evento ha terminado pero faltan resultados por confirmar. El resultado solo se puede introducir cuando empieza la ronda.
+- La lista de espera se ve en "Así va el grupo" y en las tarjetas ("Completo · 2 en reserva"); los eventos en los que estás apuntado llevan la pill "Apuntado". El mensaje bajo el botón de inscripción cambia con la fase: plaza confirmada mientras quedan plazas, y el puesto en la lista de espera para las reservas.
 - **Cron semanal**: cada miércoles a las 22:00 (hora de España) se crea el evento de la semana siguiente en Padel Indoor, con manejo del cambio de hora verano/invierno.
 - Los jugadores ven los cambios en tiempo real, sin recargar.
 
@@ -67,9 +68,9 @@ Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; ins
 | Capa | Tecnología |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19 |
-| Estilos | Emotion (tema claro y oscuro en `src/theme.ts`) |
+| Estilos | Emotion (tema claro y oscuro, con escalas cerradas de espaciado y tipografía, en `src/theme.ts`) |
 | Backend / BD | Supabase (PostgreSQL, Auth, Realtime, RLS) |
-| Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre automático y el sorteo automático |
+| Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre y el sorteo automáticos |
 | Formularios | React Hook Form + Zod v4 |
 | Iconos | Lucide React |
 
@@ -86,8 +87,10 @@ src/
 │   ├── atoms/            # Button, Input, Avatar, Select, Switch…
 │   ├── molecules/        # Header, TabBar, Dialog, PlayerList, CourtCard…
 │   └── organisms/        # EventOpenView, EventDrawView, EventGenerator, MatchEventView…
-├── lib/                  # rating-logic, mixing-algorithm, confirm-match, event-draw, match-events…
+├── lib/                  # rating-logic, mixing-algorithm, auto-draw, draw-publish, confirm-match, event-draw…
 └── theme.ts              # Tokens de diseño
+supabase/                 # Esquema completo, migraciones y jobs de pg_cron (se aplican a mano)
+docs/                     # Caso de estudio (es/en) y capturas
 ```
 
 Más contexto técnico (reglas de privacidad, base de datos, convenciones y flujo de trabajo) en [AGENT.md](AGENT.md).
@@ -123,16 +126,21 @@ VAPID_SUBJECT=mailto:...
 TEST_PUSH_USER_IDS=id1,id2            # opcional: quién recibe los avisos de los eventos de prueba
 WEEKLY_EVENT_CREATED_BY=id            # opcional: autor del evento semanal (por defecto, el primer admin)
 PUSH_DISABLED=true                    # opcional, solo en local: no se envía ninguna notificación
+AUTO_DRAW=false                       # opcional: apaga el sorteo automático sin redesplegar
+NEXT_PUBLIC_DEMO=true                 # solo en el despliegue de demo: muestra el aviso y no crea eventos ni sortea solo
 ```
 
 ### Base de datos
-Las migraciones están en la raíz del repositorio (`supabase_*.sql`) y se aplican a mano en Supabase, en el orden de su fecha de creación. Algunas están pendientes de aplicar en producción; consulta [AGENT.md](AGENT.md).
+El esquema completo está en `supabase/supabase_schema_full.sql`. Las migraciones y los jobs de `pg_cron` (cierre automático y sorteo automático) están en la misma carpeta, y se aplican a mano en Supabase. Los jobs llevan el marcador `<CRON_SECRET>`: el valor real se pone al ejecutarlos y nunca se sube al repositorio. Más detalles en [AGENT.md](AGENT.md).
+
+### Entorno de demo
+La demo (datos ficticios de Los Simpson) es otro proyecto de Supabase y otro despliegue de Vercel con el mismo código y `NEXT_PUBLIC_DEMO=true`. Se reconstruye desde cero con `npx tsx src/scripts/seed-demo.ts --apply --reset`: solo lee `.env.demo.local` y se niega a ejecutarse contra cualquier otro proyecto.
 
 ---
 
 ## ✅ Tests y CI
 
-- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de sorteo (`mixing-algorithm.test.ts`) y utilidades de fechas y rondas (`utils.test.ts`).
+- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de sorteo (`mixing-algorithm.test.ts`), sorteo automático (ventana de 3 horas y elección del mejor sorteo, `auto-draw.test.ts`), textos de la inscripción (`event-capacity.test.ts`) y utilidades de fechas y rondas (`utils.test.ts`).
 - `npm run test` (una vez) / `npm run test:watch` (modo watch).
 - **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
 - Fuera de alcance por ahora: tests E2E y de server actions que hablan con Supabase.
