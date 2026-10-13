@@ -48,7 +48,7 @@ Una aplicación móvil instalable (PWA) con dos flujos principales:
 - **Sorteo** de parejas y rivales para todas las rondas, con un resumen de repeticiones antes de publicarlo.
 - Cada jugador ve **solo su partido**, y la vista pasa sola a su ronda actual según la hora.
 - El administrador puede editar, rehacer o anular el sorteo, y cambiar las parejas de una pista si los cuatro jugadores lo deciden.
-- Un cron crea el evento de la semana siguiente de forma automática.
+- Un cron crea el evento de la semana siguiente de forma automática, y **tres horas antes del inicio** otro hace el sorteo y lo publica solo (se queda con el mejor de varios intentos y avisa al administrador, que puede rehacerlo).
 
 **Partidos**
 - Cualquier jugador publica un partido (club, día, hora, cuántos jugadores faltan y un comentario libre) y se avisa al grupo por notificación push.

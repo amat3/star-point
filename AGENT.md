@@ -36,7 +36,7 @@ star-point/
 │   ├── app/                         # Routes (see Routing Map) + Server Actions
 │   │   ├── actions/                 # 'use server' files: events, matches, mixing-generator,
 │   │   │                            #   admin-matches, admin-exclusions, users, push, view-mode
-│   │   └── api/cron/                # create-weekly-event, close-pending-matches
+│   │   └── api/cron/                # create-weekly-event, close-pending-matches, generate-draws
 │   ├── components/
 │   │   ├── atoms/                   # Avatar, Badge, Button(+ButtonLink), Card, HandTag, HeroCard,
 │   │   │                            #   Input, Label, Logo, PulsatingDot, Select, Switch, Textarea
@@ -99,6 +99,7 @@ Tab bar: Inicio · Mixing · **+ Partido** (was "Ranking", replaced) · Perfil. 
 
 Migrations/jobs live in `supabase/` as `supabase_*.sql` and are applied by hand (Supabase MCP `apply_migration` or the SQL editor). **Always get explicit confirmation before applying anything to production.**
 All applied in production: `clubs_courts`, `matches_auto_close`, `events_kind`, `court_names`, `match_known_players` (adds `events.known_players` and `events.notes`), `security_hardening` and the hourly `pg_cron` job of `supabase/supabase_cron_close_pending_matches.sql` (it carries `CRON_SECRET`: the user pastes it in the Supabase SQL editor, never in the chat, and the file in git keeps the `<CRON_SECRET>` placeholder). `supabase_schema_full.sql` is the whole structure in one file (it does not replace the incremental migrations, which are the history).
+**Pending in production (2026-10-13), in this order, before the automatic draw works:** 1) `supabase_migration_events_draw_published_at.sql` (adds `events.draw_published_at`; apply it BEFORE deploying the code that writes it), 2) the pg_cron job in `supabase_cron_generate_draws.sql` (with the real CRON_SECRET, never committed). Remove this note once both are applied.
 The MCP `execute_sql` tool may be refused for production DDL/DML the user has not clearly approved; when it is, give the user the SQL file to run in the SQL editor instead of retrying.
 
 ### Tables (public)
@@ -224,6 +225,7 @@ disputed = legacy/admin state; players have no UI to dispute anymore
 ```
 - Player UI: Home "pending action" cards. "Introducir resultado" cards appear when the round **ends**; "Confirmar" cards appear as soon as another player enters a score. Confirming opens a **review sheet** (`ResultReviewDialog`): confirm, or "Hay un error en el marcador" → correct the score (the rival must confirm), no admin involved.
 - Auto-close: `/api/cron/close-pending-matches` (hourly via **pg_cron + pg_net**, not scheduled yet) confirms scored pending matches 24 h after `result_updated_at` and expires 0-0 ones 24 h after the event ended. Disputed matches are left alone.
+- Automatic draw: `/api/cron/generate-draws` (every 15 minutes via **pg_cron + pg_net**, job in `supabase/supabase_cron_generate_draws.sql`; Vercel Hobby cron only runs once a day with ±59 min of precision, so it cannot do this) makes and publishes the draw of each open mixing that starts in 3 h or less (17:00 for a 20:00 event). Logic in `src/lib/auto-draw.ts`; the publication (`src/lib/draw-publish.ts`) is shared with the admin generator (`saveAllRounds`) and claims the event atomically (status `open` → `in_progress` in one update), so overlapping runs cannot duplicate a draw. It keeps the best of 10 random draws (fewest warnings, then fewest repeated meetings), takes the first N courts of the club by position, and tells the admins by push. If the event is not full (or the club lacks courts) it generates nothing, tells the admins once (first 15-minute window) and retries quietly every run until the event starts, so a late sign-up completes it. `AUTO_DRAW=false` switches it off without redeploying; the demo deployment never runs it. Publishing a draw (manual or automatic) sets `events.draw_published_at`, and the cron only acts on open events where it is null: after a **Rehacer** the admin takes over and it never redraws behind their back. An admin can still **Rehacer** or **Anular** afterwards, and can publish a draw manually at any time before (then the event is no longer `open`).
 - Admin: `/admin/matches` lists every pending match (confirm, edit result, rotate partners, change court, delete). `rotateMatchPlayers` rotates `a2 → b1 → b2` keeping `a1` fixed and is blocked once a result exists.
 
 ---

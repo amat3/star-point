@@ -69,7 +69,7 @@ Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; ins
 | Frontend | Next.js 16 (App Router), React 19 |
 | Estilos | Emotion (tema claro y oscuro en `src/theme.ts`) |
 | Backend / BD | Supabase (PostgreSQL, Auth, Realtime, RLS) |
-| Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre automático |
+| Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre automático y el sorteo automático |
 | Formularios | React Hook Form + Zod v4 |
 | Iconos | Lucide React |
 
@@ -81,7 +81,7 @@ Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; ins
 src/
 ├── app/                  # Rutas: / · /mixing · /partido · /events/[id] · /history · /profile · /admin/*
 │   ├── actions/          # Server Actions (events, matches, mixing-generator, admin-*, users…)
-│   └── api/cron/         # create-weekly-event, close-pending-matches
+│   └── api/cron/         # create-weekly-event, close-pending-matches, generate-draws
 ├── components/
 │   ├── atoms/            # Button, Input, Avatar, Select, Switch…
 │   ├── molecules/        # Header, TabBar, Dialog, PlayerList, CourtCard…

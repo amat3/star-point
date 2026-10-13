@@ -35,6 +35,10 @@ export interface MixingConfig {
   exclusions?: ExclusionRule[]
 }
 
+// Rotation always comes first; level and position only break ties, so there is never a reason to
+// switch them off. Used by the admin generator and by the automatic draw.
+export const DEFAULT_MIXING_CONFIG: MixingConfig = { genderMode: 'open', prioritizeLevel: true, forcePosition: true }
+
 export interface MatchProposal {
   courtNumber: number
   player1: MixingParticipant

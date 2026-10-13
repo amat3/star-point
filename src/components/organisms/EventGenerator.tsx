@@ -12,21 +12,19 @@ import CourtCard from '../molecules/CourtCard'
 import EmptyState from '../molecules/EmptyState'
 import JoinBar from '../molecules/JoinBar'
 import RoundTabs from '../molecules/RoundTabs'
-import { saveAllRounds, type DrawCourts } from '@/app/actions/mixing-generator'
+import { saveAllRounds } from '@/app/actions/mixing-generator'
+import type { DrawCourts } from '@/lib/draw-publish'
 import {
+  DEFAULT_MIXING_CONFIG,
   generateEventRounds,
   summarizeRounds,
   type ExclusionRule,
-  type MixingConfig,
   type MixingParticipant,
   type RoundProposal,
 } from '@/lib/mixing-algorithm'
 import { toCourtPlayer } from '@/lib/event-draw'
 import { missingLabel } from '@/lib/match-events'
 
-// Rotation always comes first; level and position only break ties, so there is
-// never a reason to switch them off.
-const CONFIG: MixingConfig = { genderMode: 'open', prioritizeLevel: true, forcePosition: true }
 
 // Admin preview: levels are shown
 const asCourtPlayer = (p: MixingParticipant) =>
@@ -75,7 +73,7 @@ function EventGenerator({ eventId, participants, maxSpots, rounds, exclusions, c
     try {
       // The algorithm mutates its working copy: give it a clone
       const working: MixingParticipant[] = JSON.parse(JSON.stringify(participants))
-      const result = generateEventRounds(working, { ...CONFIG, exclusions }, rounds)
+      const result = generateEventRounds(working, { ...DEFAULT_MIXING_CONFIG, exclusions }, rounds)
       setProposals(result)
       setActiveRound(1)
     } catch (error) {

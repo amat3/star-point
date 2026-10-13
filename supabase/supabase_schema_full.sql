@@ -63,7 +63,8 @@ create table public.events (
   club_id uuid,
   kind text not null default 'mixing'::text,
   known_players text[] not null default '{}'::text[],
-  notes text
+  notes text,
+  draw_published_at timestamp with time zone
 );
 
 create table public.event_participants (

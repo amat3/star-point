@@ -48,7 +48,7 @@ An installable mobile app (PWA) with two main flows:
 - A **draw** of partners and opponents for every round, with a summary of repeats before publishing.
 - Each player sees **only their own match**, and the view moves by itself to their current round according to the clock.
 - The admin can edit, redo or cancel the draw, change a match's court, and swap pairs on a court if the four players agree.
-- A cron job creates next week's event automatically.
+- A cron job creates next week's event automatically, and **three hours before the start** another one makes and publishes the draw by itself (it keeps the best of several attempts and tells the admin, who can redo it).
 
 **Matches**
 - Any player can publish a match (club, day, time, how many players are missing and a free comment) and the group is notified by push.

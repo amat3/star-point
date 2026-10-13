@@ -277,6 +277,8 @@ async function main() {
     const { data: ev } = await db.from('events').insert({
       title: 'Mixing Padel y Risas', start_time: startsAt, max_spots: PLAYERS_PER_EVENT, rounds: ROUNDS, duration_minutes: 90,
       created_by: admin, status, is_test: false, kind: 'mixing', club_id: clubIds[MAIN], ...(createdAt ? { created_at: createdAt } : {}),
+      // A published draw is marked as drawn, like the app does: the automatic draw leaves it alone even after a "Rehacer"
+      ...(status === 'in_progress' ? { draw_published_at: createdAt ?? new Date().toISOString() } : {}),
     }).select('id').single().throwOnError()
     const start = new Date(startsAt).getTime()
     await db.from('event_participants').insert(participants.map((p, i) => ({
