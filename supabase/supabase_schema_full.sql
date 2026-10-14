@@ -239,7 +239,7 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', 'Jugador Nuevo'),
     'player',
-    1.5
+    3.5
   );
   return new;
 end;
@@ -456,6 +456,10 @@ create policy "Admins can delete courts" on public.courts as permissive for dele
 create policy profiles_select_authenticated on public.profiles as permissive for select to authenticated using (true);
 create policy profiles_update_own on public.profiles as permissive for update to authenticated
   using (auth.uid() = id) with check (auth.uid() = id);
+-- …and only the columns the profile page edits: role, rating, stats and is_guest stay server-only
+revoke update on public.profiles from anon, authenticated;
+grant update (full_name, avatar_url, gender, preferred_hand, court_position, updated_at)
+  on public.profiles to authenticated;
 
 -- events: public read (the public home needs counts), admin write
 create policy "Everyone can view events" on public.events as permissive for select to public using (true);

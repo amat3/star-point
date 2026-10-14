@@ -40,16 +40,12 @@ export default function LoginPage() {
   }
 
   const handleRegister = async () => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName, rating: RATING_CONFIG.INITIAL_RATING } },
     })
     if (error) throw error
-    // Force update profile just in case trigger doesn't pick up metadata rating
-    if (data.user) {
-      await supabase.from('profiles').update({ rating: RATING_CONFIG.INITIAL_RATING }).eq('id', data.user.id)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
