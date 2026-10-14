@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { keyframes } from '@emotion/react'
 import styled from '@emotion/styled'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,7 +12,9 @@ import Select from '@/components/atoms/Select'
 import Textarea from '@/components/atoms/Textarea'
 import Field from '@/components/molecules/Field'
 import SegmentedControl from '@/components/molecules/SegmentedControl'
+import MatchAssistant from './MatchAssistant'
 import { MATCH_NOTES_MAX, MATCH_NOTE_SUGGESTIONS } from '@/lib/match-events'
+import type { MatchFill } from '@/lib/match-parser'
 import { madridDateTimeToUTC } from '@/lib/utils'
 
 const formSchema = z.object({
@@ -44,12 +47,16 @@ interface MatchFormProps {
   submitLabel: string
   submittingLabel: string
   onSubmit: (values: MatchFormSubmit) => Promise<void>
+  // Shows the "write it and I fill it" box above the form (publish page, players with AI enabled)
+  assistant?: boolean
 }
 
 // Shared by "publish" and "edit": club, day, time and how many players are missing.
-function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: MatchFormProps) {
+function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, assistant = false }: MatchFormProps) {
   const [needed, setNeeded] = useState<'1' | '2' | '3'>(String(initial.needed) as '1' | '2' | '3')
   const [submitting, setSubmitting] = useState(false)
+  // Fields the assistant just filled: they flash for a moment so the player sees what changed
+  const [filled, setFilled] = useState<(keyof MatchFill)[]>([])
 
   const {
     register,
@@ -63,6 +70,22 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
   })
 
   const notes = watch('notes') ?? ''
+
+  function applyFill(fill: MatchFill) {
+    const options = { shouldValidate: true, shouldDirty: true }
+    if (fill.club_id) setValue('club_id', fill.club_id, options)
+    if (fill.date) setValue('date', fill.date, options)
+    if (fill.time) setValue('time', fill.time, options)
+    if (fill.notes) setValue('notes', fill.notes, options)
+    if (fill.needed) setNeeded(String(fill.needed) as '1' | '2' | '3')
+    setFilled(Object.keys(fill) as (keyof MatchFill)[])
+  }
+
+  useEffect(() => {
+    if (filled.length === 0) return
+    const timer = setTimeout(() => setFilled([]), FLASH_MS)
+    return () => clearTimeout(timer)
+  }, [filled])
 
   async function submit(values: FormValues) {
     setSubmitting(true)
@@ -79,63 +102,104 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit }: M
   }
 
   return (
-    <Form onSubmit={handleSubmit(submit)}>
-      <Field label="Club" htmlFor="match-club" error={errors.club_id?.message}>
-        <Select id="match-club" {...register('club_id')}>
-          <option value="">Elige un club…</option>
-          {clubs.map(club => (
-            <option key={club.id} value={club.id}>{club.name}</option>
-          ))}
-        </Select>
-      </Field>
+    <Stack>
+      {assistant && <MatchAssistant onFill={applyFill} />}
+      <Form onSubmit={handleSubmit(submit)}>
+        <Flash $on={filled.includes('club_id')}>
+          <Field label="Club" htmlFor="match-club" error={errors.club_id?.message}>
+            <Select id="match-club" {...register('club_id')}>
+              <option value="">Elige un club…</option>
+              {clubs.map(club => (
+                <option key={club.id} value={club.id}>{club.name}</option>
+              ))}
+            </Select>
+          </Field>
+        </Flash>
 
-      <Row>
-        <Field label="Fecha" htmlFor="match-date" error={errors.date?.message}>
-          <Input id="match-date" type="date" {...register('date')} />
-        </Field>
-        <Field label="Hora" htmlFor="match-time" error={errors.time?.message}>
-          <Input id="match-time" type="time" {...register('time')} />
-        </Field>
-      </Row>
+        <Row>
+          <Flash $on={filled.includes('date')}>
+            <Field label="Fecha" htmlFor="match-date" error={errors.date?.message}>
+              <Input id="match-date" type="date" {...register('date')} />
+            </Field>
+          </Flash>
+          <Flash $on={filled.includes('time')}>
+            <Field label="Hora" htmlFor="match-time" error={errors.time?.message}>
+              <Input id="match-time" type="time" {...register('time')} />
+            </Field>
+          </Flash>
+        </Row>
 
-      <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed">
-        <SegmentedControl
-          label="Jugadores que buscas"
-          fill
-          value={needed}
-          onChange={setNeeded}
-          options={[
-            { value: '1', label: '1' },
-            { value: '2', label: '2' },
-            { value: '3', label: '3' },
-          ]}
-        />
-      </Field>
+        <Flash $on={filled.includes('needed')}>
+          <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed">
+            <SegmentedControl
+              label="Jugadores que buscas"
+              fill
+              value={needed}
+              onChange={setNeeded}
+              options={[
+                { value: '1', label: '1' },
+                { value: '2', label: '2' },
+                { value: '3', label: '3' },
+              ]}
+            />
+          </Field>
+        </Flash>
 
-      <Field label="Comentarios (opcional)" htmlFor="match-notes" error={errors.notes?.message}>
-        <Textarea id="match-notes" rows={3} maxLength={MATCH_NOTES_MAX} placeholder="Ej.: buscamos un revés" {...register('notes')} />
-       <div>
-        <Counter>{notes.length}/{MATCH_NOTES_MAX}</Counter>
-        <Suggestions>
-          {MATCH_NOTE_SUGGESTIONS.map(suggestion => (
-            <Chip
-              key={suggestion}
-              type="button"
-              onClick={() => setValue('notes', suggestion, { shouldValidate: true })}
-            >
-              {suggestion}
-            </Chip>
-          ))}
-        </Suggestions>
-        </div>
-      </Field>
+        <Flash $on={filled.includes('notes')}>
+          <Field label="Comentarios (opcional)" htmlFor="match-notes" error={errors.notes?.message}>
+            <Textarea id="match-notes" rows={3} maxLength={MATCH_NOTES_MAX} placeholder="Ej.: buscamos un revés" {...register('notes')} />
+            <div>
+              <Counter>{notes.length}/{MATCH_NOTES_MAX}</Counter>
+              <Suggestions>
+                {MATCH_NOTE_SUGGESTIONS.map(suggestion => (
+                  <Chip
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setValue('notes', suggestion, { shouldValidate: true })}
+                  >
+                    {suggestion}
+                  </Chip>
+                ))}
+              </Suggestions>
+            </div>
+          </Field>
+        </Flash>
 
-      <Button type="submit" $size="lg" disabled={submitting}>
-        {submitting ? submittingLabel : submitLabel}
-      </Button>
-    </Form>
+        <Button type="submit" $size="lg" disabled={submitting}>
+          {submitting ? submittingLabel : submitLabel}
+        </Button>
+      </Form>
+    </Stack>
   )
 }
+
+const FLASH_MS = 1600
+
+const flash = keyframes`
+  from { box-shadow: 0 0 0 4px var(--flash-color); }
+  to { box-shadow: 0 0 0 4px transparent; }
+`
+
+const Flash = styled('div', { shouldForwardProp: prop => prop !== '$on' })<{ $on: boolean }>`
+  min-width: 0;
+  --flash-color: ${({ theme }) => theme.colors.lime};
+
+  & :is(input, select, textarea, [role='radiogroup']) {
+    animation: ${({ $on }) => ($on ? flash : 'none')} ${FLASH_MS}ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & :is(input, select, textarea, [role='radiogroup']) {
+      animation: none;
+    }
+  }
+`
+
+const Stack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(6)};
+`
 
 const Form = styled.form`
   display: flex;

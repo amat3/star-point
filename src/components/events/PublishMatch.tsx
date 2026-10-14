@@ -6,7 +6,7 @@ import MatchForm, { type MatchFormSubmit } from './MatchForm'
 import { createMatchEvent } from '@/app/actions/events'
 import { utcToMadridDateTime } from '@/lib/utils'
 
-function PublishMatch({ clubs }: { clubs: { id: string; name: string }[] }) {
+function PublishMatch({ clubs, assistant = false }: { clubs: { id: string; name: string }[]; assistant?: boolean }) {
   const router = useRouter()
 
   async function handleSubmit(values: MatchFormSubmit) {
@@ -31,6 +31,7 @@ function PublishMatch({ clubs }: { clubs: { id: string; name: string }[] }) {
       submitLabel="Publicar partido"
       submittingLabel="Publicando…"
       onSubmit={handleSubmit}
+      assistant={assistant}
     />
   )
 }

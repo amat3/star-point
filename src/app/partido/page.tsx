@@ -9,6 +9,7 @@ import TabBar from '@/components/molecules/TabBar'
 import PublishMatch from '@/components/events/PublishMatch'
 import { createClient } from '@/utils/supabase/server'
 import { isAdminView } from '@/lib/view-mode'
+import { canUseMatchParser, isMatchParserOn } from '@/lib/match-parser'
 
 // "+ Partido": publish a match to look for players in the group.
 export default async function MatchPage() {
@@ -18,7 +19,7 @@ export default async function MatchPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url, role')
+    .select('full_name, avatar_url, role, ai_enabled')
     .eq('id', user.id)
     .single()
 
@@ -35,7 +36,7 @@ export default async function MatchPage() {
       <PageIntro title="Publicar partido" subtitle="Busca jugadores del grupo para completar tu partido" />
 
       <Content>
-        <PublishMatch clubs={clubs ?? []} />
+        <PublishMatch clubs={clubs ?? []} assistant={isMatchParserOn() && canUseMatchParser(profile)} />
       </Content>
 
       <TabBar loggedIn />

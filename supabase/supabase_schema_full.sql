@@ -46,7 +46,8 @@ create table public.profiles (
   gender text,
   preferred_hand text,
   court_position text,
-  is_guest boolean not null default false
+  is_guest boolean not null default false,
+  ai_enabled boolean not null default false
 );
 
 create table public.events (
@@ -149,6 +150,14 @@ create table public.mixing_incentives (
   resolved_at timestamp with time zone
 );
 
+-- One row per call to an AI feature, to cap each person's daily use (server-only: RLS on, no policies).
+create table public.ai_requests (
+  id uuid not null default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  feature text not null,
+  created_at timestamp with time zone not null default timezone('utc'::text, now())
+);
+
 -- 3. Constraints ----------------------------------------------------------------------------
 alter table public.clubs add constraint clubs_pkey primary key (id);
 alter table public.clubs add constraint clubs_name_key unique (name);
@@ -223,6 +232,8 @@ create index matches_court_id_idx on public.matches using btree (court_id);
 create index matches_pending_close_idx on public.matches using btree (result_updated_at) where (status = 'pending'::text);
 create unique index mixing_incentives_event_active_uidx on public.mixing_incentives using btree (event_id) where (status <> 'cancelled'::text);
 create unique index profiles_full_name_unique on public.profiles using btree (full_name) where (is_guest = false);
+
+create index ai_requests_user_feature_created_idx on public.ai_requests (user_id, feature, created_at desc);
 
 -- 5. Functions and triggers -----------------------------------------------------------------
 -- Creates the profile row of every new auth user (guests and real players alike).
@@ -434,6 +445,7 @@ alter table public.notifications enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.mixing_exclusions enable row level security;
 alter table public.mixing_incentives enable row level security;
+alter table public.ai_requests enable row level security;
 
 -- clubs / courts: public read, admin write
 create policy "Everyone can view clubs" on public.clubs as permissive for select to public using (true);
@@ -456,7 +468,7 @@ create policy "Admins can delete courts" on public.courts as permissive for dele
 create policy profiles_select_authenticated on public.profiles as permissive for select to authenticated using (true);
 create policy profiles_update_own on public.profiles as permissive for update to authenticated
   using (auth.uid() = id) with check (auth.uid() = id);
--- …and only the columns the profile page edits: role, rating, stats and is_guest stay server-only
+-- …and only the columns the profile page edits: role, rating, stats, is_guest and ai_enabled stay server-only
 revoke update on public.profiles from anon, authenticated;
 grant update (full_name, avatar_url, gender, preferred_hand, court_position, updated_at)
   on public.profiles to authenticated;
