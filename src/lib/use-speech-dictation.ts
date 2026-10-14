@@ -18,14 +18,19 @@ interface Recognizer {
 
 type RecognizerConstructor = new () => Recognizer
 
+// On iOS every browser runs WebKit and exposes the recognizer, but only Safari gets the service
+const IOS_OTHER_BROWSER = /CriOS|FxiOS|EdgiOS/
+
 function getRecognizer(): RecognizerConstructor | undefined {
+  if (IOS_OTHER_BROWSER.test(navigator.userAgent)) return undefined
   const w = window as unknown as { SpeechRecognition?: RecognizerConstructor; webkitSpeechRecognition?: RecognizerConstructor }
   return w.SpeechRecognition ?? w.webkitSpeechRecognition
 }
 
 const ERRORS: Record<string, string> = {
   'not-allowed': 'Permite el micrófono en el navegador para dictar',
-  'service-not-allowed': 'El dictado no está disponible en este navegador',
+  // iOS: Dictation turned off in Settings, or the app opened from the home screen
+  'service-not-allowed': 'Aquí no puedo usar el micro: dicta con el micro del teclado',
   'no-speech': 'No te he oído: inténtalo otra vez',
   'audio-capture': 'No encuentro el micrófono',
   network: 'El dictado necesita conexión',
@@ -44,6 +49,8 @@ export function useSpeechDictation(onText: (transcript: string) => void, lang = 
   )
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // The browser has a recognizer but refuses the service: stop offering the button
+  const [blocked, setBlocked] = useState(false)
   const recognizer = useRef<Recognizer | null>(null)
   const onTextRef = useRef(onText)
 
@@ -66,6 +73,7 @@ export function useSpeechDictation(onText: (transcript: string) => void, lang = 
       onTextRef.current(transcript)
     }
     r.onerror = event => {
+      if (event.error === 'service-not-allowed') setBlocked(true)
       if (event.error !== 'aborted') setError(ERRORS[event.error] ?? 'No he podido usar el micrófono')
     }
     r.onend = () => {
@@ -80,5 +88,5 @@ export function useSpeechDictation(onText: (transcript: string) => void, lang = 
 
   const stop = useCallback(() => recognizer.current?.stop(), [])
 
-  return { supported, listening, error, start, stop }
+  return { supported: supported && !blocked, listening, error, start, stop }
 }
