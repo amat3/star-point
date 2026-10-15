@@ -1,0 +1,35 @@
+import { createClient } from '@supabase/supabase-js'
+import type { Page } from '@playwright/test'
+import { expect } from './fixtures'
+
+export const PLAYER = 'demo@example.com'
+export const ADMIN = 'admin-demo@example.com'
+
+/** Marker in the comment of every partido the tests publish, so they can be found and removed. */
+export const E2E_NOTE_PREFIX = 'e2e-'
+
+export async function login(page: Page, email: string, password = process.env.DEMO_PASSWORD ?? '') {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Contraseña', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  // The first login after the server starts also pays its cold start and a round trip to Supabase
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 })
+}
+
+/** YYYY-MM-DD, `days` from today, as the calendar reads in Madrid. */
+export function madridDate(days: number) {
+  const ms = Date.now() + days * 24 * 60 * 60 * 1000
+  return new Intl.DateTimeFormat('sv', { timeZone: 'Europe/Madrid' }).format(ms)
+}
+
+/** Deletes every partido the tests published (global setup guarantees this is the demo database). */
+export async function removeE2EMatches() {
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: events } = await db.from('events').select('id').eq('kind', 'match').like('notes', `${E2E_NOTE_PREFIX}%`)
+  const ids = (events ?? []).map(event => event.id)
+  if (ids.length === 0) return 0
+  await db.from('event_participants').delete().in('event_id', ids)
+  await db.from('events').delete().in('id', ids)
+  return ids.length
+}

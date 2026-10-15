@@ -154,7 +154,8 @@ La demo (datos ficticios de Los Simpson) es otro proyecto de Supabase y otro des
 - **Evaluación de la IA** contra el modelo real: `npx -y tsx src/scripts/eval-match-parser.ts` (16 frases con los campos esperados, unos 5 céntimos por pasada).
 - `npm run test` (una vez) / `npm run test:watch` (modo watch).
 - **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
-- Fuera de alcance por ahora: tests E2E y de server actions que hablan con Supabase.
+- **Tests E2E con Playwright** (`e2e/`, `npm run test:e2e`) sobre los flujos reales: portada pública y redirección al login, acceso, la splash, publicar un partido, apuntarse y desapuntarse con otro usuario y cancelarlo. Corren **solo contra la demo** (una comprobación se niega a ejecutarse contra cualquier otra base de datos), usan selectores por rol y por etiqueta, y borran los partidos que crean aunque un test falle. No están en la CI porque necesitarían las claves de la demo como secretos.
+- Los tests unitarios siguen sin hablar nunca con Supabase.
 
 ---
 

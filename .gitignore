@@ -44,3 +44,7 @@ next-env.d.ts
 docs/img/*.mov
 docs/img/*.MOV
 docs/img/raw/
+
+# Playwright
+/playwright-report/
+/test-results/

@@ -291,6 +291,7 @@ npm run dev       # Dev server (port 3000)
 npm run build     # Production build
 npm run lint
 npm run test      # vitest run
+npm run test:e2e  # Playwright against the demo (see Testing)
 ```
 
 ---
@@ -318,7 +319,13 @@ npm run test      # vitest run
 
 - Vitest, `environment: 'node'`, alias `@` → `src`, files `src/**/*.test.ts`. Covered: ELO (`rating-logic`), the mixing algorithm, the auto draw, join copy (`event-capacity`), the AI partido filler's checks (`match-parser`), and date helpers (`utils`: Madrid timezone, round start/end).
 - Anything that depends on a model is measured with an eval script, not unit tests (`src/scripts/eval-match-parser.ts`).
-- No E2E and no tests that talk to Supabase (explicit scope decision). Random algorithms: assert invariants over several runs, never exact outputs, and run the suite a few times to catch flakiness.
+- **E2E with Playwright** (`e2e/`, `npm run test:e2e`): 10 tests on the real flows (public home and redirects to login, login, the splash leaving by itself and showing once per session, publishing a partido, another player joining and leaving, the organizer cancelling).
+  - **Only against the demo.** `e2e/global-setup.ts` refuses to run unless `NEXT_PUBLIC_SUPABASE_URL` is the demo project (the tests write rows). Credentials come from `.env.demo.local` (loaded by `playwright.config.ts`; `DEMO_PASSWORD`, anon and service-role keys).
+  - **Production build on port 3100** (not 3000: Next allows a single dev server per project). A server already listening there is reused, so for quick reruns start it once with `set -a; source .env.demo.local; set +a; npx next start -p 3100`; otherwise each run builds first (~1 min). Serial, one worker, system Chrome (`channel: 'chrome'`).
+  - **Selectors by role and label**, never by class: the tests also check that the UI is reachable for assistive technology. A fixture (`e2e/fixtures.ts`) sets `sessionStorage.sp-splash` so the splash does not cover the page; the splash tests turn it off with `test.use({ skipSplash: false })`.
+  - **Cleanup:** every partido the tests publish carries `e2e-` in its comment and `afterAll` deletes them with the service role, even if a test failed halfway.
+  - **Not in CI** (it would need the demo's keys as GitHub secrets). Unit tests still never talk to Supabase.
+  - Random algorithms: assert invariants over several runs, never exact outputs, and run the suite a few times to catch flakiness.
 
 ## Timezone (Europe/Madrid)
 
