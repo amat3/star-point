@@ -13,14 +13,16 @@ interface HeaderProps {
   // Real role (not the current view): only admins get the view switch
   isAdmin?: boolean
   adminView?: boolean
+  // While the page loads: only the logo, so there is no login button or avatar that is then replaced
+  loading?: boolean
 }
 
-function Header({ profile, userName, isAdmin = false, adminView = false }: HeaderProps) {
+function Header({ profile, userName, isAdmin = false, adminView = false, loading = false }: HeaderProps) {
   return (
     <Root>
       <Logo />
-      
-      {userName ? (
+
+      {loading ? null : userName ? (
         <Actions>
           {adminView && <AdminPill>Admin</AdminPill>}
           <AvatarMenu name={userName} avatarUrl={profile?.avatar_url} isAdmin={isAdmin} adminView={adminView} />

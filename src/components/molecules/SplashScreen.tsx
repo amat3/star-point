@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styled from '@emotion/styled'
-import { ThemeProvider, keyframes } from '@emotion/react'
+import { ThemeProvider, css, keyframes } from '@emotion/react'
 import { lightTheme } from '@/theme'
 
 const SHOW_MS = 3400
@@ -11,9 +11,11 @@ const FADE_MS = 500
 // Runs before the first paint (inline, in the layout): marks the page so the splash
 // is hidden by CSS when it should not appear, instead of flashing and then going away.
 // It only shows on the first load of the session, on the home, and without reduced motion.
-export const SPLASH_GUARD_SCRIPT = `try{var d=document.documentElement;if(location.pathname!=='/'||sessionStorage.getItem('sp-splash')||matchMedia('(prefers-reduced-motion: reduce)').matches)d.setAttribute('data-splash','skip')}catch(e){document.documentElement.setAttribute('data-splash','skip')}`
+// When it does show it also marks the session, here and not after hydration, so a reload
+// before React is ready does not play it again.
+export const SPLASH_GUARD_SCRIPT = `try{var d=document.documentElement;if(location.pathname!=='/'||sessionStorage.getItem('sp-splash')||matchMedia('(prefers-reduced-motion: reduce)').matches)d.setAttribute('data-splash','skip');else sessionStorage.setItem('sp-splash','1')}catch(e){document.documentElement.setAttribute('data-splash','skip')}`
 
-type Phase = 'show' | 'leave' | 'done'
+type Phase = 'show' | 'done'
 
 const NAME = 'starpoint'
 
@@ -27,6 +29,7 @@ const SERVICE_LINE = '15.25%'
 // home is already loading behind it.
 function SplashScreen({ hold = false }: { hold?: boolean }) {
   const [phase, setPhase] = useState<Phase>('show')
+  const rootRef = useRef<HTMLDivElement>(null)
   // Review mode: the animation restarts every few seconds
   const [cycle, setCycle] = useState(0)
 
@@ -49,16 +52,24 @@ function SplashScreen({ hold = false }: { hold?: boolean }) {
     }
     // Skipped: the CSS already hides it, nothing to run
     if (document.documentElement.getAttribute('data-splash') === 'skip') return
-    try {
-      sessionStorage.setItem('sp-splash', '1')
-    } catch {
-      // private mode: the splash simply shows again next time
+    // The exit is a CSS animation that starts with the first paint, so it lasts the same however
+    // late React hydrates. Here we only remove the element once that animation has finished
+    // (it may already have, if hydration was slow).
+    let cancelled = false
+    const finish = () => {
+      if (!cancelled) setPhase('done')
     }
-    const leave = setTimeout(() => setPhase('leave'), SHOW_MS)
-    const done = setTimeout(() => setPhase('done'), SHOW_MS + FADE_MS)
+    const animations = rootRef.current?.getAnimations() ?? []
+    if (animations.length > 0) {
+      Promise.all(animations.map(animation => animation.finished)).then(finish, finish)
+      return () => {
+        cancelled = true
+      }
+    }
+    const fallback = setTimeout(finish, SHOW_MS + FADE_MS)
     return () => {
-      clearTimeout(leave)
-      clearTimeout(done)
+      cancelled = true
+      clearTimeout(fallback)
     }
   }, [hold])
 
@@ -67,7 +78,7 @@ function SplashScreen({ hold = false }: { hold?: boolean }) {
   // Always the light theme: the splash is the brand, whatever the device uses
   return (
     <ThemeProvider theme={lightTheme}>
-      <Root $leaving={phase === 'leave'} data-hold={hold || undefined} role="status" aria-label="Cargando starpoint">
+      <Root ref={rootRef} $hold={hold} data-hold={hold || undefined} role="status" aria-label="Cargando starpoint">
         <Brand key={cycle}>
           <MarkWrap>
             <Court aria-hidden="true">
@@ -152,9 +163,16 @@ const letterIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `
 
+// Fades the whole splash out after SHOW_MS. visibility goes hidden at the end, so it also stops
+// catching taps if the element is still in the DOM.
+const leave = keyframes`
+  from { opacity: 1; visibility: visible; }
+  to { opacity: 0; visibility: hidden; }
+`
+
 const Root = styled('div', {
-  shouldForwardProp: (prop) => prop !== '$leaving',
-})<{ $leaving: boolean }>`
+  shouldForwardProp: (prop) => prop !== '$hold',
+})<{ $hold: boolean }>`
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -166,9 +184,8 @@ const Root = styled('div', {
   overflow: hidden;
   background: var(--sp-bg);
   color: var(--sp-ink);
-  opacity: ${({ $leaving }) => ($leaving ? 0 : 1)};
-  pointer-events: ${({ $leaving }) => ($leaving ? 'none' : 'auto')};
-  transition: opacity ${FADE_MS}ms ease;
+  /* review mode (hold) never leaves */
+  ${({ $hold }) => ($hold ? css`animation: none;` : css`animation: ${leave} ${FADE_MS}ms ${SHOW_MS}ms ease both;`)}
 
   html[data-splash='skip'] &:not([data-hold]) {
     display: none;

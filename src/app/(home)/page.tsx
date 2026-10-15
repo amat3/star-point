@@ -32,18 +32,20 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const profile = user
-    ? (await supabase.from('profiles').select('full_name, avatar_url, role, matches_played, matches_won, win_ratio').eq('id', user.id).single()).data
-    : null
+  // None of these depends on another one, so they go out together instead of one round trip after another
+  const [profileResult, pending, lastMatch, events] = await Promise.all([
+    user
+      ? supabase.from('profiles').select('full_name, avatar_url, role, matches_played, matches_won, win_ratio').eq('id', user.id).single()
+      : null,
+    user ? getPendingActions(user.id) : { actions: [], nextRevealAt: null },
+    user ? getLastMatch(user.id) : null,
+    user ? getOpenEvents() : getPublicEvents(),
+  ])
+  const profile = profileResult?.data ?? null
+  const { actions: pendingActions, nextRevealAt } = pending
 
   const userName = user ? (profile?.full_name ?? user.email?.split('@')[0] ?? 'Jugador') : undefined
-
-  const { actions: pendingActions, nextRevealAt } = user
-    ? await getPendingActions(user.id)
-    : { actions: [], nextRevealAt: null }
   const adminView = await isAdminView(profile?.role)
-  const lastMatch = user ? await getLastMatch(user.id) : null
-  const events = user ? await getOpenEvents() : await getPublicEvents()
 
   // What changes by itself on this page: a partido starts ("En juego") and disappears when it ends, a published
   // draw goes from "Partidos creados" to "En juego" when it starts and to "Resultados pendientes" when its time is over
