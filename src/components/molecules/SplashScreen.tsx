@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styled from '@emotion/styled'
 import { ThemeProvider, css, keyframes } from '@emotion/react'
-import { lightTheme } from '@/theme'
+import { darkTheme, lightTheme } from '@/theme'
 
 const SHOW_MS = 3400
 const FADE_MS = 500
@@ -207,7 +207,8 @@ const MarkWrap = styled.div`
 `
 
 // The court sits behind the logo with its center on the tile: the dot of the logo is the center
-// mark. Lines are the brand green at low opacity, as a group so crossings do not get darker.
+// mark. Lines are the brand green at low opacity (lime on the dark background, where green would
+// vanish), as a group so crossings do not get darker.
 const Court = styled.div`
   --logo-gap-x: 5.5rem;
   --logo-gap-top: 4rem;
@@ -222,6 +223,11 @@ const Court = styled.div`
   color: ${({ theme }) => theme.colors.forest};
   opacity: 0.2;
   pointer-events: none;
+
+  html.dark & {
+    color: ${darkTheme.colors.lime};
+    opacity: 0.4;
+  }
 `
 
 const Outline = styled.svg`
