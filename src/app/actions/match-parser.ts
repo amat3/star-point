@@ -8,10 +8,10 @@ import { utcToMadridDateTime } from '@/lib/utils'
 import {
   MATCH_PARSER_DAILY_LIMIT,
   MATCH_PARSER_FEATURE,
+  MATCH_PARSER_GLOBAL_DAILY_LIMIT,
   MATCH_PARSER_MAX_CHARS,
   MATCH_PARSER_MODEL,
   buildMatchParserPrompt,
-  canUseMatchParser,
   isMatchParserMock,
   isMatchParserOn,
   mockParsedMatch,
@@ -33,9 +33,6 @@ export async function parseMatchText(text: string): Promise<MatchParseResult> {
 
   if (!isMatchParserOn()) throw new Error('El relleno automático no está disponible ahora mismo')
 
-  const { data: profile } = await supabase.from('profiles').select('role, ai_enabled').eq('id', user.id).single()
-  if (!canUseMatchParser(profile)) throw new Error('No tienes activado el relleno automático')
-
   const input = text.trim()
   if (!input) throw new Error('Escribe cómo es el partido')
   if (input.length > MATCH_PARSER_MAX_CHARS) throw new Error(`Máximo ${MATCH_PARSER_MAX_CHARS} caracteres`)
@@ -46,8 +43,8 @@ export async function parseMatchText(text: string): Promise<MatchParseResult> {
     const { data: clubs } = await supabase.from('clubs').select('id, name').order('name')
     await new Promise(resolve => setTimeout(resolve, 800))
     try {
-      const { fill, doubts } = normalizeParsedMatch(mockParsedMatch(input, clubs ?? [], today), clubs ?? [], today)
-      return { fill, doubts, remaining: MATCH_PARSER_DAILY_LIMIT - 1 }
+      const parsed = normalizeParsedMatch(mockParsedMatch(input, clubs ?? [], today), clubs ?? [], today)
+      return { ...parsed, remaining: MATCH_PARSER_DAILY_LIMIT - 1 }
     } catch {
       throw new Error('No he podido entender el texto: rellena el formulario a mano')
     }
@@ -62,16 +59,22 @@ export async function parseMatchText(text: string): Promise<MatchParseResult> {
     .single()
   if (insertError || !request) throw new Error('No se ha podido procesar el texto')
 
-  const { count } = await admin
-    .from('ai_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('feature', MATCH_PARSER_FEATURE)
-    .gte('created_at', new Date(Date.now() - DAY_MS).toISOString())
-  const used = count ?? MATCH_PARSER_DAILY_LIMIT + 1
-  if (used > MATCH_PARSER_DAILY_LIMIT) {
+  const since = new Date(Date.now() - DAY_MS).toISOString()
+  const [{ count: userCount }, { count: globalCount }] = await Promise.all([
+    admin.from('ai_requests').select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id).eq('feature', MATCH_PARSER_FEATURE).gte('created_at', since),
+    admin.from('ai_requests').select('id', { count: 'exact', head: true })
+      .eq('feature', MATCH_PARSER_FEATURE).gte('created_at', since),
+  ])
+  // A failed count counts as over the limit
+  const used = userCount ?? Infinity
+  if (used > MATCH_PARSER_DAILY_LIMIT || (globalCount ?? Infinity) > MATCH_PARSER_GLOBAL_DAILY_LIMIT) {
     await admin.from('ai_requests').delete().eq('id', request.id)
-    throw new Error(`Has usado los ${MATCH_PARSER_DAILY_LIMIT} rellenos de hoy: completa el formulario a mano`)
+    throw new Error(
+      used > MATCH_PARSER_DAILY_LIMIT
+        ? `Has usado los ${MATCH_PARSER_DAILY_LIMIT} rellenos de hoy: completa el formulario a mano`
+        : 'La demo ha llegado al límite de rellenos de hoy: completa el formulario a mano',
+    )
   }
 
   const { data: clubs } = await admin.from('clubs').select('id, name').order('name')
@@ -87,8 +90,8 @@ export async function parseMatchText(text: string): Promise<MatchParseResult> {
     })
     if (!message.parsed_output) throw new Error('empty output')
 
-    const { fill, doubts } = normalizeParsedMatch(message.parsed_output, clubs ?? [], today)
-    return { fill, doubts, remaining: MATCH_PARSER_DAILY_LIMIT - used }
+    const parsed = normalizeParsedMatch(message.parsed_output, clubs ?? [], today)
+    return { ...parsed, remaining: MATCH_PARSER_DAILY_LIMIT - used }
   } catch (error) {
     console.error('parseMatchText', error)
     throw new Error('No he podido entender el texto: rellena el formulario a mano')

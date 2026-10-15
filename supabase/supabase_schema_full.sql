@@ -46,8 +46,7 @@ create table public.profiles (
   gender text,
   preferred_hand text,
   court_position text,
-  is_guest boolean not null default false,
-  ai_enabled boolean not null default false
+  is_guest boolean not null default false
 );
 
 create table public.events (
@@ -468,7 +467,7 @@ create policy "Admins can delete courts" on public.courts as permissive for dele
 create policy profiles_select_authenticated on public.profiles as permissive for select to authenticated using (true);
 create policy profiles_update_own on public.profiles as permissive for update to authenticated
   using (auth.uid() = id) with check (auth.uid() = id);
--- …and only the columns the profile page edits: role, rating, stats, is_guest and ai_enabled stay server-only
+-- …and only the columns the profile page edits: role, rating, stats and is_guest stay server-only
 revoke update on public.profiles from anon, authenticated;
 grant update (full_name, avatar_url, gender, preferred_hand, court_position, updated_at)
   on public.profiles to authenticated;

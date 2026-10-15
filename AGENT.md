@@ -116,6 +116,7 @@ The MCP `execute_sql` tool may be refused for production DDL/DML the user has no
 - **`matches` has no DELETE policy for users.** A delete with the normal client returns no error and removes nothing (this left stale matches behind and made the generator say "ya tiene partidos generados"). Every action that deletes matches (`deleteEvent`, `reopenDraw`, `updateEvent` when it undoes a draw, `saveAllRounds` when it clears leftovers) deletes with the **admin client after authorizing the caller**.
 - Never trust ids coming from the client in Server Actions: derive the user from the session (see `getMatchHistory`, which ignores any id).
 - Files with `'use server'` may **only export async functions** (types are fine). Put constants/helpers in a plain module (e.g. `lib/match-events.ts`).
+- **`profiles` UPDATE is granted per column** (`supabase_migration_profiles_column_grants.sql`, applied in prod and demo): players can only change `full_name`, `avatar_url`, `gender`, `preferred_hand`, `court_position` and `updated_at` of their own row. Before it, `profiles_update_own` let any player set their own `role`/`rating` through the API. A new column is server-only by default; if the profile page must edit it, add a `grant update (col)`. Gotcha: `revoke update on table` does **not** remove column-level grants (production had them): revoke column by column. The signup trigger inserts the initial rating (3.5).
 - Use the service-role client (`utils/supabase/admin.ts`) only after authorizing the caller (players cannot insert events directly: `createMatchEvent` validates and then writes as admin).
 
 ---
@@ -133,6 +134,8 @@ VAPID_SUBJECT
 TEST_PUSH_USER_IDS               # optional: comma-separated user ids that receive the pushes of is_test events (none set = nobody)
 WEEKLY_EVENT_CREATED_BY          # optional: owner of the weekly event (none set = the first admin)
 PUSH_DISABLED=true               # optional, local only: no push is sent (testing against the real DB without bothering the group). Never set it on Vercel
+ANTHROPIC_API_KEY                # demo project only: the AI partido filler (see "AI: partido from free text")
+AI_MATCH_PARSER                  # optional: false turns the AI filler off; mock (local only) gives canned answers without the API
 ```
 
 ---
@@ -213,6 +216,22 @@ Two layers: (1) plan groups of 4 per round (random start + local search over swa
 
 ---
 
+## AI: partido from free text (demo only)
+
+A box above the "Publicar partido" form ("Escríbelo y lo relleno por ti") turns a sentence, typed or dictated, into the form values with Claude Haiku 4.5. **It never publishes**: it fills the same react-hook-form form and the player reviews and publishes. Read it outside-in: `app/partido/page.tsx` → `components/events/MatchForm.tsx` (`applyFill`, amber/lime `Flash`) → `MatchAssistant.tsx` → `lib/use-speech-dictation.ts` → `app/actions/match-parser.ts` → `lib/match-parser.ts`.
+
+- **Where it runs**: only on the public demo (`NEXT_PUBLIC_DEMO=true` + `ANTHROPIC_API_KEY`), for every signed-in account; `isMatchParserOn()` decides on the server and the production app never shows it. The demo keeps `AI_MATCH_PARSER=false` until the user buys API credits (they only will when a recruiter asks for access): with a key but no credits every call fails with "No he podido entender el texto".
+- **Server action gates, cheapest first**: session → switch → 300 chars → usage caps → model. Caps: 5 per account and **50 for the whole demo** per rolling 24 h (demo accounts are shared by every visitor), counted in `ai_requests` (demo DB only; RLS on, no policies). The row is inserted **before** counting so parallel requests cannot all slip under the cap; a failed count counts as over the limit.
+- **Model call**: `client.messages.parse` + `zodOutputFormat(parsedMatchSchema)` in `output_config.format`. Structured outputs do not support numeric/length constraints (the SDK strips them), so limits live in `normalizeParsedMatch`.
+- **Treat the model output as untrusted input**: `normalizeParsedMatch` drops clubs that are not in the DB, impossible or past dates, invalid times and more than 3 players, and turns each drop into a doubt shown to the player. Required fields the text did not mention come back as `missing` (computed by code, not by the model) and the form keeps and flags their value ("No has dicho la hora: he dejado las 20:00").
+- **Prompt**: the real club list plus a precomputed 21-day calendar ("jueves 2026-10-15"), so the model looks dates up instead of doing calendar maths; "better null and a doubt than a guess"; the player's text is data, never instructions (prompt injection is one of the eval phrases).
+- **Dictation**: the browser's Web Speech API (`es-ES`), free, text only reaches the server. On iOS only Safari gets the service: Chrome/Firefox/Edge on iOS expose the recognizer but fail with `service-not-allowed`, so the button is hidden there (UA check) and also after that error; the hint points to the keyboard microphone. The microphone needs HTTPS: test on a phone through the **demo** Preview, not the LAN IP. In Playwright, fake both `window.SpeechRecognition` and `webkitSpeechRecognition` (current Chrome has the unprefixed one).
+- **Local work**: `.env.local` points to the **production** DB. For this feature run against the demo: `set -a; source .env.demo.local; set +a; AI_MATCH_PARSER=mock npm run dev` (mock: canned answers; "error" in the text shows the failure state). Never test on the Preview of the production project: it uses the production DB with push on.
+- **Verification**: unit tests for the pure part (`lib/match-parser.test.ts`) and an eval against the real model, `npx -y tsx src/scripts/eval-match-parser.ts` (16 phrases with expected fields, frozen date, ~$0.05 per run; reads the key from `.env.local`). Change the prompt → run the eval.
+- Cost reference: ~$0.003 per request (Haiku 4.5, $1/$5 per million tokens).
+
+---
+
 ## Match lifecycle
 
 ```
@@ -288,7 +307,8 @@ npm run test      # vitest run
 
 ## Testing
 
-- Vitest, `environment: 'node'`, alias `@` → `src`, files `src/**/*.test.ts`. Covered: ELO (`rating-logic`), the mixing algorithm, and date helpers (`utils`: Madrid timezone, round start/end).
+- Vitest, `environment: 'node'`, alias `@` → `src`, files `src/**/*.test.ts`. Covered: ELO (`rating-logic`), the mixing algorithm, the auto draw, join copy (`event-capacity`), the AI partido filler's checks (`match-parser`), and date helpers (`utils`: Madrid timezone, round start/end).
+- Anything that depends on a model is measured with an eval script, not unit tests (`src/scripts/eval-match-parser.ts`).
 - No E2E and no tests that talk to Supabase (explicit scope decision). Random algorithms: assert invariants over several runs, never exact outputs, and run the suite a few times to catch flakiness.
 
 ## Timezone (Europe/Madrid)
@@ -309,6 +329,7 @@ All displayed dates/times are formatted with `timeZone: 'Europe/Madrid'` on the 
 - `src/scripts/` holds one-off maintenance scripts (ESLint-ignored). Disposable test scripts live outside git with a `.tmp-` prefix and are deleted afterwards, along with any rows they created.
 - Never touch the real production event when testing: use `is_test = true` events and clean up everything created (matches → participants → event → guests).
 - Before any irreversible production data migration take a Supabase backup (`pg_dump` of `public` + `auth.users`).
+- Git worktrees (e.g. to ship a hotfix from `main` while a feature branch has uncommitted work): `next build` fails there with a symlinked `node_modules` (Turbopack refuses symlinks pointing outside the root). Build in the main checkout or install dependencies in the worktree.
 - zsh gotcha: unquoted variables are **not** word-split (`git push origin --delete $LIST` silently did nothing, and `env $VAR_STRING cmd` does not work either): use a `for` loop, or `bash -c "export A=1 B=2; cmd"` when sweeping parameters.
 
 ## Release status (2026-10-07)
@@ -323,6 +344,6 @@ Parked: a blank list reported after confirming a result in the draw view could n
 A fictional copy for showing the app (portfolio, recruiters) without exposing the real group: **https://star-point-demo.vercel.app**.
 - **Data**: Supabase project `dibjelontnvnqdqaljqo` (the real one is `idnovsdkodfxaumkbosy`; never mix them up). Built from `supabase/supabase_schema_full.sql` plus `src/scripts/seed-demo.ts`: 16 Springfield characters, 8 past mixings with a real draw and real ELO (the shown ratings are an Elo replay, so they match what the app would compute), a published draw, an open mixing, two partidos, one exclusion and 3 fictional clubs. Accounts: `demo@example.com` (player) and `admin-demo@example.com` (admin), password = `DEMO_PASSWORD`. Public sign-up is disabled.
 - **Seed script**: `npx -y tsx src/scripts/seed-demo.ts` (dry run, writes nothing), `--apply`, `--apply --reset` to rebuild. It reads **only** `.env.demo.local` (git-ignored: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PUSH_DISABLED=true`, `DEMO_PASSWORD`) and refuses to run unless the URL is the demo project's.
-- **Deployment**: Vercel project `star-point-demo`, connected to the same repository, so a push to `main` deploys both. Its env vars are the demo's own, plus `NEXT_PUBLIC_DEMO=true`, which shows `DemoBanner` and makes `create-weekly-event` skip. No VAPID keys, no `pg_cron`.
+- **Deployment**: Vercel project `star-point-demo`, connected to the same repository, so a push to `main` deploys both. Its env vars are the demo's own, plus `NEXT_PUBLIC_DEMO=true`, which shows `DemoBanner`, makes `create-weekly-event` and `generate-draws` skip and enables the AI partido filler (with `ANTHROPIC_API_KEY`; `AI_MATCH_PARSER=false` while there are no API credits). No VAPID keys, no `pg_cron`.
 - **Never run `vercel link` in this directory** (it would point production deploys to the demo). Target the demo only per command with `VERCEL_ORG_ID=<team> VERCEL_PROJECT_ID=<demo project id>`; project settings and env vars go through `vercel api` (the CLI's own session). Secrets are piped from the env file to Vercel, never printed.
 - **MCP**: two Supabase servers with different names: `supabase` (production) and `supabase-demo` (user scope, `--project-ref` of the demo). **Name the project before every change** and double-check it with `get_project_url`. Production data and DDL need the user's explicit approval; the demo is for experiments.

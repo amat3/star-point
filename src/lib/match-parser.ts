@@ -8,6 +8,8 @@ export const MATCH_PARSER_FEATURE = 'match_parser'
 export const MATCH_PARSER_MODEL = 'claude-haiku-4-5'
 export const MATCH_PARSER_MAX_CHARS = 300
 export const MATCH_PARSER_DAILY_LIMIT = 5
+// The demo accounts are shared by every visitor, so the whole demo also has a daily cap
+export const MATCH_PARSER_GLOBAL_DAILY_LIMIT = 50
 // Days listed in the prompt so the model picks dates from a table instead of doing calendar maths
 const CALENDAR_DAYS = 21
 
@@ -34,43 +36,50 @@ export interface MatchFill {
   notes?: string
 }
 
+// Fields every match needs: when the text does not mention one, the form keeps its current value
+export const REQUIRED_MATCH_FIELDS = ['club_id', 'date', 'time', 'needed'] as const
+export type RequiredMatchField = (typeof REQUIRED_MATCH_FIELDS)[number]
+
 export interface MatchParseResult {
   fill: MatchFill
   doubts: string[]
+  // Required fields the text did not mention (not the ones it mentioned wrongly: those are doubts)
+  missing: RequiredMatchField[]
   remaining: number
 }
 
-/**
- * Canned answers without calling the API. Always on the public demo (visitors must not spend the
- * API key); locally with AI_MATCH_PARSER=mock to work on the UI. Never on the production app.
- */
+/** Canned answers without calling the API, to work on the UI locally (AI_MATCH_PARSER=mock). */
 export function isMatchParserMock() {
-  if (process.env.NEXT_PUBLIC_DEMO === 'true') return true
   return process.env.AI_MATCH_PARSER === 'mock' && process.env.NODE_ENV !== 'production'
 }
 
-/** Kill switch (AI_MATCH_PARSER=false) and no key = the feature is off for everyone. Server only. */
+/**
+ * The feature only exists on the public demo, for every signed-in account. It needs the API key,
+ * and AI_MATCH_PARSER=false turns it off. The production app never shows it. Server only.
+ */
 export function isMatchParserOn() {
   if (isMatchParserMock()) return true
-  return process.env.AI_MATCH_PARSER !== 'false' && Boolean(process.env.ANTHROPIC_API_KEY)
+  return (
+    process.env.NEXT_PUBLIC_DEMO === 'true' &&
+    process.env.AI_MATCH_PARSER !== 'false' &&
+    Boolean(process.env.ANTHROPIC_API_KEY)
+  )
 }
 
-/** Stand-in for the model in mock mode. Type "error" to see the failure state. */
+/**
+ * Stand-in for the model in mock mode. Type "error" to see the failure state; the club only
+ * comes back if the text says "club" and the time only if it has a digit, to try missing fields.
+ */
 export function mockParsedMatch(text: string, clubs: { name: string }[], today: string): ParsedMatch {
   if (/error/i.test(text)) throw new Error('mock error')
   return {
-    club: clubs[0]?.name ?? null,
+    club: /club/i.test(text) ? clubs[0]?.name ?? null : null,
     date: addDays(today, 1),
-    time: '19:00',
+    time: /\d/.test(text) ? '19:00' : null,
     needed: 2,
     notes: 'Mejor un revés',
     doubts: ['Modo simulado: estos datos no salen de tu texto'],
   }
-}
-
-/** Admins always; players once an admin sets profiles.ai_enabled. */
-export function canUseMatchParser(profile: { role?: string | null; ai_enabled?: boolean | null } | null) {
-  return profile?.role === 'admin' || profile?.ai_enabled === true
 }
 
 const DATE_RE =/^\d{4}-\d{2}-\d{2}$/
@@ -128,7 +137,7 @@ export function normalizeParsedMatch(
   parsed: ParsedMatch,
   clubs: { id: string; name: string }[],
   today: string,
-): { fill: MatchFill; doubts: string[] } {
+): { fill: MatchFill; doubts: string[]; missing: RequiredMatchField[] } {
   const fill: MatchFill = {}
   const doubts = parsed.doubts.map(d => d.trim()).filter(Boolean).slice(0, 4)
 
@@ -163,5 +172,13 @@ export function normalizeParsedMatch(
   const notes = parsed.notes?.trim()
   if (notes) fill.notes = notes.slice(0, MATCH_NOTES_MAX).trim()
 
-  return { fill, doubts }
+  const mentioned: Record<RequiredMatchField, boolean> = {
+    club_id: Boolean(parsed.club),
+    date: Boolean(parsed.date),
+    time: Boolean(parsed.time),
+    needed: parsed.needed !== null,
+  }
+  const missing = REQUIRED_MATCH_FIELDS.filter(field => !mentioned[field])
+
+  return { fill, doubts, missing }
 }

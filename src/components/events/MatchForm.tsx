@@ -14,7 +14,7 @@ import Field from '@/components/molecules/Field'
 import SegmentedControl from '@/components/molecules/SegmentedControl'
 import MatchAssistant from './MatchAssistant'
 import { MATCH_NOTES_MAX, MATCH_NOTE_SUGGESTIONS } from '@/lib/match-events'
-import type { MatchFill } from '@/lib/match-parser'
+import type { MatchFill, RequiredMatchField } from '@/lib/match-parser'
 import { madridDateTimeToUTC } from '@/lib/utils'
 
 const formSchema = z.object({
@@ -55,12 +55,14 @@ interface MatchFormProps {
 function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, assistant = false }: MatchFormProps) {
   const [needed, setNeeded] = useState<'1' | '2' | '3'>(String(initial.needed) as '1' | '2' | '3')
   const [submitting, setSubmitting] = useState(false)
-  // Fields the assistant just filled: they flash for a moment so the player sees what changed
-  const [filled, setFilled] = useState<(keyof MatchFill)[]>([])
+  // Fields the assistant just touched flash for a moment: lime if it filled them, amber if the
+  // text did not mention them and they kept their previous value
+  const [flashes, setFlashes] = useState<Partial<Record<keyof MatchFill, FlashTone>>>({})
 
   const {
     register,
     handleSubmit,
+    getValues,
     setValue,
     watch,
     formState: { errors },
@@ -71,21 +73,35 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
 
   const notes = watch('notes') ?? ''
 
-  function applyFill(fill: MatchFill) {
+  /** Fills what the assistant found; returns, for each missing field, the value it kept. */
+  function applyFill(fill: MatchFill, missing: RequiredMatchField[]) {
+    const kept: Partial<Record<RequiredMatchField, string>> = {}
+    for (const field of missing) {
+      if (field === 'club_id') kept.club_id = clubs.find(c => c.id === getValues('club_id'))?.name ?? ''
+      if (field === 'date') kept.date = getValues('date') ? formatDay(getValues('date')) : ''
+      if (field === 'time') kept.time = getValues('time')
+      if (field === 'needed') kept.needed = needed
+    }
+
     const options = { shouldValidate: true, shouldDirty: true }
     if (fill.club_id) setValue('club_id', fill.club_id, options)
     if (fill.date) setValue('date', fill.date, options)
     if (fill.time) setValue('time', fill.time, options)
     if (fill.notes) setValue('notes', fill.notes, options)
     if (fill.needed) setNeeded(String(fill.needed) as '1' | '2' | '3')
-    setFilled(Object.keys(fill) as (keyof MatchFill)[])
+
+    const next: Partial<Record<keyof MatchFill, FlashTone>> = {}
+    for (const field of Object.keys(fill) as (keyof MatchFill)[]) next[field] = 'filled'
+    for (const field of missing) next[field] = 'missing'
+    setFlashes(next)
+    return kept
   }
 
   useEffect(() => {
-    if (filled.length === 0) return
-    const timer = setTimeout(() => setFilled([]), FLASH_MS)
+    if (Object.keys(flashes).length === 0) return
+    const timer = setTimeout(() => setFlashes({}), FLASH_MS)
     return () => clearTimeout(timer)
-  }, [filled])
+  }, [flashes])
 
   async function submit(values: FormValues) {
     setSubmitting(true)
@@ -105,7 +121,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
     <Stack>
       {assistant && <MatchAssistant onFill={applyFill} />}
       <Form onSubmit={handleSubmit(submit)}>
-        <Flash $on={filled.includes('club_id')}>
+        <Flash $tone={flashes.club_id}>
           <Field label="Club" htmlFor="match-club" error={errors.club_id?.message}>
             <Select id="match-club" {...register('club_id')}>
               <option value="">Elige un club…</option>
@@ -117,19 +133,19 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
         </Flash>
 
         <Row>
-          <Flash $on={filled.includes('date')}>
+          <Flash $tone={flashes.date}>
             <Field label="Fecha" htmlFor="match-date" error={errors.date?.message}>
               <Input id="match-date" type="date" {...register('date')} />
             </Field>
           </Flash>
-          <Flash $on={filled.includes('time')}>
+          <Flash $tone={flashes.time}>
             <Field label="Hora" htmlFor="match-time" error={errors.time?.message}>
               <Input id="match-time" type="time" {...register('time')} />
             </Field>
           </Flash>
         </Row>
 
-        <Flash $on={filled.includes('needed')}>
+        <Flash $tone={flashes.needed}>
           <Field label="¿Cuántos jugadores buscas?" htmlFor="match-needed">
             <SegmentedControl
               label="Jugadores que buscas"
@@ -145,7 +161,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
           </Field>
         </Flash>
 
-        <Flash $on={filled.includes('notes')}>
+        <Flash $tone={flashes.notes}>
           <Field label="Comentarios (opcional)" htmlFor="match-notes" error={errors.notes?.message}>
             <Textarea id="match-notes" rows={3} maxLength={MATCH_NOTES_MAX} placeholder="Ej.: buscamos un revés" {...register('notes')} />
             <div>
@@ -175,17 +191,26 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
 
 const FLASH_MS = 1600
 
+type FlashTone = 'filled' | 'missing'
+
+/** "2026-10-15" → "jueves 15 oct" */
+function formatDay(isoDate: string) {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'short' })
+    .format(new Date(Date.UTC(y, m - 1, d)))
+}
+
 const flash = keyframes`
   from { box-shadow: 0 0 0 4px var(--flash-color); }
   to { box-shadow: 0 0 0 4px transparent; }
 `
 
-const Flash = styled('div', { shouldForwardProp: prop => prop !== '$on' })<{ $on: boolean }>`
+const Flash = styled('div', { shouldForwardProp: prop => prop !== '$tone' })<{ $tone?: FlashTone }>`
   min-width: 0;
-  --flash-color: ${({ theme }) => theme.colors.lime};
+  --flash-color: ${({ theme, $tone }) => ($tone === 'missing' ? theme.colors.amber : theme.colors.lime)};
 
   & :is(input, select, textarea, [role='radiogroup']) {
-    animation: ${({ $on }) => ($on ? flash : 'none')} ${FLASH_MS}ms ease-out;
+    animation: ${({ $tone }) => ($tone ? flash : 'none')} ${FLASH_MS}ms ease-out;
   }
 
   @media (prefers-reduced-motion: reduce) {

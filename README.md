@@ -43,6 +43,13 @@ Cualquier jugador puede publicar un **partido** (club, fecha, hora y cuántas pa
 
 La pantalla del partido muestra siempre los **4 puestos**: el organizador, los jugadores que ya tiene cerrados fuera de la app (con el nombre que él les ponga), los que se apuntan y las plazas libres. El organizador puede **añadir jugadores de fuera del grupo**, renombrarlos o quitarlos, editar el partido o cancelarlo; desaparece al terminar.
 
+**Publicar escribiéndolo o dictándolo, con IA (solo en la demo).** Encima del formulario hay una caja donde se describe el partido con palabras ("busco 2 para el jueves a las 19:00 en Padel Indoor, mejor un revés") o se dicta con el micrófono, y **Claude Haiku 4.5** rellena el formulario. Nunca publica: el jugador revisa y publica.
+- El modelo devuelve una estructura fija (salidas estructuradas con Zod) y el código la trata como una entrada no fiable: descarta clubs que no existen, fechas pasadas o más de 3 jugadores y lo explica como dudas.
+- Si el texto no dice algún dato obligatorio, avisa del valor que se ha quedado ("No has dicho la hora: he dejado las 20:00") y lo resalta en ámbar. Los campos rellenados se resaltan en lima.
+- El dictado usa el reconocimiento de voz del navegador (en iPhone, Safari); donde no existe, la caja recuerda el micro del teclado.
+- Límites en servidor: 300 caracteres, 5 usos al día por cuenta y 50 en toda la demo, contados en la tabla `ai_requests`.
+- Se valida con tests de la parte determinista y con una evaluación de 16 frases contra el modelo real.
+
 ### ⚔️ Resultados y ranking
 - Cada jugador ve **solo su partido** del sorteo. El resultado se guarda como **juegos totales** (sin sets).
 - Un jugador introduce el marcador, el rival lo confirma o lo corrige ("Hay un error en el marcador"). Si pasan 24 horas sin respuesta se confirma el último marcador; los partidos sin resultado caducan sin puntuar.
@@ -73,6 +80,7 @@ Supabase Realtime en eventos, partidos e inscripciones; notificaciones push; ins
 | Despliegue | Vercel (cron semanal); `pg_cron` de Supabase para el cierre y el sorteo automáticos |
 | Formularios | React Hook Form + Zod v4 |
 | Iconos | Lucide React |
+| IA | Claude Haiku 4.5 con el SDK de Anthropic (salidas estructuradas), Web Speech API para el dictado |
 
 ---
 
@@ -87,7 +95,7 @@ src/
 │   ├── atoms/            # Button, Input, Avatar, Select, Switch…
 │   ├── molecules/        # Header, TabBar, Dialog, PlayerList, CourtCard…
 │   └── organisms/        # EventOpenView, EventDrawView, EventGenerator, MatchEventView…
-├── lib/                  # rating-logic, mixing-algorithm, auto-draw, draw-publish, confirm-match, event-draw…
+├── lib/                  # rating-logic, mixing-algorithm, auto-draw, draw-publish, confirm-match, match-parser…
 └── theme.ts              # Tokens de diseño
 supabase/                 # Esquema completo, migraciones y jobs de pg_cron (se aplican a mano)
 docs/                     # Caso de estudio (es/en) y capturas
@@ -127,7 +135,9 @@ TEST_PUSH_USER_IDS=id1,id2            # opcional: quién recibe los avisos de lo
 WEEKLY_EVENT_CREATED_BY=id            # opcional: autor del evento semanal (por defecto, el primer admin)
 PUSH_DISABLED=true                    # opcional, solo en local: no se envía ninguna notificación
 AUTO_DRAW=false                       # opcional: apaga el sorteo automático sin redesplegar
-NEXT_PUBLIC_DEMO=true                 # solo en el despliegue de demo: muestra el aviso y no crea eventos ni sortea solo
+NEXT_PUBLIC_DEMO=true                 # solo en el despliegue de demo: muestra el aviso, no crea eventos ni sortea solo y activa el relleno con IA
+ANTHROPIC_API_KEY=sk-ant-...          # solo en la demo: el relleno del partido con IA
+AI_MATCH_PARSER=false                 # opcional: apaga el relleno con IA (mock, solo en local: respuestas de ejemplo sin llamar a la API)
 ```
 
 ### Base de datos
@@ -140,7 +150,8 @@ La demo (datos ficticios de Los Simpson) es otro proyecto de Supabase y otro des
 
 ## ✅ Tests y CI
 
-- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de sorteo (`mixing-algorithm.test.ts`), sorteo automático (ventana de 3 horas y elección del mejor sorteo, `auto-draw.test.ts`), textos de la inscripción (`event-capacity.test.ts`) y utilidades de fechas y rondas (`utils.test.ts`).
+- **Vitest** para la lógica pura de mayor riesgo: ELO (`rating-logic.test.ts`), algoritmo de sorteo (`mixing-algorithm.test.ts`), sorteo automático (ventana de 3 horas y elección del mejor sorteo, `auto-draw.test.ts`), textos de la inscripción (`event-capacity.test.ts`), validación de lo que devuelve la IA (`match-parser.test.ts`) y utilidades de fechas y rondas (`utils.test.ts`).
+- **Evaluación de la IA** contra el modelo real: `npx -y tsx src/scripts/eval-match-parser.ts` (16 frases con los campos esperados, unos 5 céntimos por pasada).
 - `npm run test` (una vez) / `npm run test:watch` (modo watch).
 - **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
 - Fuera de alcance por ahora: tests E2E y de server actions que hablan con Supabase.

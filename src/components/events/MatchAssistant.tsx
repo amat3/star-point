@@ -7,7 +7,7 @@ import Button from '@/components/atoms/Button'
 import Card, { CardDescription, CardTitle } from '@/components/atoms/Card'
 import Textarea from '@/components/atoms/Textarea'
 import { parseMatchText } from '@/app/actions/match-parser'
-import { MATCH_PARSER_MAX_CHARS, type MatchFill } from '@/lib/match-parser'
+import { MATCH_PARSER_MAX_CHARS, type MatchFill, type RequiredMatchField } from '@/lib/match-parser'
 import { useSpeechDictation } from '@/lib/use-speech-dictation'
 
 const FIELD_LABELS: Record<keyof MatchFill, string> = {
@@ -18,12 +18,31 @@ const FIELD_LABELS: Record<keyof MatchFill, string> = {
   notes: 'comentario',
 }
 
+type KeptValues = Partial<Record<RequiredMatchField, string>>
+
+/** "No has dicho la hora: he dejado 20:00" for every required field the text left out. */
+function missingMessages(missing: RequiredMatchField[], kept: KeptValues) {
+  return missing.map(field => {
+    const value = kept[field]
+    switch (field) {
+      case 'club_id':
+        return value ? `No has dicho el club donde juegas: he dejado ${value}` : 'No has dicho el club donde juegas: elígelo en el formulario'
+      case 'date':
+        return value ? `No has dicho el día del partido: he dejado el ${value}` : 'No has dicho el día del partido: elígelo en el formulario'
+      case 'time':
+        return value ? `No has dicho la hora a la que juegas: he dejado las ${value}` : 'No has dicho la hora a la que juegas: elígela en el formulario'
+      case 'needed':
+        return `No has dicho cuántos jugadores buscas: he dejado ${value}`
+    }
+  })
+}
+
 // Free text → form values. It only fills the form below; publishing stays a manual step.
-function MatchAssistant({ onFill }: { onFill: (fill: MatchFill) => void }) {
+function MatchAssistant({ onFill }: { onFill: (fill: MatchFill, missing: RequiredMatchField[]) => KeptValues }) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ filled: string[]; doubts: string[]; remaining: number } | null>(null)
+  const [result, setResult] = useState<{ filled: string[]; missing: string[]; doubts: string[]; remaining: number } | null>(null)
   // What was written before the current dictation: the transcript is appended to it
   const textBeforeDictation = useRef('')
   const dictation = useSpeechDictation(transcript => {
@@ -41,10 +60,10 @@ function MatchAssistant({ onFill }: { onFill: (fill: MatchFill) => void }) {
     setError(null)
     setResult(null)
     try {
-      const { fill, doubts, remaining } = await parseMatchText(text)
-      onFill(fill)
+      const { fill, missing, doubts, remaining } = await parseMatchText(text)
+      const kept = onFill(fill, missing)
       const filled = (Object.keys(fill) as (keyof MatchFill)[]).map(key => FIELD_LABELS[key])
-      setResult({ filled, doubts, remaining })
+      setResult({ filled, missing: missingMessages(missing, kept), doubts, remaining })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No he podido entender el texto')
     } finally {
@@ -103,10 +122,15 @@ function MatchAssistant({ onFill }: { onFill: (fill: MatchFill) => void }) {
           {result.filled.length > 0
             ? `He rellenado: ${result.filled.join(', ')}. Revisa el formulario antes de publicar.`
             : 'No he encontrado datos del partido en el texto.'}
-          {result.doubts.length > 0 && (
+          {result.missing.length + result.doubts.length > 0 && (
             <Doubts>
-              {result.doubts.map(doubt => <li key={doubt}>{doubt}</li>)}
+              {[...result.missing, ...result.doubts].map(line => <li key={line}>{line}</li>)}
             </Doubts>
+          )}
+          {result.missing.length > 0 && (
+            <Hint>
+              {dictation.supported ? 'Díctalo o escríbelo' : 'Escríbelo'} y pulsa Rellenar otra vez, o cámbialo en el formulario.
+            </Hint>
           )}
           <Remaining>
             {result.remaining === 1 ? 'Te queda 1 relleno hoy' : `Te quedan ${result.remaining} rellenos hoy`}
@@ -163,6 +187,11 @@ const Doubts = styled.ul`
     border-radius: 50%;
     background: ${({ theme }) => theme.colors.amber};
   }
+`
+
+const Hint = styled.p`
+  margin: ${({ theme }) => theme.spacing(2, 0, 0)};
+  color: ${({ theme }) => theme.colors.subtle};
 `
 
 const Remaining = styled.p`

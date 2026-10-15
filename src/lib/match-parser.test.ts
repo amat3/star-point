@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMatchParserPrompt,
-  canUseMatchParser,
   normalizeName,
   normalizeParsedMatch,
   type ParsedMatch,
@@ -24,6 +23,12 @@ describe('normalizeParsedMatch', () => {
     )
     expect(fill).toEqual({ club_id: 'c1', date: '2026-10-15', time: '19:00', needed: 2, notes: 'Mejor un revés' })
     expect(doubts).toEqual([])
+  })
+
+  it('lists the required fields the text did not mention, but not the wrong ones', () => {
+    const { missing } = normalizeParsedMatch({ ...empty, club: 'Padel Norte', date: '2026-10-15', notes: 'Mixto' }, CLUBS, TODAY)
+    expect(missing).toEqual(['time', 'needed'])
+    expect(normalizeParsedMatch(empty, CLUBS, TODAY).missing).toEqual(['club_id', 'date', 'time', 'needed'])
   })
 
   it('matches clubs ignoring case and accents', () => {
@@ -83,12 +88,5 @@ describe('buildMatchParserPrompt', () => {
 describe('helpers', () => {
   it('normalizes names', () => {
     expect(normalizeName('  Club  PÁDEL ')).toBe('club padel')
-  })
-
-  it('lets admins and enabled players in', () => {
-    expect(canUseMatchParser({ role: 'admin', ai_enabled: false })).toBe(true)
-    expect(canUseMatchParser({ role: 'player', ai_enabled: true })).toBe(true)
-    expect(canUseMatchParser({ role: 'player', ai_enabled: false })).toBe(false)
-    expect(canUseMatchParser(null)).toBe(false)
   })
 })
