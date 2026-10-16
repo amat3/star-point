@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { createClient } from '@supabase/supabase-js'
 import type { Page } from '@playwright/test'
 import { expect } from './fixtures'
@@ -32,4 +33,21 @@ export async function removeE2EMatches() {
   await db.from('event_participants').delete().in('event_id', ids)
   await db.from('events').delete().in('id', ids)
   return ids.length
+}
+
+/**
+ * Runs axe-core on the current page with the WCAG 2.0, 2.1 and 2.2 A and AA rules and fails with
+ * one readable line per problem. Automated checks cover only part of WCAG (contrast, names and
+ * roles, labels, landmarks...): this guards against regressions, it is not an audit.
+ */
+export async function expectNoA11yViolations(page: Page) {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze()
+  const lines = violations.map(violation => {
+    const first = violation.nodes[0]
+    const detail = first.any[0]?.message ?? first.failureSummary?.split('\n')[1]?.trim() ?? ''
+    return `${violation.id} (${violation.impact}) x${violation.nodes.length}: ${violation.help} | ${first.target.join(' ')} | ${detail}`
+  })
+  expect(lines, 'WCAG 2.2 AA (axe-core)').toEqual([])
 }

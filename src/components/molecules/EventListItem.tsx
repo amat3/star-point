@@ -183,7 +183,7 @@ const Availability = styled('span', {
   align-items: center;
   /* wider than the dot's ring so the pulse never touches the text */
   gap: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme, $full, $created, $pending }) => ($full ? theme.colors.coral : $pending ? theme.colors.amber : $created ? theme.colors.subtle : theme.colors.forest)};
+  color: ${({ theme, $full, $created, $pending }) => ($full ? theme.colors.coral : $pending ? theme.colors.amber : $created ? theme.colors.subtle : theme.colors.forestText)};
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
 `

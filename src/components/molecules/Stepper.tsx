@@ -64,7 +64,7 @@ const Step = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.fieldBorder};
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.field};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   cursor: pointer;
   touch-action: manipulation;
 
@@ -83,7 +83,7 @@ const Step = styled.button`
 
 const Value = styled.span`
   min-width: 3rem;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['5xl']};
   font-weight: 700;

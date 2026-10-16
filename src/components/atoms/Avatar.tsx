@@ -71,8 +71,9 @@ const Fallback = styled(AvatarPrimitive.Fallback)`
   height: 100%;
   align-items: center;
   justify-content: center;
+  /* The same beige and dark green in both themes: the initials need the pair, whatever the theme text color is */
   background: #efe8dc;
-  color: ${({ theme }) => theme.colors.forest};
+  color: #123d32;
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;

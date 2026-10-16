@@ -8,7 +8,7 @@ export type BadgeVariant = 'default' | 'accent' | 'danger' | 'outline'
 const variants = (t: Theme): Record<BadgeVariant, string> => ({
   default: `background: ${t.colors.forest}; color: ${t.colors.onForest}; border-color: transparent;`,
   accent: `background: ${t.colors.lime}; color: ${t.colors.forestDeep}; border-color: transparent;`,
-  danger: `background: ${t.colors.coral}; color: #fff; border-color: transparent;`,
+  danger: `background: ${t.colors.coral}; color: ${t.colors.onCoral}; border-color: transparent;`,
   outline: `background: transparent; color: ${t.colors.ink}; border-color: ${t.colors.line};`,
 })
 

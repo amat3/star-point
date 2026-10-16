@@ -85,7 +85,7 @@ const tabStyles = (theme: Theme) => css`
   text-decoration: none;
 
   &[aria-current='page'] {
-    color: ${theme.colors.forest};
+    color: ${theme.colors.forestText};
   }
 `
 

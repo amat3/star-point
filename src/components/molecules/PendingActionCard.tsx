@@ -73,7 +73,7 @@ const Eyebrow = styled.span`
 `
 
 const When = styled.span`
-  opacity: 0.6;
+  opacity: 0.75;
   font-size: ${({ theme }) => theme.fontSizes['2xs']};
 `
 
@@ -88,13 +88,13 @@ const Title = styled.h3`
 
 const Description = styled.p`
   margin: ${({ theme }) => theme.spacing(2, 0, 0)};
-  opacity: 0.7;
+  opacity: 0.8;
   font-size: ${({ theme }) => theme.fontSizes.sm};
 `
 
 const Context = styled.p`
   margin: ${({ theme }) => theme.spacing(0, 0, 2)};
-  opacity: 0.6;
+  opacity: 0.75;
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
 `
@@ -123,7 +123,7 @@ const Names = styled.div`
   display: flex;
   max-width: 100%;
   flex-direction: column;
-  opacity: 0.6;
+  opacity: 0.75;
   font-size: ${({ theme }) => theme.fontSizes.sm};
   line-height: 1.3;
 

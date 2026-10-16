@@ -37,7 +37,7 @@ const IconBox = styled.div`
   height: 2.5rem;
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
 
   svg {
     width: 1.125rem;

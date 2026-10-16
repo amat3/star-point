@@ -21,7 +21,7 @@ const Tag = styled.span`
   padding: ${({ theme }) => theme.spacing(0.5, 2)};
   border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-size: ${({ theme }) => theme.fontSizes.xs};
   font-weight: 700;
 `

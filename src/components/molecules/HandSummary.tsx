@@ -33,7 +33,7 @@ const Chip = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.xs};
 
   strong {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
 `
 

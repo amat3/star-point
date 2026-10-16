@@ -343,7 +343,7 @@ const Chip = styled.span`
 
 const Title = styled.h1`
   margin: 0;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['4xl']};
   font-weight: 700;
@@ -404,7 +404,7 @@ const Action = styled.div`
 `
 
 const Score = styled.strong`
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;

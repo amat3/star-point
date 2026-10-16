@@ -282,7 +282,7 @@ const Level = styled.span`
   padding: ${({ theme }) => theme.spacing(1, 3)};
   border-radius: ${({ theme }) => theme.radii.sm};
   background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 700;
 `
@@ -339,7 +339,7 @@ const Placeholder = styled.span`
   border: 1.5px dashed ${({ theme }) => theme.colors.fieldBorder};
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;

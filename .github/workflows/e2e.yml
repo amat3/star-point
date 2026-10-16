@@ -1,0 +1,47 @@
+name: E2E (demo)
+
+# The Playwright suite (real flows + accessibility with axe-core) against the DEMO database.
+# Not on every push: the tests write rows to one shared database, and a slow Supabase response
+# would paint the repository red for no reason. It runs by hand and every Monday morning.
+# Needs these repository secrets, all from the demo project (never the production ones):
+#   DEMO_SUPABASE_URL, DEMO_SUPABASE_ANON_KEY, DEMO_SUPABASE_SERVICE_ROLE_KEY, DEMO_PASSWORD
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+# Two runs at once would step on each other's rows
+concurrency:
+  group: e2e-demo
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chrome
+
+      # The config builds the app, starts it and refuses to run unless the database is the demo one
+      - run: npx playwright test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.DEMO_SUPABASE_SERVICE_ROLE_KEY }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+          PUSH_DISABLED: 'true'
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

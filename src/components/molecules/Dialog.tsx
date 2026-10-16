@@ -134,7 +134,7 @@ const Title = styled.h2`
   margin: 0;
   padding: 0;
   border: 0;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['2xl']};
   font-weight: 700;

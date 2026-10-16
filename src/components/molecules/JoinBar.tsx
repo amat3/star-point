@@ -64,7 +64,7 @@ const Shield = styled.p`
     flex-shrink: 0;
     width: 0.875rem;
     height: 0.875rem;
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
 `
 

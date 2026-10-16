@@ -207,7 +207,7 @@ const Notice = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.base};
 
   a {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
     font-weight: 700;
   }
 `
@@ -227,7 +227,7 @@ const Hint = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.md};
 
   a {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
     font-weight: 700;
   }
 `
@@ -237,7 +237,7 @@ const ExclusionsLink = styled(Link)`
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
 
@@ -277,7 +277,7 @@ const Summary = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.md};
 
   strong {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
 `
 

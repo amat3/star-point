@@ -153,7 +153,7 @@ const Meta = styled.div`
 
 const Rating = styled.span`
   flex-shrink: 0;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;

@@ -43,19 +43,28 @@ export const lightTheme = {
     // Raised cards sitting on the page background
     card: '#fffefa',
     forest: '#123d32',
+    // The brand green as TEXT. In the light theme it is the same as forest; in the dark one forest is
+    // a surface color (buttons, cards) and too dark to read as text, so text gets its own lighter tone
+    forestText: '#123d32',
     forestDeep: '#0b2b24',
     lime: '#d9f36a',
     ink: '#17221e',
-    muted: '#7c8780',
+    // Secondary text. Darkened from #7c8780 (3.6:1) so it reaches 4.5:1 (WCAG AA) on the page, the
+    // cards and the tinted rows; the axe test in e2e/a11y.spec.ts keeps it that way
+    muted: '#626b66',
     // Secondary text that must stay readable on cards (a bit darker than muted)
-    subtle: '#68766e',
+    subtle: '#5a655e',
     line: '#e6e9e1',
     coral: '#f2795b',
     // Event over but results still to be saved or confirmed
-    amber: '#a67c00',
+    amber: '#886600',
     online: '#70bb6a',
     alert: '#ef5d4a',
     danger: '#d4271c',
+    // Red as text (the danger color is also a button background with white text, so it cannot move)
+    dangerText: '#d4271c',
+    // Text on the coral pills
+    onCoral: '#17221e',
     field: '#ffffff',
     fieldBorder: '#85938b',
     focusRing: 'rgba(18, 61, 50, 0.22)',
@@ -68,7 +77,7 @@ export const lightTheme = {
     heroHaloInner: 'rgba(217, 243, 106, 0.045)',
     heroHaloOuter: 'rgba(217, 243, 106, 0.035)',
     onForest: '#fbfaf6',
-    tabInactive: '#929a93',
+    tabInactive: '#626b66',
     glass: 'rgba(251, 250, 246, 0.96)',
     hairline: 'rgba(18, 61, 50, 0.08)',
   },
@@ -117,6 +126,7 @@ export const darkTheme: Theme = {
     surface: '#142019',
     card: '#142019',
     forest: '#2f7a62',
+    forestText: '#41aa88',
     forestDeep: '#1f5745',
     lime: '#e3ff7a',
     ink: '#f3f5ef',
@@ -127,7 +137,10 @@ export const darkTheme: Theme = {
     amber: '#f2cc4d',
     online: '#7fd078',
     alert: '#ff6a55',
-    danger: '#e5333a',
+    // Button background with white text: 4.5:1 needs this tone (dangerText is the one for red text)
+    danger: '#e3242b',
+    dangerText: '#e95157',
+    onCoral: '#0b1512',
     field: '#0b1512',
     fieldBorder: '#587066',
     focusRing: 'rgba(227, 255, 122, 0.28)',

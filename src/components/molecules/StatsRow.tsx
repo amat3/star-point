@@ -64,7 +64,7 @@ const Root = styled.section`
 type Tone = 'brand' | 'win' | 'loss'
 
 const toneColor = (theme: Theme, tone: Tone) =>
-  ({ brand: theme.colors.forest, win: theme.colors.online, loss: theme.colors.danger })[tone]
+  ({ brand: theme.colors.forestText, win: theme.colors.online, loss: theme.colors.dangerText })[tone]
 
 // The border carries the color: brand for totals, green for wins, red for losses.
 const Tile = styled('div', {
@@ -96,7 +96,7 @@ const Caption = styled.span`
 
 const Value = styled.span`
   align-self: center;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['5xl']};
   font-weight: 700;

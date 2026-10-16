@@ -154,7 +154,7 @@ La demo (datos ficticios de Los Simpson) es otro proyecto de Supabase y otro des
 - **Evaluación de la IA** contra el modelo real: `npx -y tsx src/scripts/eval-match-parser.ts` (16 frases con los campos esperados, unos 5 céntimos por pasada).
 - `npm run test` (una vez) / `npm run test:watch` (modo watch).
 - **GitHub Actions** (`.github/workflows/ci.yml`) ejecuta en cada push a `main` y en cada PR: `tsc --noEmit` → `eslint` → `vitest run` → `next build`.
-- **Tests E2E con Playwright** (`e2e/`, `npm run test:e2e`) sobre los flujos reales: portada pública y redirección al login, acceso, la splash, publicar un partido, apuntarse y desapuntarse con otro usuario y cancelarlo. Corren **solo contra la demo** (una comprobación se niega a ejecutarse contra cualquier otra base de datos), usan selectores por rol y por etiqueta, y borran los partidos que crean aunque un test falle. No están en la CI porque necesitarían las claves de la demo como secretos.
+- **Tests E2E con Playwright** (`e2e/`, `npm run test:e2e`): 26 tests, 16 de ellos de accesibilidad (axe-core, WCAG 2.2 AA, en tema claro y oscuro, sin ningún problema de contraste ni de etiquetas), más los flujos reales: portada pública y redirección al login, acceso, la splash, publicar un partido, apuntarse y desapuntarse con otro usuario y cancelarlo. Corren **solo contra la demo** (una comprobación se niega a ejecutarse contra cualquier otra base de datos), usan selectores por rol y por etiqueta, y borran los partidos que crean aunque un test falle. Se ejecutan a mano y cada lunes en GitHub Actions (`e2e.yml`), contra la demo, y no en cada push para que una respuesta lenta de la base de datos no ponga el repositorio en rojo.
 - Los tests unitarios siguen sin hablar nunca con Supabase.
 
 ---

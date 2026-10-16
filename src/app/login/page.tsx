@@ -183,7 +183,7 @@ const Form = styled.form`
 
 const Heading = styled.h1`
   margin: ${({ theme }) => theme.spacing(0, 0, 1)};
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;
@@ -202,7 +202,7 @@ const TextButton = styled.button`
   padding: 0;
   border: 0;
   background: transparent;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: inherit;
   font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 600;
@@ -217,6 +217,6 @@ const Message = styled('p', {
   shouldForwardProp: (prop) => prop !== '$error',
 })<{ $error?: boolean }>`
   margin: 0;
-  color: ${({ theme, $error }) => ($error ? theme.colors.alert : theme.colors.forest)};
+  color: ${({ theme, $error }) => ($error ? theme.colors.alert : theme.colors.forestText)};
   font-size: ${({ theme }) => theme.fontSizes.md};
 `

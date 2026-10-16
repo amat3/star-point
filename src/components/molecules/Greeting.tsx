@@ -34,7 +34,7 @@ const DateLabel = styled.p`
 
 const Title = styled.h1`
   margin: 0;
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: ${({ theme }) => theme.fontSizes['3xl']};
   font-weight: 700;

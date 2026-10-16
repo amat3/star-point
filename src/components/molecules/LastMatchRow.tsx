@@ -34,8 +34,8 @@ const Root = styled.div`
 
 // Same code as the history cards: green win, red loss, neutral draw.
 const outcomeColors = (theme: Theme, outcome: LastMatchRowProps['outcome']) => ({
-  win: { tint: theme.colors.winTint, icon: theme.colors.online, score: theme.colors.forest },
-  loss: { tint: theme.colors.coralTint, icon: theme.colors.danger, score: theme.colors.danger },
+  win: { tint: theme.colors.winTint, icon: theme.colors.online, score: theme.colors.forestText },
+  loss: { tint: theme.colors.coralTint, icon: theme.colors.danger, score: theme.colors.dangerText },
   draw: { tint: theme.colors.surface, icon: theme.colors.muted, score: theme.colors.ink },
 })[outcome]
 

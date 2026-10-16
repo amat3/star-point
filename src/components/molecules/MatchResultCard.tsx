@@ -56,8 +56,8 @@ function MatchResultCard({ date, context, outcome, myTeam, opponents, games }: M
 
 // Outcome colors: a tinted card with a stronger stripe on the left.
 const outcomeColors = (theme: Theme, outcome: MatchOutcome) => ({
-  win: { stripe: theme.colors.online, tint: theme.colors.winTint, score: theme.colors.forest },
-  loss: { stripe: theme.colors.danger, tint: theme.colors.coralTint, score: theme.colors.danger },
+  win: { stripe: theme.colors.online, tint: theme.colors.winTint, score: theme.colors.forestText },
+  loss: { stripe: theme.colors.danger, tint: theme.colors.coralTint, score: theme.colors.dangerText },
   draw: { stripe: theme.colors.fieldBorder, tint: 'transparent', score: theme.colors.ink },
 })[outcome]
 

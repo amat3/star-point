@@ -13,7 +13,8 @@ const HeroCard = styled.div`
   padding: ${({ theme }) => theme.spacing(5)};
   border-radius: ${({ theme }) => theme.radii.lg};
   box-shadow: ${({ theme }) => theme.shadows.card};
-  background: ${({ theme }) => theme.colors.forest};
+  /* hero: the same green in the light theme, a darker one in the dark theme so the soft text on it keeps 4.5:1 */
+  background: ${({ theme }) => theme.colors.hero};
   color: ${({ theme }) => theme.colors.onForest};
   isolation: isolate;
 

@@ -253,7 +253,7 @@ const Status = styled.p`
 
   strong {
     margin-left: ${({ theme }) => theme.spacing(1)};
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
     font-family: ${({ theme }) => theme.fonts.display};
     font-size: ${({ theme }) => theme.fontSizes.lg};
   }

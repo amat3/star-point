@@ -139,7 +139,7 @@ const Celebration = styled.div`
     width: 3.5rem;
     height: 3.5rem;
     margin-bottom: ${({ theme }) => theme.spacing(2)};
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
   p {
     margin: 0;

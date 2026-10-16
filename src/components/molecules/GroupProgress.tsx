@@ -69,7 +69,7 @@ const Title = styled.h2`
 `
 
 const Free = styled.span`
-  color: ${({ theme }) => theme.colors.forest};
+  color: ${({ theme }) => theme.colors.forestText};
   font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 700;
 `
@@ -94,7 +94,7 @@ const Count = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
 
   strong {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
 `
 

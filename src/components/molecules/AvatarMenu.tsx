@@ -122,7 +122,7 @@ const Indicator = styled.span`
   place-items: center;
 
   svg {
-    color: ${({ theme }) => theme.colors.forest};
+    color: ${({ theme }) => theme.colors.forestText};
   }
 `
 
