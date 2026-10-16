@@ -119,7 +119,7 @@ function MatchForm({ clubs, initial, submitLabel, submittingLabel, onSubmit, ass
 
   return (
     <Stack>
-      {assistant && <MatchAssistant onFill={applyFill} />}
+      {assistant && <MatchAssistant onFill={applyFill} exampleClub={clubs[0]?.name} />}
       <Form onSubmit={handleSubmit(submit)}>
         <Flash $tone={flashes.club_id}>
           <Field label="Club" htmlFor="match-club" error={errors.club_id?.message}>

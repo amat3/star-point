@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase, firstName, roundStartsAt, roundEndsAt } from './utils'
+import { madridDateTimeToUTC, utcToMadridDateTime, toTitleCase, firstName, roundStartsAt, roundEndsAt, formatEventMonth, formatEventDate } from './utils'
 
 describe('madridDateTimeToUTC', () => {
   it('convierte 20:00 Madrid en verano (CEST, +2) a 18:00 UTC', () => {
@@ -86,5 +86,24 @@ describe('firstName', () => {
     expect(firstName('M')).toBe('M')
     expect(firstName('')).toBe('')
     expect(firstName(null)).toBe('')
+  })
+})
+
+describe('el año en las fechas de los eventos', () => {
+  const now = new Date('2026-10-16T10:00:00Z')
+
+  it('no se muestra si el evento es de este año', () => {
+    expect(formatEventMonth('2026-10-21T18:00:00Z', now)).toBe('oct')
+    expect(formatEventDate('2026-10-21T18:00:00Z', now)).toBe('Miércoles, 21 de octubre')
+  })
+
+  it('se muestra si el evento es de otro año, para que un evento lejano no parezca pasado', () => {
+    expect(formatEventMonth('2028-10-14T17:00:00Z', now)).toBe('oct ’28')
+    expect(formatEventDate('2028-10-14T17:00:00Z', now)).toBe('Sábado, 14 de octubre de 2028')
+  })
+
+  it('cuenta el año en hora de Madrid: el 31 de diciembre a las 23:30 UTC ya es 2027 allí', () => {
+    expect(formatEventMonth('2026-12-31T23:30:00Z', now)).toBe('ene ’27')
+    expect(formatEventMonth('2026-12-31T22:30:00Z', now)).toBe('dic')
   })
 })

@@ -38,7 +38,7 @@ function missingMessages(missing: RequiredMatchField[], kept: KeptValues) {
 }
 
 // Free text → form values. It only fills the form below; publishing stays a manual step.
-function MatchAssistant({ onFill }: { onFill: (fill: MatchFill, missing: RequiredMatchField[]) => KeptValues }) {
+function MatchAssistant({ onFill, exampleClub }: { onFill: (fill: MatchFill, missing: RequiredMatchField[]) => KeptValues; exampleClub?: string }) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -86,7 +86,7 @@ function MatchAssistant({ onFill }: { onFill: (fill: MatchFill, missing: Require
         aria-label="Describe el partido"
         rows={3}
         maxLength={MATCH_PARSER_MAX_CHARS}
-        placeholder="Ej.: busco 2 para el jueves a las 19:00 en Padel Indoor, mejor un revés"
+        placeholder={`Ej.: busco 2 para el jueves a las 19:00 en ${exampleClub ?? 'el club'}, mejor un revés`}
         value={text}
         onChange={e => setText(e.target.value)}
       />

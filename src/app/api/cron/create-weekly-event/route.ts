@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { PLAYERS_PER_COURT } from '@/lib/utils'
 import { sendPushToUsers } from '@/lib/push'
+import { MIXING_TITLE } from '@/lib/event-title'
 
 const MADRID_TZ = 'Europe/Madrid'
 const COURTS = 3
 const ROUNDS = 3
 const DURATION_MINUTES = 90
-const EVENT_TITLE = 'Mixing Padel y Risas'
+const EVENT_TITLE = MIXING_TITLE
 const DEFAULT_CLUB_NAME = 'Padel Indoor'
 
 function getMadridHour(): number {

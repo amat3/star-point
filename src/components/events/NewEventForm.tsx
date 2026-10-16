@@ -16,6 +16,7 @@ import Field from '@/components/molecules/Field'
 import SettingRow from '@/components/molecules/SettingRow'
 import { createEvent } from '@/app/actions/events'
 import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
+import { MIXING_TITLE } from '@/lib/event-title'
 
 const formSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres'),
@@ -46,7 +47,7 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: 'Mixing Padel y Risas',
+      title: MIXING_TITLE,
       club_id: clubs.find(c => c.name === 'Padel Indoor')?.id ?? '',
       date: utcToMadridDateTime(new Date().toISOString()).date,
       time: '20:00',
@@ -82,7 +83,7 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Field label="Título" htmlFor="title" error={errors.title?.message}>
-        <Input id="title" placeholder="Ej: Mixing Padel y Risas" {...register('title')} />
+        <Input id="title" placeholder={`Ej: ${MIXING_TITLE}`} {...register('title')} />
       </Field>
 
       <Field label="Club" htmlFor="club_id" hint="Si todavía no se sabe, se mostrará «Club por confirmar»." error={errors.club_id?.message}>

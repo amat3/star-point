@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { calculateNewRating, applyGuestProtection } from '../lib/rating-logic'
 import { generateEventRounds, type MixingParticipant, type MixingConfig } from '../lib/mixing-algorithm'
+import { DEMO_MIXING_TITLE } from '../lib/event-title'
 
 const DEMO_REF = 'dibjelontnvnqdqaljqo'
 const PROD_REF = 'idnovsdkodfxaumkbosy'
@@ -24,6 +25,9 @@ const PAST_EVENTS = 8
 const PLAYERS_PER_EVENT = 12
 const ROUNDS = 3
 const MADRID_TZ = 'Europe/Madrid'
+// The open mixing and the partidos are dated this far ahead (104 weeks: the weekday does not change), so the
+// demo does not run out of upcoming events and needs no weekly refresh. Re-seed before this date passes.
+const HORIZON_DAYS = 728
 
 // --- environment: only the demo file, only the demo project -----------------------------------
 const env: Record<string, string> = {}
@@ -194,17 +198,19 @@ function simulateEvent(startsAt: string, participants: Character[], prior: SimEv
 // 8 past mixings, oldest first
 const past: SimEvent[] = []
 for (let i = PAST_EVENTS; i >= 1; i--) {
-  const startsAt = madridAt(wednesdayOffset(-1, i - 1), 20)
+  // skip i (not i - 1): the closest past Wednesday is kept for the published draw below
+  const startsAt = madridAt(wednesdayOffset(-1, i), 20)
   // Ralph is the newcomer: he only joins the last two mixings
   const regulars = shuffle(CAST.filter((c) => c.key !== 'ralph')).slice(0, PLAYERS_PER_EVENT - (i <= 2 ? 1 : 0))
   const roster = i <= 2 ? [...regulars, byKey.ralph] : regulars
   past.push(simulateEvent(startsAt, roster, past[past.length - 1] ?? null, true))
 }
-// Published draw (next Wednesday, nothing played yet) and an open mixing (the one after)
+// Published draw: last Wednesday, its results still to be entered. A draw in that state never expires, so the home always
+// shows "Resultados pendientes" and the "Acción pendiente" cards. Then an open mixing, two years ahead.
 // Homer (the demo player account) is always in the published draw, so he sees his own matches
 const drawRoster = [byKey.homer, ...shuffle(CAST.filter((c) => c.key !== 'homer'))].slice(0, PLAYERS_PER_EVENT)
-const drawEvent = simulateEvent(madridAt(wednesdayOffset(1, 0), 20), drawRoster, past[past.length - 1], false)
-const openEventStart = madridAt(wednesdayOffset(1, 1), 20)
+const drawEvent = simulateEvent(madridAt(wednesdayOffset(-1, 0), 20), drawRoster, past[past.length - 1], false)
+const openEventStart = madridAt(wednesdayOffset(1, 0) + HORIZON_DAYS, 20)
 const openParticipants = shuffle(CAST.filter((c) => c.key !== 'homer')).slice(0, PLAYERS_PER_EVENT - 1)
 
 // --- report -----------------------------------------------------------------------------------
@@ -213,8 +219,8 @@ console.log('Final ratings after the 8 past mixings:')
 Object.keys(rating).sort((a, b) => rating[b] - rating[a]).forEach((k) =>
   console.log(`  ${byKey[k].name.padEnd(24)} ${rating[k].toFixed(3)}  ·  ${won[k]}/${played[k]} ganados`))
 console.log(`\nPast mixings: ${past.length} · matches: ${past.reduce((n, e) => n + e.matches.length, 0)} · history rows: ${past.reduce((n, e) => n + e.matches.reduce((m, x) => m + x.history.length, 0), 0)}`)
-console.log(`Published draw: ${drawEvent.startsAt} · ${drawEvent.matches.length} matches (pending)`)
-console.log(`Open mixing:    ${openEventStart} · ${openParticipants.length}/12 signed up`)
+console.log(`Published draw: ${drawEvent.startsAt} · ${drawEvent.matches.length} matches (results pending, never expires)`)
+console.log(`Open mixing:    ${openEventStart} · ${openParticipants.length}/12 signed up · partidos ${HORIZON_DAYS + 1} and ${HORIZON_DAYS + 2} days ahead`)
 const sample = past[past.length - 1].matches.slice(0, 3).map((m) => `  R${m.round} ${m.a1.name.split(' ')[0]}/${m.a2.name.split(' ')[0]} ${m.score} ${m.b1.name.split(' ')[0]}/${m.b2.name.split(' ')[0]}`)
 console.log('\nSample (latest past mixing):\n' + sample.join('\n'))
 
@@ -275,12 +281,14 @@ async function main() {
 
   const makeEvent = async (startsAt: string, status: string, participants: Character[], createdAt?: string) => {
     const { data: ev } = await db.from('events').insert({
-      title: 'Mixing Padel y Risas', start_time: startsAt, max_spots: PLAYERS_PER_EVENT, rounds: ROUNDS, duration_minutes: 90,
+      title: DEMO_MIXING_TITLE, start_time: startsAt, max_spots: PLAYERS_PER_EVENT, rounds: ROUNDS, duration_minutes: 90,
       created_by: admin, status, is_test: false, kind: 'mixing', club_id: clubIds[MAIN], ...(createdAt ? { created_at: createdAt } : {}),
       // A published draw is marked as drawn, like the app does: the automatic draw leaves it alone even after a "Rehacer"
       ...(status === 'in_progress' ? { draw_published_at: createdAt ?? new Date().toISOString() } : {}),
     }).select('id').single().throwOnError()
-    const start = new Date(startsAt).getTime()
+    // Sign-ups are always in the past, in order: for an event two years ahead they cannot hang from its date, or whoever
+    // joins today would sort before the seeded players
+    const start = status === 'open' ? Date.now() : new Date(startsAt).getTime()
     await db.from('event_participants').insert(participants.map((p, i) => ({
       event_id: ev!.id, user_id: uid[p.key], joined_at: new Date(start - (6 * 24 * 60 - i * 7) * 60_000).toISOString(),
     }))).throwOnError()
@@ -324,8 +332,8 @@ async function main() {
     }).select('id').single().throwOnError()
     await db.from('event_participants').insert([organizer, ...extra].map((p) => ({ event_id: ev!.id, user_id: uid[p.key] }))).throwOnError()
   }
-  await partido(byKey.bart, madridAt(1, 19), 1, ['Milhouse', 'Nelson'], 'Necesitamos un revés')
-  await partido(byKey.marge, madridAt(2, 20, 30), 2, ['Patty Bouvier'], 'Partido mixto', [byKey.lisa])
+  await partido(byKey.bart, madridAt(HORIZON_DAYS + 1, 19), 1, ['Milhouse', 'Nelson'], 'Necesitamos un revés')
+  await partido(byKey.marge, madridAt(HORIZON_DAYS + 2, 20, 30), 2, ['Patty Bouvier'], 'Partido mixto', [byKey.lisa])
   await db.from('mixing_exclusions').insert({ player_a: uid.bart, player_b: uid.skinner, type: 'no_contact', note: 'Mejor que no coincidan', created_by: admin }).throwOnError()
 
   console.log('\nDone. Demo accounts: demo@example.com (player) and admin-demo@example.com (admin), password = DEMO_PASSWORD.')

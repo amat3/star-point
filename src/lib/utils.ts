@@ -82,9 +82,21 @@ export function formatTodayLong(now = new Date()) {
   }).format(now)
 }
 
-/** "Viernes, 2 de octubre" (hora de Madrid). */
-export function formatEventDate(dateStr: string) {
-  const date = new Date(dateStr).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' })
+/** Año de una fecha en hora de Madrid. */
+function madridYear(date: Date) {
+  return Number(date.toLocaleDateString('en-CA', { year: 'numeric', timeZone: 'Europe/Madrid' }).slice(0, 4))
+}
+
+/** "Viernes, 2 de octubre" (hora de Madrid), con el año solo si no es el actual: "Sábado, 14 de octubre de 2028". */
+export function formatEventDate(dateStr: string, now = new Date()) {
+  const event = new Date(dateStr)
+  const date = event.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    ...(madridYear(event) !== madridYear(now) ? { year: 'numeric' as const } : {}),
+    timeZone: 'Europe/Madrid',
+  })
   return date.charAt(0).toUpperCase() + date.slice(1)
 }
 
@@ -98,9 +110,12 @@ export function formatEventDay(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', timeZone: 'Europe/Madrid' })
 }
 
-/** Mes abreviado en hora de Madrid: "oct". */
-export function formatEventMonth(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-ES', { month: 'short', timeZone: 'Europe/Madrid' }).replace('.', '')
+/** Mes abreviado en hora de Madrid: "oct", o "oct ’28" si el evento no es de este año (así un evento lejano no parece pasado). */
+export function formatEventMonth(dateStr: string, now = new Date()) {
+  const event = new Date(dateStr)
+  const month = event.toLocaleDateString('es-ES', { month: 'short', timeZone: 'Europe/Madrid' }).replace('.', '')
+  const year = madridYear(event)
+  return year === madridYear(now) ? month : `${month} ’${String(year % 100).padStart(2, '0')}`
 }
 
 /** "Hoy", "Ayer", "Hace 3 días" o "12 sep" (por día natural en Madrid). */
