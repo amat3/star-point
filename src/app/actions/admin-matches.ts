@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { sendPushToUsers } from '@/lib/push'
+import { sendPushAfterResponse } from '@/lib/push'
 
 export async function deleteMatch(matchId: string) {
   console.log('🗑️ Eliminando partido:', matchId)
@@ -88,11 +88,11 @@ async function notifyCourtChange(matchIds: string[], courtName: string, eventId:
   matches?.forEach(m => [m.player_a1, m.player_a2, m.player_b1, m.player_b2].forEach(id => ids.add(id)))
   if (ids.size === 0) return
   const { data: profiles } = await adminSupabase.from('profiles').select('id').in('id', [...ids]).eq('is_guest', false)
-  sendPushToUsers((profiles ?? []).map(p => p.id), {
+  sendPushAfterResponse((profiles ?? []).map(p => p.id), {
     title: 'Cambio de pista',
     body: `Tu partido se juega ahora en ${courtName}`,
     url: `/events/${eventId}`,
-  }).catch(console.error)
+  })
 }
 
 // Moves matches to another court of the event's club, in situ (the club had a problem with a court).

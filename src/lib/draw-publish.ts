@@ -27,7 +27,7 @@ export interface PublishDrawInput {
 export async function publishDraw(
   admin: SupabaseClient,
   input: PublishDrawInput
-): Promise<{ title: string; notifications: Promise<void> }> {
+): Promise<{ title: string; notifications: Promise<unknown> }> {
   const { eventId, creatorId, rounds, courts = {}, extraRecipients = [] } = input
 
   const { data: event } = await admin
@@ -110,8 +110,9 @@ export async function publishDraw(
     playerIds = Array.from(new Set([...(participants ?? []).map(p => p.user_id), ...extraRecipients]))
   }
 
-  // Not awaited here: the admin screen does not need to wait for the push service. A caller that runs
-  // in a function that ends right after (the cron endpoint) awaits `notifications` before returning.
+  // Not awaited here, so the caller decides how: the admin screen hands it to `after` (the function stays
+  // alive until it settles, without making the admin wait), and the cron endpoint awaits it before returning.
+  // Never leave it floating: on a serverless platform a promise nobody waits for can be cut short.
   const notifications = sendPushToUsers(playerIds, {
     title: '¡Sorteo listo!',
     body: `Ya puedes ver tus partidos de "${event.title}"`,

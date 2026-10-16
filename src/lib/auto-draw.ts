@@ -131,7 +131,7 @@ export async function runAutoDraw(admin: SupabaseClient, event: DueEvent, now: n
     return skip('generation_failed', `No se ha podido generar el sorteo de "${event.title}": ${error instanceof Error ? error.message : String(error)}.`)
   }
 
-  let playersNotified: Promise<void>
+  let playersNotified: Promise<unknown>
   try {
     ;({ notifications: playersNotified } = await publishDraw(admin, {
       eventId: event.id,

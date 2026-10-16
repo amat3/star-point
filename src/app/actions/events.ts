@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
-import { sendPushToUsers, getTestPushAudience } from '@/lib/push'
+import { sendPushAfterResponse, getTestPushAudience } from '@/lib/push'
 import { MAX_RESERVES } from '@/lib/event-capacity'
 import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_NOTES_MAX, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
@@ -234,11 +234,11 @@ export async function leaveEvent(eventId: string) {
 
   if (promotion?.promoted_user_id) {
     const recipients = event.is_test ? getTestPushAudience() : [promotion.promoted_user_id]
-    sendPushToUsers(recipients, {
+    sendPushAfterResponse(recipients, {
       title: '¡Pasas a titular!',
       body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
       url: `/events/${promotion.promoted_event_id}`,
-    }).catch(console.error)
+    })
   }
 
   revalidatePath('/')
@@ -306,11 +306,11 @@ export async function createEvent(data: { title: string, start_time: string, max
       minute: '2-digit',
     }).format(new Date(newEvent.start_time))
 
-    sendPushToUsers(playerIds, {
+    sendPushAfterResponse(playerIds, {
       title: 'Nuevo evento disponible',
       body: `"${newEvent.title}" el ${formattedDate} — ¡apúntate!`,
       url: '/',
-    }).catch(console.error)
+    })
 
     revalidatePath('/')
     revalidatePath('/mixing')
@@ -461,11 +461,11 @@ export async function removeParticipant(eventId: string, userId: string) {
     if (promotion?.promoted_user_id) {
       const { data: eventInfo } = await supabase.from('events').select('is_test').eq('id', eventId).single()
       const recipients = eventInfo?.is_test ? getTestPushAudience() : [promotion.promoted_user_id]
-      sendPushToUsers(recipients, {
+      sendPushAfterResponse(recipients, {
         title: '¡Pasas a titular!',
         body: `Has pasado a titular en "${promotion.promoted_event_title}"`,
         url: `/events/${promotion.promoted_event_id}`,
-      }).catch(console.error)
+      })
     }
 
     if (targetProfile?.is_guest) {
@@ -707,11 +707,11 @@ export async function createMatchEvent(input: MatchInput) {
 
   // Push to the whole group, except whoever published it
   const { data: players } = await admin.from('profiles').select('id').eq('is_guest', false).neq('id', user.id)
-  sendPushToUsers((players ?? []).map(p => p.id), {
+  sendPushAfterResponse((players ?? []).map(p => p.id), {
     title: 'Nuevo partido',
     body: `${input.needed === 1 ? 'Falta 1 jugador' : `Faltan ${input.needed} jugadores`} · ${formatMatchWhen(event.start_time)} · ${club.name}`,
     url: `/events/${event.id}`,
-  }).catch(console.error)
+  })
 
   revalidatePath('/')
   return { id: event.id as string }
@@ -741,14 +741,14 @@ export async function updateMatchEvent(eventId: string, input: MatchInput) {
   if (changedPlace || changedTime) {
     const { data: joined } = await admin.from('event_participants').select('user_id').eq('event_id', eventId)
     const { data: club } = await admin.from('clubs').select('name').eq('id', input.club_id).single()
-    sendPushToUsers(
+    sendPushAfterResponse(
       (joined ?? []).map(p => p.user_id).filter(id => id !== event.created_by),
       {
         title: 'Partido actualizado',
         body: `${formatMatchWhen(input.start_time)}${club ? ` · ${club.name}` : ''}`,
         url: `/events/${eventId}`,
       }
-    ).catch(console.error)
+    )
   }
 
   revalidatePath('/')
@@ -766,10 +766,10 @@ export async function cancelMatchEvent(eventId: string) {
   const { error } = await admin.from('events').delete().eq('id', eventId)
   if (error) throw new Error(error.message)
 
-  sendPushToUsers(
+  sendPushAfterResponse(
     (joined ?? []).map(p => p.user_id).filter(id => id !== user.id),
     { title: 'Partido cancelado', body: `Se ha cancelado el partido de ${formatMatchWhen(event.start_time)}`, url: '/' }
-  ).catch(console.error)
+  )
 
   revalidatePath('/')
   return { success: true }

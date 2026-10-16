@@ -232,6 +232,16 @@ A box above the "Publicar partido" form ("Escríbelo y lo relleno por ti") turns
 
 ---
 
+## Push notifications
+
+- **Send with `sendPushAfterResponse` (`lib/push.ts`) from any action or route; never leave `sendPushToUsers(...)` floating** (`.catch(console.error)` without waiting). On Vercel a promise nobody waits for can be cut short when the response goes out, and some devices never get the notification. `after()` keeps the function alive until the sends settle without making the user wait. Where the caller is a cron endpoint, `await` it (as `auto-draw.ts` does). `publishDraw` returns its `notifications` promise for the caller to await or hand to `after`.
+- **One log line per send**: `[push] {"title","recipients","devices","sent","removed","failed","services","errors"}`. It says how many devices the recipients have, how many the push service accepted, how many it said are gone (404/410: the row is deleted) and which service answered what (`apple:410`, `google:403`…), with no endpoints or ids. Failures other than 404/410 log the push service's reason (`BadJwtToken`, `UnauthorizedRegistration`…). Read it with `vercel logs -p star-point --environment production -x` (the CLI shows Madrid time and keeps only about an hour on the Hobby plan, so look soon after the event).
+- **"Accepted" is not "delivered"**: `sent` only means the push service took it. If a player says nothing arrived and `sent` counts their device, look at the phone (iOS: the app must be installed on the home screen, notifications allowed for it, no Focus mode).
+- **The toggle in Profile says "on" from the browser's own subscription** (`pushManager.getSubscription()`), not from the server: a subscription the server deleted after a 404/410 still shows as active. A player with 0 rows in `push_subscriptions` never receives anything. Group check (read-only, SQL editor): `select p.full_name, count(s.id) from profiles p left join push_subscriptions s on s.user_id = p.id where not p.is_guest group by 1 order by 2, 1`. On 2026-10-16, 13 of 31 players had 0 devices.
+- Sends are skipped for `is_test` events except to `TEST_PUSH_USER_IDS`, and entirely with `PUSH_DISABLED=true`. The demo has no VAPID keys.
+
+---
+
 ## Loading performance (first byte and splash)
 
 - **The home streams.** `src/app/(home)/loading.tsx` (route group: the URL stays `/`, and the rest of the pages keep their normal redirects) makes Next send the layout, with the splash, as soon as the function starts instead of after the last query. Without it the first byte waited for the whole page (0.6 to 1.2 s, spikes of 10 s whenever Supabase was slow) and the screen stayed blank. The fallback is `Header loading` + `HomeSkeleton` + `TabBar` (logged in or not guessed from the `sb-*-auth-token` cookie, no network), so coming back to Inicio does not make the header and tabs blink. Measured on a production build: first byte 12-120 ms, full response 0.17-9.5 s.

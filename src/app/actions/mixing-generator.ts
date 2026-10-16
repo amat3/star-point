@@ -6,6 +6,7 @@ import { MatchProposal } from '@/lib/mixing-algorithm'
 import { loadMixingData, type MixingData } from '@/lib/mixing-data'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { publishDraw, type DrawCourts } from '@/lib/draw-publish'
+import { after } from 'next/server'
 
 export async function getEventMixingData(eventId: string): Promise<MixingData> {
   const supabase = await createClient()
@@ -33,7 +34,9 @@ export async function saveAllRounds(
   if (profile?.role !== 'admin') throw new Error('Solo los administradores pueden guardar rondas')
 
   // Same publication as the automatic draw (src/lib/draw-publish.ts); the admin is also told
-  await publishDraw(getAdminClient(), { eventId, creatorId: user.id, rounds, courts, extraRecipients: [user.id] })
+  const { notifications } = await publishDraw(getAdminClient(), { eventId, creatorId: user.id, rounds, courts, extraRecipients: [user.id] })
+  // The admin screen does not wait for the push service, but the function must stay alive until it finishes
+  after(() => notifications)
 
   revalidatePath('/')
   revalidatePath('/mixing')
