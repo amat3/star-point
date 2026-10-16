@@ -65,6 +65,8 @@ export const lightTheme = {
     dangerText: '#d4271c',
     // Text on the coral pills
     onCoral: '#17221e',
+    // Text of the soft warning button: it sits on the coral tint, which is darker than the page
+    warnText: '#c02319',
     field: '#ffffff',
     fieldBorder: '#85938b',
     focusRing: 'rgba(18, 61, 50, 0.22)',
@@ -141,6 +143,7 @@ export const darkTheme: Theme = {
     danger: '#e3242b',
     dangerText: '#e95157',
     onCoral: '#0b1512',
+    warnText: '#ff8a68',
     field: '#0b1512',
     fieldBorder: '#587066',
     focusRing: 'rgba(227, 255, 122, 0.28)',

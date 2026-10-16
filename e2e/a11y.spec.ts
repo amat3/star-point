@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures'
-import { PLAYER, expectNoA11yViolations, login } from './helpers'
+import { ADMIN, PLAYER, expectNoA11yViolations, login } from './helpers'
 
 // axe-core over the main screens, in the light and the dark theme. Contrast is where this app slipped
 // (muted text, brand green on dark surfaces): the theme tokens were adjusted until it reported nothing.
@@ -46,6 +46,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await expect(page.getByRole('heading').first()).toBeVisible()
         await expectNoA11yViolations(page)
       })
+    })
+
+    // The manage panel (edit, add player, cancel) only exists for the organizer or an admin in the admin view,
+    // so the player tests never saw it: that is where the "Cancelar" warning button hid a contrast failure
+    test('un partido visto como administrador', async ({ page, context, baseURL }) => {
+      await login(page, ADMIN)
+      await context.addCookies([{ name: 'sp_view', value: 'admin', url: baseURL! }])
+      await page.goto('/')
+      const partido = page.locator('a[href^="/events/"]', { hasText: /Partido(?!s)/ }).first()
+      test.skip((await partido.count()) === 0, 'the demo has no partido to open right now')
+      await page.goto((await partido.getAttribute('href'))!)
+      await expect(page.getByRole('region', { name: 'Gestionar partido' })).toBeVisible()
+      await expectNoA11yViolations(page)
     })
   })
 }

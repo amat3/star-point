@@ -14,7 +14,7 @@ const variants = (t: Theme): Record<ButtonVariant, string> => ({
   ghost: `background: transparent; color: ${t.colors.ink}; border-color: transparent;`,
   danger: `background: ${t.colors.danger}; color: ${t.colors.onDanger}; border-color: transparent;`,
   // Soft red: a warning action that should not compete with the main one
-  warn: `background: ${t.colors.coralTint}; color: ${t.colors.danger}; border-color: ${t.colors.coral};`,
+  warn: `background: ${t.colors.coralTint}; color: ${t.colors.warnText}; border-color: ${t.colors.coral};`,
   link: `background: transparent; color: ${t.colors.forest}; border-color: transparent; text-decoration: underline; text-underline-offset: 4px;`,
 })
 
