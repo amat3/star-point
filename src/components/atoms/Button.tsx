@@ -2,6 +2,7 @@
 
 import styled from '@emotion/styled'
 import Link from 'next/link'
+import { mix, withAlpha } from '@/lib/color'
 import type { Theme } from '@/theme'
 
 export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost' | 'danger' | 'warn' | 'link'
@@ -17,6 +18,38 @@ const variants = (t: Theme): Record<ButtonVariant, string> => ({
   warn: `background: ${t.colors.coralTint}; color: ${t.colors.warnText}; border-color: ${t.colors.coral};`,
   link: `background: transparent; color: ${t.colors.forest}; border-color: transparent; text-decoration: underline; text-underline-offset: 4px;`,
 })
+
+// Solid buttons have a quiet relief, the kind the big sites use today (Linear, Supabase): a 1px light edge, two
+// very faint shadows tinted with the button's own color, no gradient and no glow, and the press sinks it by 1px.
+// The fill stays solid, so the text keeps exactly the contrast of the flat button (a gradient would lower it).
+const solidFill = (t: Theme): Partial<Record<ButtonVariant, string>> => ({
+  primary: t.colors.forest,
+  accent: t.colors.lime,
+  danger: t.colors.danger,
+})
+
+const relief = (t: Theme, variant: ButtonVariant) => {
+  const fill = solidFill(t)[variant]
+  if (!fill) return '' // outline, ghost, warn and link have no solid fill to lift
+  const shade = mix(fill, '#000000', 60)
+  return `
+    /* Only top and bottom: the 1px transparent border would sit between the fill and the edge light, and the
+       sides keep it so the button does not get 2px narrower */
+    border-top-width: 0;
+    border-bottom-width: 0;
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.18),
+      0 1px 1px ${withAlpha(shade, 0.18)},
+      0 3px 6px -2px ${withAlpha(shade, 0.22)};
+    transition: opacity 150ms ease, translate 100ms ease, box-shadow 100ms ease;
+
+    &:active {
+      transform: none;
+      translate: 0 1px;
+      box-shadow: inset 0 1px 2px ${withAlpha(shade, 0.35)};
+    }
+  `
+}
 
 const sizes = (t: Theme): Record<ButtonSize, string> => ({
   sm: `height: 2.25rem; padding: ${t.spacing(0, 3)};`,
@@ -59,6 +92,8 @@ const Button = styled('button', {
     pointer-events: none;
     opacity: 0.5;
   }
+  /* last, so its :active wins over the scale of the flat button */
+  ${({ theme, $variant = 'primary' }) => relief(theme, $variant)}
 `
 
 // Same look, rendered as a Next.js link.
