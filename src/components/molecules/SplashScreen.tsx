@@ -333,7 +333,8 @@ const Letter = styled.span`
 `
 
 const Tagline = styled.p`
-  color: ${({ theme }) => theme.colors.muted};
+  /* the page's variable, like the background: the theme here is always the light one */
+  color: var(--sp-muted);
   font-size: 1rem;
   animation: ${rise} 700ms 1850ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 `
@@ -347,7 +348,8 @@ const Credits = styled.p`
   display: flex;
   justify-content: center;
   gap: 1.5rem;
-  color: ${({ theme }) => theme.colors.muted};
+  /* the page's variable, like the background: the theme here is always the light one */
+  color: var(--sp-muted);
   font-size: 0.75rem;
   animation: ${rise} 700ms 2100ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 `

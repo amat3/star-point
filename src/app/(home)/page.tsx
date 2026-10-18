@@ -2,13 +2,11 @@ import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-import { RealtimeRefresher } from '@/components/dashboard/RealtimeRefresher'
-import { NotificationListener } from '@/components/dashboard/NotificationListener'
+import { SignedInExtras, SignedInPendingActions } from '@/components/dashboard/SignedInOnly'
 import { TimeRefresher } from '@/components/dashboard/TimeRefresher'
 import Content from '@/components/molecules/Content'
 import EmptyEvents from '@/components/molecules/EmptyEvents'
 import EventListItem from '@/components/molecules/EventListItem'
-import PendingActions from '@/components/molecules/PendingActions'
 import LastMatchRow from '@/components/molecules/LastMatchRow'
 import StatsRow from '@/components/molecules/StatsRow'
 import SectionHeader from '@/components/molecules/SectionHeader'
@@ -59,8 +57,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {user && <RealtimeRefresher />}
-      {user && <NotificationListener userId={user.id} />}
+      {user && <SignedInExtras userId={user.id} />}
       <TimeRefresher times={refreshTimes} />
       <Header profile={profile} userName={userName} isAdmin={profile?.role === 'admin'} adminView={adminView} />
       <Greeting
@@ -68,7 +65,7 @@ export default async function HomePage() {
         name={userName ? firstName(userName) : undefined}
       />
       <Content $clearTabBar={false}>
-        <PendingActions actions={pendingActions} nextRevealAt={nextRevealAt} />
+        {user && <SignedInPendingActions actions={pendingActions} nextRevealAt={nextRevealAt} />}
         <SectionHeader title="Lo que viene" />
         {events.length === 0 && <EmptyEvents canPublish={!!user} />}
         {events.map(event => {

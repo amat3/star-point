@@ -40,10 +40,9 @@ export async function removeE2EMatches() {
  * one readable line per problem. Automated checks cover only part of WCAG (contrast, names and
  * roles, labels, landmarks...): this guards against regressions, it is not an audit.
  */
-export async function expectNoA11yViolations(page: Page) {
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze()
+export async function expectNoA11yViolations(page: Page, scope?: string) {
+  const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+  const { violations } = await (scope ? builder.include(scope) : builder).analyze()
   const lines = violations.map(violation => {
     const first = violation.nodes[0]
     const detail = first.any[0]?.message ?? first.failureSummary?.split('\n')[1]?.trim() ?? ''

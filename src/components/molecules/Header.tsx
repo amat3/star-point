@@ -3,8 +3,11 @@
 import styled from '@emotion/styled'
 
 import Logo from "../atoms/Logo"
-import AvatarMenu from './AvatarMenu'
+import dynamic from 'next/dynamic'
 import { ButtonLink } from '../atoms/Button'
+
+// Loaded only when there is a signed-in player: a visitor does not download the Radix dropdown
+const AvatarMenu = dynamic(() => import('./AvatarMenu'))
 
 interface HeaderProps {
   // Omit userName for anonymous visitors: shows a login button instead of the avatar.

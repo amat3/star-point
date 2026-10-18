@@ -13,7 +13,11 @@ export function InstallBanner() {
   useEffect(() => {
     function checkInstallState() {
       const dismissed = localStorage.getItem(DISMISS_KEY)
-      if (isTouchDevice() && !isStandaloneMode() && !dismissed) {
+      // Only for someone with a session (a player who may have the old icon). A first-time visitor, a recruiter
+      // opening the demo, has nothing to reinstall: the notice confused them, and as the biggest text of the
+      // page, painted late and only on the client, it was what set the Largest Contentful Paint
+      const signedIn = document.cookie.split('; ').some(cookie => /^sb-[^=]+-auth-token/.test(cookie))
+      if (signedIn && isTouchDevice() && !isStandaloneMode() && !dismissed) {
         setState({ visible: true, isIOS: isIOSDevice() })
       }
     }

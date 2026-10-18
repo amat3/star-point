@@ -62,3 +62,23 @@ for (const colorScheme of ['light', 'dark'] as const) {
     })
   })
 }
+
+// The other tests skip the splash (it covers the page for almost 4 seconds). Its background follows the theme
+// but its colors came from the light one, so in the dark theme the tagline and the credits were 3.4:1 and
+// nothing here noticed: PageSpeed did.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`accesibilidad de la splash (${colorScheme})`, () => {
+    test.use({ colorScheme, skipSplash: false })
+
+    test('el lema y los créditos se leen', async ({ page }) => {
+      await page.goto('/')
+      const splash = page.getByRole('status', { name: 'Cargando starpoint' })
+      // The last thing to appear; once it is opaque the whole composition is on screen
+      await expect(splash.locator('p', { hasText: 'JUANAN AMATE' })).toHaveCSS('opacity', '1', { timeout: 8_000 })
+      // Freeze it so the fade-out cannot start while axe is measuring
+      await page.evaluate(() => document.getAnimations().forEach(animation => animation.pause()))
+      await expectNoA11yViolations(page, '[aria-label="Cargando starpoint"]')
+    })
+  })
+}
+

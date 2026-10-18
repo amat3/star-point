@@ -25,12 +25,14 @@ const styles = css`
   :root {
     --sp-bg: ${lightTheme.colors.background};
     --sp-ink: ${lightTheme.colors.ink};
+    --sp-muted: ${lightTheme.colors.muted};
     color-scheme: light;
   }
 
   html.dark {
     --sp-bg: ${darkTheme.colors.background};
     --sp-ink: ${darkTheme.colors.ink};
+    --sp-muted: ${darkTheme.colors.muted};
     color-scheme: dark;
   }
 
