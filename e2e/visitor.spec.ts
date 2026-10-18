@@ -1,5 +1,4 @@
 import { test, expect } from './fixtures'
-import { PLAYER, login } from './helpers'
 
 test.describe('visitante sin sesión', () => {
   test('la portada pública enseña los eventos y ofrece entrar', async ({ page }) => {
@@ -37,7 +36,7 @@ test.describe('splash', () => {
   })
 })
 
-// What the public home downloads and shows to someone with no session (PageSpeed, recruiters, new players)
+// What the public home downloads for someone with no session (PageSpeed, recruiters, new players)
 test.describe('portada pública: lo que descarga y lo que enseña', () => {
   // Only what the page itself needs: the scripts in its HTML. Next also prefetches /login (the header, the locked
   // cards and a tab link to it), which does use Supabase, right after the load and without blocking anything
@@ -50,24 +49,5 @@ test.describe('portada pública: lo que descarga y lo que enseña', () => {
       const body = await (await page.request.get(path)).text()
       expect(body, `${path} trae el cliente de Supabase`).not.toContain('GoTrueClient')
     }
-  })
-
-  test.describe('en un móvil', () => {
-    test.use({ hasTouch: true, isMobile: true })
-
-    // It was the Largest Contentful Paint of the public home (painted late, from the client, and the biggest text
-    // on the page) and it asked a first-time visitor to "reinstall" something they never installed
-    test('el aviso de reinstalar no sale a un visitante sin sesión', async ({ page }) => {
-      await page.goto('/')
-      await expect(page.getByText('Lo que viene')).toBeVisible()
-      await page.waitForTimeout(1_500) // it is shown from an effect after hydration: time to appear if it were going to
-      await expect(page.getByText('Reinstala starpoint')).toHaveCount(0)
-    })
-
-    test('sí le sale a un jugador con sesión, que puede tener el icono antiguo', async ({ page }) => {
-      await login(page, PLAYER)
-      await page.goto('/')
-      await expect(page.getByText('Reinstala starpoint')).toBeVisible({ timeout: 10_000 })
-    })
   })
 })

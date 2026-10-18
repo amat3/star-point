@@ -18,6 +18,21 @@ export async function login(page: Page, email: string, password = process.env.DE
   await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 })
 }
 
+/**
+ * The first link to an event on the home, or null if the list really is empty. It waits for the list: right after
+ * `goto` the cards can still be on their way (the home streams), and deciding "there is none" on that instant made
+ * the tests that depend on an event skip themselves at random.
+ */
+export async function firstEventLink(page: Page, hasText?: RegExp) {
+  const link = page.locator('a[href^="/events/"]', hasText ? { hasText } : undefined).first()
+  try {
+    await link.waitFor({ state: 'attached', timeout: 8_000 })
+    return link
+  } catch {
+    return null
+  }
+}
+
 /** YYYY-MM-DD, `days` from today, as the calendar reads in Madrid. */
 export function madridDate(days: number) {
   const ms = Date.now() + days * 24 * 60 * 60 * 1000

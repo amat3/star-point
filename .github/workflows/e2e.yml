@@ -2,13 +2,14 @@ name: E2E (demo)
 
 # The Playwright suite (real flows + accessibility with axe-core) against the DEMO database.
 # Not on every push: the tests write rows to one shared database, and a slow Supabase response
-# would paint the repository red for no reason. It runs by hand and every Monday morning.
+# would paint the repository red for no reason. It runs by hand (and, once the secrets are set, every Monday).
 # Needs these repository secrets, all from the demo project (never the production ones):
 #   DEMO_SUPABASE_URL, DEMO_SUPABASE_ANON_KEY, DEMO_SUPABASE_SERVICE_ROLE_KEY, DEMO_PASSWORD
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 1'
+  # Weekly run, OFF until the four secrets above exist (without them it would fail every Monday):
+  # schedule:
+  #   - cron: '0 6 * * 1'
 
 # Two runs at once would step on each other's rows
 concurrency:

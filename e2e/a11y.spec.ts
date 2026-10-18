@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures'
-import { ADMIN, PLAYER, expectNoA11yViolations, login } from './helpers'
+import { ADMIN, PLAYER, expectNoA11yViolations, firstEventLink, login } from './helpers'
 
 // axe-core over the main screens, in the light and the dark theme. Contrast is where this app slipped
 // (muted text, brand green on dark surfaces): the theme tokens were adjusted until it reported nothing.
@@ -40,9 +40,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       test('un evento', async ({ page }) => {
         await page.goto('/')
-        const link = page.locator('a[href^="/events/"]').first()
-        test.skip((await link.count()) === 0, 'the demo has no event to open right now')
-        await page.goto((await link.getAttribute('href'))!)
+        const link = await firstEventLink(page)
+        test.skip(!link, 'the demo has no event to open right now')
+        await page.goto((await link!.getAttribute('href'))!)
         await expect(page.getByRole('heading').first()).toBeVisible()
         await expectNoA11yViolations(page)
       })
@@ -54,9 +54,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await login(page, ADMIN)
       await context.addCookies([{ name: 'sp_view', value: 'admin', url: baseURL! }])
       await page.goto('/')
-      const partido = page.locator('a[href^="/events/"]', { hasText: /Partido(?!s)/ }).first()
-      test.skip((await partido.count()) === 0, 'the demo has no partido to open right now')
-      await page.goto((await partido.getAttribute('href'))!)
+      const partido = await firstEventLink(page, /Partido(?!s)/) // the card runs the title into the time ("Partido19:00"); a mixing says "Partidos creados"
+      test.skip(!partido, 'the demo has no partido to open right now')
+      await page.goto((await partido!.getAttribute('href'))!)
       await expect(page.getByRole('region', { name: 'Gestionar partido' })).toBeVisible()
       await expectNoA11yViolations(page)
     })
@@ -72,11 +72,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test('el lema y los créditos se leen', async ({ page }) => {
       await page.goto('/')
-      const splash = page.getByRole('status', { name: 'Cargando starpoint' })
-      // The last thing to appear; once it is opaque the whole composition is on screen
-      await expect(splash.locator('p', { hasText: 'JUANAN AMATE' })).toHaveCSS('opacity', '1', { timeout: 8_000 })
-      // Freeze it so the fade-out cannot start while axe is measuring
-      await page.evaluate(() => document.getAnimations().forEach(animation => animation.pause()))
+      await expect(page.getByRole('status', { name: 'Cargando starpoint' })).toBeVisible()
+      // Put every animation at t = 3 s and hold it there: the composition is complete (the last text is in at
+      // 2.8 s) and the fade-out, which starts at 3.4 s, cannot begin while axe is measuring
+      await page.evaluate(() => document.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 3000 }))
       await expectNoA11yViolations(page, '[aria-label="Cargando starpoint"]')
     })
   })

@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
-import { InstallBanner } from "@/components/layout/InstallBanner";
 import { ServiceWorkerRegister } from "@/components/layout/ServiceWorkerRegister";
 import AppShell from "@/components/molecules/AppShell";
 import DemoBanner from "@/components/molecules/DemoBanner";
@@ -65,7 +64,6 @@ export default function RootLayout({
             {/* Only on the demo deployment */}
             {process.env.NEXT_PUBLIC_DEMO === 'true' && <DemoBanner />}
             <AppShell>{children}</AppShell>
-            <InstallBanner />
             <ServiceWorkerRegister />
             <Toaster richColors position="top-center" />
           </EmotionProvider>
