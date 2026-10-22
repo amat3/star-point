@@ -1,11 +1,11 @@
 'use client'
 
 import styled from '@emotion/styled'
-import { css, keyframes } from '@emotion/react'
+import { css } from '@emotion/react'
 import type { Theme } from '@/theme'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Activity, CircleUserRound, Home, LogIn, Plus } from 'lucide-react'
 
 // Tabs without an href are placeholders until their page exists.
@@ -24,8 +24,8 @@ const GUEST_TABS = [
 
 // Every page renders its own TabBar, so it remounts on each navigation. The last highlighted position
 // lives at module level (it survives client-side navigations) so the new bar can start the
-// highlight where the old one left it and slide it to the current tab.
-let lastActive = -1
+// highlight where the old one left it (even in mid-slide, so it never jumps) and slide it to the current tab.
+let lastPosition = -1 // in tab units, fractional while moving; -1 = nothing highlighted
 let lastCount = 0
 
 function isActive(pathname: string, { href, ...tab }: (typeof TABS)[number]) {
@@ -37,8 +37,9 @@ function TabBar({ loggedIn = true }: { loggedIn?: boolean }) {
   const pathname = usePathname()
   const tabs = loggedIn ? TABS : GUEST_TABS
   const active = tabs.findIndex(tab => isActive(pathname, tab))
-  const canSlide = lastActive >= 0 && lastCount === tabs.length
-  const [position, setPosition] = useState(canSlide ? lastActive : active)
+  const highlight = useRef<HTMLSpanElement>(null)
+  const canSlide = lastPosition >= 0 && lastCount === tabs.length
+  const [position, setPosition] = useState(canSlide ? lastPosition : active)
   const [visible, setVisible] = useState(canSlide || active >= 0)
 
   useEffect(() => {
@@ -47,15 +48,29 @@ function TabBar({ loggedIn = true }: { loggedIn?: boolean }) {
       setVisible(active >= 0)
       if (active >= 0) setPosition(active)
     })
-    lastActive = active
-    lastCount = tabs.length
     return () => cancelAnimationFrame(frame)
   }, [active, tabs.length])
+
+  // On unmount, remember where the highlight is right now (it may be halfway through a slide)
+  const count = tabs.length
+  useEffect(() => {
+    const element = highlight.current
+    return () => {
+      const track = element?.parentElement
+      if (!element || !track || getComputedStyle(element).opacity === '0') {
+        lastPosition = -1
+        return
+      }
+      const margin = parseFloat(getComputedStyle(element).marginLeft)
+      lastPosition = ((element.offsetLeft - margin) / track.offsetWidth) * count
+      lastCount = count
+    }
+  }, [count])
 
   return (
     <Root aria-label="Menú principal">
       <Track>
-        <Highlight aria-hidden="true" $count={tabs.length} $index={Math.max(position, 0)} $visible={visible} />
+        <Highlight ref={highlight} aria-hidden="true" $count={tabs.length} $index={Math.max(position, 0)} $visible={visible} />
         {tabs.map(({ label, icon: Icon, href }, index) => {
           const content = (
             <>
@@ -71,7 +86,15 @@ function TabBar({ loggedIn = true }: { loggedIn?: boolean }) {
             )
           }
           return (
-            <Tab key={label} href={href} aria-current={index === active ? 'page' : undefined}>
+            <Tab
+              key={label}
+              href={href}
+              // Start the slide on touch, not after the next page has loaded
+              onClick={() => {
+                setPosition(index)
+                setVisible(true)
+              }}
+              aria-current={index === active ? 'page' : undefined}>
               {content}
             </Tab>
           )
@@ -97,12 +120,6 @@ const Root = styled.nav`
   border-top: 1px solid ${({ theme }) => theme.colors.hairline};
   background: ${({ theme }) => theme.colors.glass};
   backdrop-filter: blur(12px);
-`
-
-const iconPop = keyframes`
-  0% { transform: scale(0.8); }
-  60% { transform: scale(1.15); }
-  100% { transform: scale(1); }
 `
 
 // Same width as the Root content box; the tabs share it equally, so the highlight can be placed by index
@@ -143,6 +160,9 @@ const tabStyles = (theme: Theme) => css`
   font-size: ${theme.fontSizes['2xs']};
   font-weight: 600;
   text-decoration: none;
+  // No grey flash on tap: the highlight already marks the selection
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   // line-height 1 and a block icon: otherwise the text line box leaves extra room below the label
   line-height: 1;
   padding-block: ${theme.spacing(2)};
@@ -156,16 +176,6 @@ const tabStyles = (theme: Theme) => css`
 
   &[aria-current='page'] {
     color: ${theme.colors.forestText};
-
-    svg {
-      animation: ${iconPop} 320ms ease-out;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      svg {
-        animation: none;
-      }
-    }
   }
 `
 
