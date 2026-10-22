@@ -56,6 +56,9 @@ export async function removeE2EMatches() {
  * roles, labels, landmarks...): this guards against regressions, it is not an audit.
  */
 export async function expectNoA11yViolations(page: Page, scope?: string) {
+  // axe reads the colors as painted: in the middle of a color transition it reports a contrast that is never on
+  // screen. Only transitions are finished: the splash test positions its keyframe animations by hand
+  await page.evaluate(() => document.getAnimations().forEach(animation => { if (animation instanceof CSSTransition) animation.finish() }))
   const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
   const { violations } = await (scope ? builder.include(scope) : builder).analyze()
   const lines = violations.map(violation => {
