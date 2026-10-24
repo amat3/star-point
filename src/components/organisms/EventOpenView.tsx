@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import styled from '@emotion/styled'
+import { useRouter } from 'next/navigation'
 import { Pencil, Shuffle, Trash2, UserMinus, UserPlus, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Button, { ButtonLink } from '../atoms/Button'
@@ -58,11 +59,14 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole,
   const position = isJoined ? Math.max(players.findIndex(p => p.userId === viewerId), 0) : -1
   const copy = joinCopy(total, count, position)
 
-  const run = (fn: () => Promise<unknown>, success?: string) =>
+  const router = useRouter()
+
+  const run = (fn: () => Promise<unknown>, success?: string, then?: () => void) =>
     startTransition(async () => {
       try {
         await fn()
         if (success) toast.success(success)
+        then?.()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : String(error))
       }
@@ -89,7 +93,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole,
       title: 'Anular evento',
       description: '¿Estás seguro de anular este evento? Se borrarán todos los participantes.',
       confirmLabel: 'Anular evento',
-      action: () => run(() => deleteEvent(event.id), 'Evento anulado'),
+      action: () => run(() => deleteEvent(event.id), 'Evento anulado', () => router.push('/mixing')),
     })
 
   const bar = (() => {

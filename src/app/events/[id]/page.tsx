@@ -32,6 +32,9 @@ export default async function EventPage(props: EventPageProps) {
     .eq('id', params.id)
     .single()
 
+  // An event that no longer exists (cancelled just now, from this tab or from another one) is not an error
+  // worth a 404: the realtime refresh and the action's own revalidation re-render this page after the delete
+  if (error?.code === 'PGRST116' || (!error && !event)) redirect('/')
   if (error || !event) {
     notFound()
   }
