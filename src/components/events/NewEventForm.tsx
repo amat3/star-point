@@ -14,9 +14,10 @@ import Select from '@/components/atoms/Select'
 import Switch from '@/components/atoms/Switch'
 import Field from '@/components/molecules/Field'
 import SettingRow from '@/components/molecules/SettingRow'
+import AutoDrawSetting from '@/components/events/AutoDrawSetting'
 import { createEvent } from '@/app/actions/events'
 import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
-import { MIXING_TITLE } from '@/lib/event-title'
+import { DEFAULT_EVENT_SUBTITLE, INTRO_TEXT_MAX, MIXING_TITLE } from '@/lib/event-title'
 
 const formSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres'),
@@ -26,6 +27,9 @@ const formSchema = z.object({
   courts: z.number().min(1, 'Mínimo 1 pista').max(9, 'Máximo 9 pistas'),
   rounds: z.number().min(1, 'Mínimo 1 ronda').max(6, 'Máximo 6 rondas'),
   duration_minutes: z.number().min(30, 'Mínimo 30 minutos'),
+  intro_eyebrow: z.string().max(INTRO_TEXT_MAX, `Máximo ${INTRO_TEXT_MAX} caracteres`),
+  intro_subtitle: z.string().max(INTRO_TEXT_MAX, `Máximo ${INTRO_TEXT_MAX} caracteres`),
+  auto_draw: z.boolean(),
   is_test: z.boolean(),
 })
 
@@ -54,6 +58,9 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
       courts: 3,
       rounds: 3,
       duration_minutes: 90,
+      intro_eyebrow: '',
+      intro_subtitle: '',
+      auto_draw: true,
       is_test: false,
     },
   })
@@ -69,6 +76,9 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
         duration_minutes: values.duration_minutes,
         is_test: values.is_test,
         club_id: values.club_id || null,
+        auto_draw: values.auto_draw,
+        intro_eyebrow: values.intro_eyebrow,
+        intro_subtitle: values.intro_subtitle,
       })
 
       toast.success('Evento creado correctamente')
@@ -116,6 +126,20 @@ export default function NewEventForm({ clubs }: NewEventFormProps) {
       <Field label="Duración (minutos)" htmlFor="duration_minutes" hint="Se reparte a partes iguales entre las rondas." error={errors.duration_minutes?.message}>
         <Input id="duration_minutes" type="number" inputMode="numeric" min={30} step={5} {...register('duration_minutes', { valueAsNumber: true })} />
       </Field>
+
+      <Field label="Antetítulo" htmlFor="intro_eyebrow" hint="Opcional: si lo dejas vacío sale «El plan de los …» con el día." error={errors.intro_eyebrow?.message}>
+        <Input id="intro_eyebrow" maxLength={INTRO_TEXT_MAX} placeholder="El plan de los …" {...register('intro_eyebrow')} />
+      </Field>
+
+      <Field label="Frase" htmlFor="intro_subtitle" hint="Opcional: si la dejas vacía sale la de siempre." error={errors.intro_subtitle?.message}>
+        <Input id="intro_subtitle" maxLength={INTRO_TEXT_MAX} placeholder={DEFAULT_EVENT_SUBTITLE} {...register('intro_subtitle')} />
+      </Field>
+
+      <Controller
+        control={control}
+        name="auto_draw"
+        render={({ field }) => <AutoDrawSetting checked={field.value} onCheckedChange={field.onChange} />}
+      />
 
       <Controller
         control={control}

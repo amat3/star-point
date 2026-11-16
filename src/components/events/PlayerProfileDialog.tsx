@@ -8,10 +8,11 @@ import { toast } from 'sonner'
 import Avatar from '@/components/atoms/Avatar'
 import Button from '@/components/atoms/Button'
 import Input from '@/components/atoms/Input'
+import Select from '@/components/atoms/Select'
 import Dialog from '@/components/molecules/Dialog'
 import StatsRow from '@/components/molecules/StatsRow'
 import { getPlayerProfileDetails, type PlayerProfileDetails } from '@/app/actions/matches'
-import { renameGuest } from '@/app/actions/events'
+import { renameGuest, setGuestGender } from '@/app/actions/events'
 import { toTitleCase } from '@/lib/utils'
 
 interface PlayerProfileDialogProps {
@@ -46,6 +47,7 @@ export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: Pl
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [savingName, setSavingName] = useState(false)
+  const [savingGender, setSavingGender] = useState(false)
 
   useEffect(() => {
     if (!open || !userId) return
@@ -79,6 +81,20 @@ export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: Pl
       toast.error(error instanceof Error ? error.message : 'Error al renombrar')
     } finally {
       setSavingName(false)
+    }
+  }
+
+  async function saveGender(gender: string) {
+    if (!data || (gender !== 'masculino' && gender !== 'femenino')) return
+    setSavingGender(true)
+    try {
+      await setGuestGender(data.id, gender)
+      setData({ ...data, gender })
+      toast.success('Género actualizado')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al guardar el género')
+    } finally {
+      setSavingGender(false)
     }
   }
 
@@ -127,7 +143,24 @@ export function PlayerProfileDialog({ userId, userRole, open, onOpenChange }: Pl
           </Identity>
 
           <Info>
-            <InfoRow label="Género" value={(data.gender && GENDER_LABEL[data.gender]) || NOT_SET} />
+            {userRole === 'admin' && data.is_guest ? (
+              // Guests cannot log in: the admin sets it (the mixed and separated rounds need it)
+              <Row>
+                <Label id="guest-gender-label">Género</Label>
+                <GenderSelect
+                  aria-labelledby="guest-gender-label"
+                  value={data.gender === 'masculino' || data.gender === 'femenino' ? data.gender : ''}
+                  onChange={(e) => saveGender(e.target.value)}
+                  disabled={savingGender}
+                >
+                  <option value="" disabled>{NOT_SET}</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="masculino">Masculino</option>
+                </GenderSelect>
+              </Row>
+            ) : (
+              <InfoRow label="Género" value={(data.gender && GENDER_LABEL[data.gender]) || NOT_SET} />
+            )}
             <InfoRow label="Mano preferida" value={(data.preferred_hand && HAND_LABEL[data.preferred_hand]) || NOT_SET} />
             <InfoRow label="Posición en pista" value={(data.court_position && POSITION_LABEL[data.court_position]) || NOT_SET} />
           </Info>
@@ -233,6 +266,13 @@ const Row = styled.div`
 
 const Label = styled.span`
   color: ${({ theme }) => theme.colors.muted};
+`
+
+const GenderSelect = styled(Select)`
+  width: auto;
+  height: 2.25rem;
+  font-size: ${({ theme }) => theme.fontSizes.base};
+  font-weight: 600;
 `
 
 const Value = styled.span`

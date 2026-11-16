@@ -7,7 +7,7 @@ import Header from '@/components/molecules/Header'
 import PageIntro from '@/components/molecules/PageIntro'
 import TabBar from '@/components/molecules/TabBar'
 import EventGenerator from '@/components/organisms/EventGenerator'
-import { getEventMixingData } from '@/app/actions/mixing-generator'
+import { getDrawRules, getEventMixingData } from '@/app/actions/mixing-generator'
 import { requireAdmin } from '@/lib/admin'
 import { isAdminView } from '@/lib/view-mode'
 import { formatEventChip } from '@/lib/utils'
@@ -32,7 +32,7 @@ export default async function GeneratePage(props: GeneratePageProps) {
   // Once the draw is published there is nothing left to generate
   if (event.status !== 'open') redirect(`/events/${id}`)
 
-  const { participants, max_spots, rounds, exclusions } = await getEventMixingData(id)
+  const [{ participants, max_spots, rounds, exclusions }, rules] = await Promise.all([getEventMixingData(id), getDrawRules(id)])
 
   const { data: courts } = event.club_id
     ? await supabase.from('courts').select('id, name').eq('club_id', event.club_id).order('position', { ascending: true })
@@ -60,6 +60,7 @@ export default async function GeneratePage(props: GeneratePageProps) {
           maxSpots={max_spots}
           rounds={rounds}
           exclusions={exclusions}
+          rules={rules}
           clubCourts={courts ?? []}
         />
       </Content>

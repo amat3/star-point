@@ -12,6 +12,7 @@ import MatchEventView from '@/components/organisms/MatchEventView'
 import { isMatchExpired } from '@/lib/match-events'
 import { getEventDraw } from '@/lib/event-draw'
 import { isAdminView } from '@/lib/view-mode'
+import { defaultEventEyebrow } from '@/lib/event-title'
 import { formatEventChip, formatEventDate, formatEventTime, formatEventWeekday, formatLevel, formatWeekdayPlural, toTitleCase } from '@/lib/utils'
 
 interface EventPageProps {
@@ -178,7 +179,7 @@ export default async function EventPage(props: EventPageProps) {
         />
         <EventOpenView
           event={fullEvent}
-          eyebrow={`El plan de los ${formatWeekdayPlural(fullEvent.start_time)}`}
+          eyebrow={fullEvent.intro_eyebrow || defaultEventEyebrow(formatWeekdayPlural(fullEvent.start_time))}
           heroTitle={formatEventDate(fullEvent.start_time)}
           startsAt={formatEventTime(fullEvent.start_time)}
           players={players}

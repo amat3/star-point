@@ -21,6 +21,7 @@ import { AddParticipantDialog } from '@/components/events/AddParticipantDialog'
 import { PlayerProfileDialog } from '@/components/events/PlayerProfileDialog'
 import { ShareEventButton } from '@/components/events/ShareEventButton'
 import type { MixingEvent } from '@/types/events'
+import { DEFAULT_EVENT_SUBTITLE } from '@/lib/event-title'
 
 
 interface EventOpenViewProps {
@@ -144,7 +145,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole,
       <EventIntro
         eyebrow={eyebrow}
         title={event.title.trim()}
-        subtitle="Partidos de nivel y cerveza garantizada."
+        subtitle={event.intro_subtitle || DEFAULT_EVENT_SUBTITLE}
         badge={event.is_test ? 'Prueba · No computa en ranking' : undefined}
       />
 
@@ -172,7 +173,7 @@ function EventOpenView({ event, eyebrow, heroTitle, startsAt, players, userRole,
 
         {isAdmin && (
           <AdminPanel aria-label="Administración del evento">
-            <AdminCaption>Administrar evento</AdminCaption>
+            <AdminCaption>Administrar evento{event.auto_draw === false && ' · Sorteo manual'}</AdminCaption>
             <AdminActions>
               <AddParticipantDialog
                 eventId={event.id}

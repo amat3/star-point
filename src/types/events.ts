@@ -13,6 +13,13 @@ export interface MixingEvent {
   kind?: 'mixing' | 'match'
   club_id: string | null
   club?: { name: string } | null
+  // false: an admin makes the draw by hand; the automatic one 3 hours before never acts on this event
+  auto_draw?: boolean
+  // Set when a draw has been published (also kept after "Rehacer"): from then on the draw is the admin's
+  draw_published_at?: string | null
+  // Header texts of the event page; null or empty keeps the defaults (see lib/event-title.ts)
+  intro_eyebrow?: string | null
+  intro_subtitle?: string | null
 
   // Virtual properties (joined columns or computed)
   participants_count?: number

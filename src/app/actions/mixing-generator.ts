@@ -6,6 +6,7 @@ import { MatchProposal } from '@/lib/mixing-algorithm'
 import { loadMixingData, type MixingData } from '@/lib/mixing-data'
 import { getAdminClient } from '@/utils/supabase/admin'
 import { publishDraw, type DrawCourts } from '@/lib/draw-publish'
+import type { DrawRule } from '@/lib/draw-rules'
 import { after } from 'next/server'
 
 export async function getEventMixingData(eventId: string): Promise<MixingData> {
@@ -73,5 +74,77 @@ export async function rotateMatchPairs(matchId: string) {
   if (error) throw new Error(error.message)
 
   if (match.event_id) revalidatePath(`/events/${match.event_id}`)
+  return { success: true }
+}
+
+// --- Rules of an event's draw (event_draw_rules): admins only ---------------------------------------------------
+
+async function requireAdminUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No auth')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Requiere admin')
+  return { supabase, userId: user.id }
+}
+
+const RULE_COLUMNS = 'id, kind, player_a, player_b, a:player_a(full_name), b:player_b(full_name)'
+
+type Named = { full_name: string | null } | { full_name: string | null }[] | null
+type RuleRow = { id: string; kind: 'pair' | 'women_court'; player_a: string; player_b: string | null; a: Named; b: Named }
+
+const nameOf = (profile: Named) => (Array.isArray(profile) ? profile[0]?.full_name : profile?.full_name) ?? 'Jugador'
+
+function toDrawRule(row: RuleRow): DrawRule {
+  return {
+    id: row.id,
+    kind: row.kind,
+    playerA: row.player_a,
+    playerB: row.player_b,
+    playerAName: nameOf(row.a),
+    playerBName: row.player_b ? nameOf(row.b) : null,
+  }
+}
+
+export async function getDrawRules(eventId: string): Promise<DrawRule[]> {
+  const { supabase } = await requireAdminUser()
+  const { data, error } = await supabase.from('event_draw_rules').select(RULE_COLUMNS).eq('event_id', eventId).order('created_at')
+  if (error) {
+    // Before its migration the table does not exist, and then there are no rules either
+    if (error.code === '42P01' || error.code === 'PGRST205') return []
+    throw new Error(error.message)
+  }
+  return ((data ?? []) as unknown as RuleRow[]).map(toDrawRule)
+}
+
+export async function addDrawRule(eventId: string, kind: 'pair' | 'women_court', playerA: string, playerB: string | null): Promise<DrawRule> {
+  const { userId } = await requireAdminUser()
+  if (kind === 'pair' ? !playerB || playerB === playerA : playerB !== null) throw new Error('Regla no válida')
+
+  const admin = getAdminClient()
+  const { data: event } = await admin.from('events').select('kind, status').eq('id', eventId).single()
+  if (!event || event.kind !== 'mixing' || event.status !== 'open') throw new Error('Las reglas solo se cambian antes de publicar el sorteo')
+
+  const players = playerB ? [playerA, playerB] : [playerA]
+  const { count } = await admin
+    .from('event_participants')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .in('user_id', players)
+  if ((count ?? 0) !== players.length) throw new Error('Los jugadores de una regla tienen que estar apuntados al evento')
+
+  const { data, error } = await admin
+    .from('event_draw_rules')
+    .insert({ event_id: eventId, kind, player_a: playerA, player_b: playerB, created_by: userId })
+    .select(RULE_COLUMNS)
+    .single()
+  if (error) throw new Error(error.code === '23505' ? 'Esa regla ya está puesta' : error.message)
+  return toDrawRule(data as unknown as RuleRow)
+}
+
+export async function removeDrawRule(ruleId: string) {
+  await requireAdminUser()
+  const { error } = await getAdminClient().from('event_draw_rules').delete().eq('id', ruleId)
+  if (error) throw new Error(error.message)
   return { success: true }
 }

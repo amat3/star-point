@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import styled from '@emotion/styled'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
@@ -11,6 +11,8 @@ import Input from '@/components/atoms/Input'
 import Select from '@/components/atoms/Select'
 import Dialog from '@/components/molecules/Dialog'
 import Field from '@/components/molecules/Field'
+import AutoDrawSetting from '@/components/events/AutoDrawSetting'
+import { DEFAULT_EVENT_SUBTITLE, INTRO_TEXT_MAX } from '@/lib/event-title'
 import { createClient } from '@/utils/supabase/client'
 import { PLAYERS_PER_COURT, madridDateTimeToUTC, utcToMadridDateTime } from '@/lib/utils'
 import { updateEvent } from '@/app/actions/events'
@@ -24,6 +26,9 @@ const formSchema = z.object({
   courts: z.number().min(1, 'Mínimo 1 pista').max(9, 'Máximo 9 pistas'),
   rounds: z.number().min(1, 'Mínimo 1 ronda').max(6, 'Máximo 6 rondas'),
   duration_minutes: z.number().min(30, 'Mínimo 30 minutos'),
+  intro_eyebrow: z.string().max(INTRO_TEXT_MAX, `Máximo ${INTRO_TEXT_MAX} caracteres`),
+  intro_subtitle: z.string().max(INTRO_TEXT_MAX, `Máximo ${INTRO_TEXT_MAX} caracteres`),
+  auto_draw: z.boolean(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -46,15 +51,21 @@ const valuesFor = (event: MixingEvent): FormValues => {
     courts: Math.round((event.max_spots || PLAYERS_PER_COURT) / PLAYERS_PER_COURT),
     rounds: event.rounds || 1,
     duration_minutes: event.duration_minutes || 90,
+    intro_eyebrow: event.intro_eyebrow ?? '',
+    intro_subtitle: event.intro_subtitle ?? '',
+    auto_draw: event.auto_draw ?? true,
   }
 }
 
 export function EditEventDialog({ open, onOpenChange, event, published = false }: EditEventDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [clubs, setClubs] = useState<{ id: string; name: string }[]>([])
+  // The automatic draw only acts on an event that has never had a draw: afterwards the switch means nothing
+  const canAutoDraw = !published && !event.draw_published_at
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -86,6 +97,9 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
         rounds: values.rounds,
         duration_minutes: values.duration_minutes,
         club_id: values.club_id || null,
+        auto_draw: canAutoDraw ? values.auto_draw : undefined,
+        intro_eyebrow: values.intro_eyebrow,
+        intro_subtitle: values.intro_subtitle,
       })
 
       toast.success('Evento actualizado')
@@ -135,6 +149,22 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
         <Field label="Duración (minutos)" htmlFor="edit-duration" error={errors.duration_minutes?.message}>
           <Input id="edit-duration" type="number" inputMode="numeric" min={30} step={5} {...register('duration_minutes', { valueAsNumber: true })} />
         </Field>
+
+        <Field label="Antetítulo" htmlFor="edit-intro_eyebrow" hint="Opcional: si lo dejas vacío sale «El plan de los …» con el día." error={errors.intro_eyebrow?.message}>
+          <Input id="edit-intro_eyebrow" maxLength={INTRO_TEXT_MAX} placeholder="El plan de los …" {...register('intro_eyebrow')} />
+        </Field>
+
+        <Field label="Frase" htmlFor="edit-intro_subtitle" hint="Opcional: si la dejas vacía sale la de siempre." error={errors.intro_subtitle?.message}>
+          <Input id="edit-intro_subtitle" maxLength={INTRO_TEXT_MAX} placeholder={DEFAULT_EVENT_SUBTITLE} {...register('intro_subtitle')} />
+        </Field>
+
+        {canAutoDraw && (
+          <Controller
+            control={control}
+            name="auto_draw"
+            render={({ field }) => <AutoDrawSetting checked={field.value} onCheckedChange={field.onChange} />}
+          />
+        )}
 
         {published && (
           <Note>El sorteo ya está publicado: si cambias club, pistas o rondas se deshará y tendrás que generarlo de nuevo. Fecha, hora, título y duración no lo afectan.</Note>

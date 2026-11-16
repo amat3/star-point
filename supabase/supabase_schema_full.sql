@@ -64,7 +64,10 @@ create table public.events (
   kind text not null default 'mixing'::text,
   known_players text[] not null default '{}'::text[],
   notes text,
-  draw_published_at timestamp with time zone
+  draw_published_at timestamp with time zone,
+  auto_draw boolean not null default true,
+  intro_eyebrow text,
+  intro_subtitle text
 );
 
 create table public.event_participants (
@@ -131,6 +134,17 @@ create table public.mixing_exclusions (
   player_b uuid not null,
   type text not null,
   note text,
+  created_by uuid not null,
+  created_at timestamp with time zone not null default now()
+);
+
+-- Rules of one event's draw (special events): fixed pairs and the men who may complete the women's court
+create table public.event_draw_rules (
+  id uuid not null default gen_random_uuid(),
+  event_id uuid not null,
+  kind text not null,
+  player_a uuid not null,
+  player_b uuid,
   created_by uuid not null,
   created_at timestamp with time zone not null default now()
 );
@@ -215,6 +229,14 @@ alter table public.mixing_exclusions add constraint mixing_exclusions_player_b_f
 alter table public.mixing_exclusions add constraint mixing_exclusions_type_check check (type = any (array['no_partner'::text, 'no_opponent'::text, 'no_contact'::text]));
 alter table public.mixing_exclusions add constraint no_self_exclusion check (player_a <> player_b);
 
+alter table public.event_draw_rules add constraint event_draw_rules_pkey primary key (id);
+alter table public.event_draw_rules add constraint event_draw_rules_event_id_fkey foreign key (event_id) references public.events(id) on delete cascade;
+alter table public.event_draw_rules add constraint event_draw_rules_player_a_fkey foreign key (player_a) references public.profiles(id) on delete cascade;
+alter table public.event_draw_rules add constraint event_draw_rules_player_b_fkey foreign key (player_b) references public.profiles(id) on delete cascade;
+alter table public.event_draw_rules add constraint event_draw_rules_created_by_fkey foreign key (created_by) references public.profiles(id);
+alter table public.event_draw_rules add constraint event_draw_rules_kind_check check (kind = any (array['pair'::text, 'women_court'::text]));
+alter table public.event_draw_rules add constraint event_draw_rules_shape check ((kind = 'pair') = (player_b is not null) and player_a is distinct from player_b);
+
 alter table public.mixing_incentives add constraint mixing_incentives_pkey primary key (id);
 alter table public.mixing_incentives add constraint mixing_incentives_created_by_fkey foreign key (created_by) references public.profiles(id);
 alter table public.mixing_incentives add constraint mixing_incentives_event_id_fkey foreign key (event_id) references public.events(id);
@@ -226,6 +248,8 @@ alter table public.mixing_incentives add constraint mixing_incentives_status_che
 -- 4. Indexes --------------------------------------------------------------------------------
 create index courts_club_id_idx on public.courts using btree (club_id);
 create index events_club_id_idx on public.events using btree (club_id);
+create unique index event_draw_rules_unique on public.event_draw_rules
+  (event_id, kind, least(player_a, coalesce(player_b, player_a)), greatest(player_a, coalesce(player_b, player_a)));
 create index idx_matches_event_id on public.matches using btree (event_id);
 create index matches_court_id_idx on public.matches using btree (court_id);
 create index matches_pending_close_idx on public.matches using btree (result_updated_at) where (status = 'pending'::text);
@@ -444,6 +468,7 @@ alter table public.notifications enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.mixing_exclusions enable row level security;
 alter table public.mixing_incentives enable row level security;
+alter table public.event_draw_rules enable row level security;
 alter table public.ai_requests enable row level security;
 
 -- clubs / courts: public read, admin write
@@ -517,6 +542,9 @@ create policy "Admin full access on mixing_exclusions" on public.mixing_exclusio
   using (exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin'::text));
 create policy "Admin full access on mixing_incentives" on public.mixing_incentives as permissive for all to public
   using (exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin'::text));
+create policy "Admin full access on event_draw_rules" on public.event_draw_rules as permissive for all to authenticated
+  using (exists (select 1 from profiles where profiles.id = (select auth.uid()) and profiles.role = 'admin'::text))
+  with check (exists (select 1 from profiles where profiles.id = (select auth.uid()) and profiles.role = 'admin'::text));
 create policy "Winner can view own incentive" on public.mixing_incentives as permissive for select to public
   using (winner_id = auth.uid());
 create policy "Winner can choose target" on public.mixing_incentives as permissive for update to public

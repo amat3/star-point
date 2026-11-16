@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { MixingEvent } from '@/types/events'
 import { sendPushAfterResponse, getTestPushAudience } from '@/lib/push'
 import { MAX_RESERVES } from '@/lib/event-capacity'
+import { cleanIntroText } from '@/lib/event-title'
 import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_NOTES_MAX, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
 
@@ -246,7 +247,7 @@ export async function leaveEvent(eventId: string) {
   return { success: true }
 }
 
-export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean, club_id?: string | null }) {
+export async function createEvent(data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, is_test?: boolean, club_id?: string | null, auto_draw?: boolean, intro_eyebrow?: string | null, intro_subtitle?: string | null }) {
   try {
     const supabase = await createClient()
     
@@ -278,6 +279,9 @@ export async function createEvent(data: { title: string, start_time: string, max
         status: 'open',
         is_test: data.is_test ?? false,
         club_id: data.club_id ?? null,
+        auto_draw: data.auto_draw ?? true,
+        intro_eyebrow: cleanIntroText(data.intro_eyebrow),
+        intro_subtitle: cleanIntroText(data.intro_subtitle),
       })
       .select('id, title, start_time')
       .single()
@@ -321,7 +325,7 @@ export async function createEvent(data: { title: string, start_time: string, max
 }
 
 
-export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, club_id?: string | null }) {
+export async function updateEvent(eventId: string, data: { title: string, start_time: string, max_spots: number, rounds: number, duration_minutes: number, club_id?: string | null, auto_draw?: boolean, intro_eyebrow?: string | null, intro_subtitle?: string | null }) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -367,6 +371,11 @@ export async function updateEvent(eventId: string, data: { title: string, start_
         title: data.title,
         start_time: data.start_time,
         duration_minutes: data.duration_minutes,
+        // undefined leaves it untouched (the form only shows the switch while the draw can still be automatic)
+        ...(data.auto_draw !== undefined ? { auto_draw: data.auto_draw } : {}),
+        // Header texts: undefined leaves them untouched, empty brings the default back
+        ...(data.intro_eyebrow !== undefined ? { intro_eyebrow: cleanIntroText(data.intro_eyebrow) } : {}),
+        ...(data.intro_subtitle !== undefined ? { intro_subtitle: cleanIntroText(data.intro_subtitle) } : {}),
         ...(published && !reopened
           ? {}
           : {
@@ -576,6 +585,32 @@ export async function renameGuest(guestId: string, newName: string) {
     if (error) throw new Error(error.message)
 
     revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+}
+
+// Guests cannot log in, so the admin sets their gender (needed by the mixed and separated rounds).
+// Real players choose their own in their profile.
+export async function setGuestGender(guestId: string, gender: 'masculino' | 'femenino') {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') throw new Error("Requiere admin")
+
+    if (gender !== 'masculino' && gender !== 'femenino') throw new Error("Género no válido")
+
+    const adminSupabase = getAdminClient()
+    const { data: target } = await adminSupabase.from('profiles').select('is_guest').eq('id', guestId).single()
+    if (!target?.is_guest) throw new Error("Solo se puede cambiar el género de invitados")
+
+    const { error } = await adminSupabase.from('profiles').update({ gender }).eq('id', guestId)
+    if (error) throw new Error(error.message)
+
     return { success: true }
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error))
