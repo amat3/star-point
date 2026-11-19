@@ -20,6 +20,8 @@ export interface MixingEvent {
   // Header texts of the event page; null or empty keeps the defaults (see lib/event-title.ts)
   intro_eyebrow?: string | null
   intro_subtitle?: string | null
+  // A published draw nobody may undo or change from the app (no Rehacer, no Cambiar parejas, no structural edit)
+  draw_locked?: boolean
 
   // Virtual properties (joined columns or computed)
   participants_count?: number

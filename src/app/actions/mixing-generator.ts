@@ -62,6 +62,10 @@ export async function rotateMatchPairs(matchId: string) {
     .eq('id', matchId)
     .single()
   if (!match) throw new Error('Partido no encontrado')
+  if (match.event_id) {
+    const { data: event } = await supabase.from('events').select('draw_locked').eq('id', match.event_id).single()
+    if (event?.draw_locked) throw new Error('El sorteo de este evento está bloqueado: no se pueden cambiar las parejas')
+  }
   if (match.status !== 'pending' || (match.score_details ?? '0-0') !== '0-0') {
     throw new Error('Este partido ya tiene resultado: no se pueden cambiar las parejas')
   }

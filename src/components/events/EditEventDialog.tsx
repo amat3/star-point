@@ -62,6 +62,7 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
   const [clubs, setClubs] = useState<{ id: string; name: string }[]>([])
   // The automatic draw only acts on an event that has never had a draw: afterwards the switch means nothing
   const canAutoDraw = !published && !event.draw_published_at
+  const locked = published && !!event.draw_locked
 
   const {
     register,
@@ -119,14 +120,17 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
           <Input id="edit-title" {...register('title')} />
         </Field>
 
-        <Field label="Club" htmlFor="edit-club" error={errors.club_id?.message}>
-          <Select id="edit-club" {...register('club_id')}>
-            <option value="">Club por confirmar</option>
-            {clubs.map(club => (
-              <option key={club.id} value={club.id}>{club.name}</option>
-            ))}
-          </Select>
-        </Field>
+        {/* A locked draw keeps club, courts and rounds: hidden (their values still travel), since changing them undoes it */}
+        {!locked && (
+          <Field label="Club" htmlFor="edit-club" error={errors.club_id?.message}>
+            <Select id="edit-club" {...register('club_id')}>
+              <option value="">Club por confirmar</option>
+              {clubs.map(club => (
+                <option key={club.id} value={club.id}>{club.name}</option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <Row>
           <Field label="Fecha" htmlFor="edit-date" error={errors.date?.message}>
@@ -137,14 +141,16 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
           </Field>
         </Row>
 
-        <Row>
-          <Field label="Pistas" htmlFor="edit-courts" error={errors.courts?.message}>
-            <Input id="edit-courts" type="number" inputMode="numeric" min={1} max={9} {...register('courts', { valueAsNumber: true })} />
-          </Field>
-          <Field label="Rondas" htmlFor="edit-rounds" error={errors.rounds?.message}>
-            <Input id="edit-rounds" type="number" inputMode="numeric" min={1} max={6} {...register('rounds', { valueAsNumber: true })} />
-          </Field>
-        </Row>
+        {!locked && (
+          <Row>
+            <Field label="Pistas" htmlFor="edit-courts" error={errors.courts?.message}>
+              <Input id="edit-courts" type="number" inputMode="numeric" min={1} max={9} {...register('courts', { valueAsNumber: true })} />
+            </Field>
+            <Field label="Rondas" htmlFor="edit-rounds" error={errors.rounds?.message}>
+              <Input id="edit-rounds" type="number" inputMode="numeric" min={1} max={6} {...register('rounds', { valueAsNumber: true })} />
+            </Field>
+          </Row>
+        )}
 
         <Field label="Duración (minutos)" htmlFor="edit-duration" error={errors.duration_minutes?.message}>
           <Input id="edit-duration" type="number" inputMode="numeric" min={30} step={5} {...register('duration_minutes', { valueAsNumber: true })} />
@@ -166,7 +172,9 @@ export function EditEventDialog({ open, onOpenChange, event, published = false }
           />
         )}
 
-        {published && (
+        {locked ? (
+          <Note>El sorteo de este evento está bloqueado: club, pistas y rondas no se pueden cambiar. Título, fecha, hora, duración y textos sí.</Note>
+        ) : published && (
           <Note>El sorteo ya está publicado: si cambias club, pistas o rondas se deshará y tendrás que generarlo de nuevo. Fecha, hora, título y duración no lo afectan.</Note>
         )}
 

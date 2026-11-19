@@ -67,7 +67,8 @@ create table public.events (
   draw_published_at timestamp with time zone,
   auto_draw boolean not null default true,
   intro_eyebrow text,
-  intro_subtitle text
+  intro_subtitle text,
+  draw_locked boolean not null default false
 );
 
 create table public.event_participants (

@@ -138,7 +138,7 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, 
 
   // Admin: swap partners when the four players agree on the court
   const adminFooterFor = (m: DrawMatch) => {
-    if (m.status !== 'pending' || m.games) return undefined
+    if (event.draw_locked || m.status !== 'pending' || m.games) return undefined
     return (
       <CenteredAction>
         <Button $variant="outline" $size="md" disabled={isPending} onClick={() => handleRotate(m.id)}>
@@ -225,13 +225,19 @@ function EventDrawView({ event, eyebrow, chip, title, summary, rounds, isAdmin, 
 
         {isAdmin && (
           <AdminPanel aria-label="Administración del evento">
-            <AdminCaption>Administrar evento</AdminCaption>
+            <AdminCaption>Administrar evento{event.draw_locked && ' · Sorteo bloqueado'}</AdminCaption>
             <Button $variant="primary" $size="lg" disabled={isPending} onClick={() => setEditOpen(true)}>
               <Pencil />
               Editar evento
             </Button>
             <SecondaryActions>
-              <Button $variant="outline" $size="md" disabled={isPending} onClick={() => setRedoOpen(true)}>
+              <Button
+                $variant="outline"
+                $size="md"
+                disabled={isPending || event.draw_locked}
+                title={event.draw_locked ? 'El sorteo de este evento está bloqueado' : undefined}
+                onClick={() => setRedoOpen(true)}
+              >
                 <RefreshCw />
                 Rehacer
               </Button>

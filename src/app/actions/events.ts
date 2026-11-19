@@ -336,7 +336,7 @@ export async function updateEvent(eventId: string, data: { title: string, start_
 
     const { data: existingEvent } = await supabase
       .from('events')
-      .select('status, max_spots, rounds, club_id')
+      .select('status, max_spots, rounds, club_id, draw_locked')
       .eq('id', eventId)
       .single()
     const published = existingEvent?.status === 'in_progress'
@@ -350,6 +350,8 @@ export async function updateEvent(eventId: string, data: { title: string, start_
         data.max_spots !== existingEvent.max_spots ||
         data.rounds !== existingEvent.rounds ||
         (data.club_id !== undefined && data.club_id !== existingEvent.club_id)
+
+      if (structural && existingEvent.draw_locked) throw new Error('El sorteo de este evento está bloqueado: no se pueden cambiar pistas, rondas ni club')
 
       if (structural) {
         const { count: played } = await supabase
@@ -821,8 +823,9 @@ export async function reopenDraw(eventId: string) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+    const { data: event } = await supabase.from('events').select('status, draw_locked').eq('id', eventId).single()
     if (event?.status !== 'in_progress') throw new Error('Este evento no tiene el sorteo publicado')
+    if (event.draw_locked) throw new Error('El sorteo de este evento está bloqueado: no se puede rehacer')
 
     const { count: played } = await supabase
       .from('matches')
