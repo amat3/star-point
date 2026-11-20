@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  brokenNoContact,
   DEFAULT_MIXING_CONFIG,
   generateEventRounds,
   summarizeRounds,
+  type ExclusionRule,
   type MixingParticipant,
   type RoundProposal,
 } from '@/lib/mixing-algorithm'
@@ -118,17 +120,23 @@ export async function runAutoDraw(admin: SupabaseClient, event: DueEvent, now: n
   }
 
   let draw: DrawQuality
+  let exclusions: ExclusionRule[]
   try {
     const data = await loadMixingData(admin, event.id)
+    exclusions = data.exclusions
     draw = pickBestDraw(() =>
       generateEventRounds(
         structuredClone(data.participants) as MixingParticipant[],
-        { ...DEFAULT_MIXING_CONFIG, exclusions: data.exclusions },
+        { ...DEFAULT_MIXING_CONFIG, exclusions },
         data.rounds
       )
     )
   } catch (error) {
     return skip('generation_failed', `No se ha podido generar el sorteo de "${event.title}": ${error instanceof Error ? error.message : String(error)}.`)
+  }
+  // Never published with two "sin contacto" players on one court (only possible when there is no way to keep them apart)
+  if (brokenNoContact(draw.rounds, exclusions).length > 0) {
+    return skip('no_contact_broken', `El sorteo de "${event.title}" juntaría en una pista a dos jugadores con la exclusión «Sin contacto»: hazlo a mano.`)
   }
 
   let playersNotified: Promise<unknown>

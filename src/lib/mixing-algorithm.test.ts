@@ -10,6 +10,7 @@ import {
   womenPerCourt,
   scheduleFixedPairs,
   brokenRules,
+  brokenNoContact,
   FixedPair,
   GenderMode,
 } from './mixing-algorithm'
@@ -152,6 +153,37 @@ describe('exclusiones (por tipo)', () => {
       const m = findMatch(result.matches, 'p0')!
       expect([m.player1.id, m.player2.id, m.player3.id, m.player4.id]).not.toContain('p1')
     }
+  })
+
+  it('no_contact manda sobre todo lo demás: antes repite reencuentros que juntarlos', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_contact' }]
+    for (let run = 0; run < 20; run++) {
+      const players = makeParticipants(8)
+      // p0 has already met everyone but p1 four times: apart from p1 costs more meetings than together
+      players[0].session_encounter_counts = Object.fromEntries(players.slice(2).map(p => [p.id, 4]))
+      const result = generateMixingRound(players, { ...baseConfig, exclusions })
+      const m = findMatch(result.matches, 'p0')!
+      expect([m.player1.id, m.player2.id, m.player3.id, m.player4.id]).not.toContain('p1')
+    }
+  })
+
+  it('no_contact: nunca coinciden en ninguna ronda de un evento, también con parejas fijas', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_contact' }]
+    // Mixed rounds: p0–p5 are women, each fixed pair plays together in one of them
+    const fixedPairs: FixedPair[] = [['p0', 'p6'], ['p1', 'p7']]
+    const roundGenderModes: GenderMode[] = ['mixed', 'mixed', 'mixed', 'mixed']
+    for (let run = 0; run < 10; run++) {
+      const players = makeParticipants(12).map((p, i) => ({ ...p, gender: i < 6 ? 'femenino' as const : 'masculino' as const }))
+      const rounds = generateEventRounds(players, { ...baseConfig, exclusions, fixedPairs, roundGenderModes }, 4)
+      expect(brokenNoContact(rounds, exclusions)).toEqual([])
+    }
+  })
+
+  it('brokenNoContact señala la pista y la ronda donde coinciden', () => {
+    const exclusions: ExclusionRule[] = [{ playerA: 'p0', playerB: 'p1', type: 'no_contact' }]
+    const rounds = [generateMixingRound(makeParticipants(4), { ...baseConfig, exclusions })]
+    expect(brokenNoContact(rounds, exclusions)).toEqual([{ players: expect.arrayContaining(['p0', 'p1']), round: 1 }])
+    expect(brokenNoContact(rounds, [{ playerA: 'p0', playerB: 'p1', type: 'no_partner' }])).toEqual([])
   })
 
   it('avisa cuando no se puede respetar una exclusión', () => {

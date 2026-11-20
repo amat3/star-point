@@ -21,7 +21,7 @@ type ExclusionType = 'no_partner' | 'no_opponent' | 'no_contact'
 const TYPES: Record<ExclusionType, { label: string; description: string; variant: BadgeVariant }> = {
   no_partner: { label: 'No compañeros', description: 'Nunca pueden jugar en la misma pareja', variant: 'default' },
   no_opponent: { label: 'No rivales', description: 'Nunca pueden enfrentarse entre sí', variant: 'accent' },
-  no_contact: { label: 'Sin contacto', description: 'Nunca en el mismo partido (ni pareja ni rival)', variant: 'danger' },
+  no_contact: { label: 'Sin contacto', description: 'Nunca en la misma pista (ni pareja ni rival), en mixings y en partidos. Manda sobre todo lo demás del sorteo', variant: 'danger' },
 }
 
 interface ExclusionsManagerProps {

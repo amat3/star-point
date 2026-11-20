@@ -7,6 +7,8 @@ import { MixingEvent } from '@/types/events'
 import { sendPushAfterResponse, getTestPushAudience } from '@/lib/push'
 import { MAX_RESERVES } from '@/lib/event-capacity'
 import { cleanIntroText } from '@/lib/event-title'
+import { noContactWith } from '@/lib/no-contact'
+import type { ExclusionRule } from '@/lib/mixing-algorithm'
 import { MATCH_DURATION_MINUTES, MATCH_MAX_NEEDED, MATCH_NOTES_MAX, MATCH_TITLE, isMatchExpired, spotsForNeeded } from '@/lib/match-events'
 
 
@@ -23,6 +25,24 @@ export async function isEventFullyConfirmed(eventId: string): Promise<boolean> {
 function firstClub(club: unknown): { name: string } | null {
   const c = Array.isArray(club) ? club[0] : club
   return c ? { name: (c as { name: string }).name } : null
+}
+
+/** The no_contact exclusions of one player (read as admin: only admins can read the table). */
+async function noContactRules(playerId: string): Promise<ExclusionRule[]> {
+  const { data } = await getAdminClient()
+    .from('mixing_exclusions')
+    .select('player_a, player_b')
+    .eq('type', 'no_contact')
+    .or(`player_a.eq.${playerId},player_b.eq.${playerId}`)
+  return (data ?? []).map(row => ({ playerA: row.player_a as string, playerB: row.player_b as string, type: 'no_contact' as const }))
+}
+
+/** A published match (partido) never has two players with a no_contact exclusion: true when `playerId` may join it. */
+async function mayJoinMatch(eventId: string, playerId: string): Promise<boolean> {
+  const rules = await noContactRules(playerId)
+  if (rules.length === 0) return true
+  const { data: joined } = await getAdminClient().from('event_participants').select('user_id').eq('event_id', eventId)
+  return noContactWith(rules, playerId, (joined ?? []).map(p => p.user_id as string)).length === 0
 }
 
 export type PublicEvent = Pick<MixingEvent, 'id' | 'title' | 'club' | 'start_time' | 'max_spots' | 'duration_minutes' | 'status' | 'kind'> & {
@@ -184,6 +204,10 @@ export async function joinEvent(eventId: string) {
   const limit = isMatch ? event.max_spots : event.max_spots + MAX_RESERVES
   if ((count || 0) >= limit) {
     throw new Error(isMatch ? 'El partido ya está completo' : 'Evento completo (incluso reservas)')
+  }
+
+  if (isMatch && !(await mayJoinMatch(eventId, user.id))) {
+    throw new Error('No puedes apuntarte a este partido')
   }
 
   const { error } = await supabase
@@ -628,8 +652,11 @@ export async function addParticipant(eventId: string, userId: string) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (profile?.role !== 'admin') throw new Error("Requiere admin")
 
-    const { data: event } = await supabase.from('events').select('status').eq('id', eventId).single()
+    const { data: event } = await supabase.from('events').select('status, kind').eq('id', eventId).single()
     if (!event || event.status !== 'open') throw new Error("El evento no está abierto")
+    if (event.kind === 'match' && !(await mayJoinMatch(eventId, userId))) {
+      throw new Error('Este jugador tiene una exclusión «Sin contacto» con alguien del partido')
+    }
 
     const { count } = await supabase
       .from('event_participants')
@@ -742,9 +769,10 @@ export async function createMatchEvent(input: MatchInput) {
     throw new Error(`Error al publicar el partido: ${joinError.message}`)
   }
 
-  // Push to the whole group, except whoever published it
+  // Push to the whole group, except whoever published it and anyone who may not play with them (no_contact)
   const { data: players } = await admin.from('profiles').select('id').eq('is_guest', false).neq('id', user.id)
-  sendPushAfterResponse((players ?? []).map(p => p.id), {
+  const apart = new Set(noContactWith(await noContactRules(user.id), user.id, (players ?? []).map(p => p.id as string)))
+  sendPushAfterResponse((players ?? []).map(p => p.id as string).filter(id => !apart.has(id)), {
     title: 'Nuevo partido',
     body: `${input.needed === 1 ? 'Falta 1 jugador' : `Faltan ${input.needed} jugadores`} · ${formatMatchWhen(event.start_time)} · ${club.name}`,
     url: `/events/${event.id}`,

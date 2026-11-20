@@ -75,6 +75,8 @@ export interface RoundProposal {
 }
 
 // Jerarquía de la función de coste (de más a menos importante):
+//  00. SIN CONTACTO — dos jugadores con una exclusión no_contact nunca comparten pista, ni como pareja ni como
+//              rivales; pesa más que todo lo demás, también que las reglas del evento (100.000.000 por pista)
 //  0. REGLAS DEL EVENTO — las parejas fijas de la ronda, juntas y de pareja; en la pista de chicas de
 //              una ronda separada, solo los chicos permitidos (10.000.000 por regla rota)
 //  1. DURO   — exclusiones y pareja repetida en este evento (1.000.000 por violación inevitable)
@@ -85,6 +87,7 @@ export interface RoundProposal {
 //  3. BLANDO — nivel (parejas igualadas e igual nivel medio entre pistas), y a menor
 //              peso, coincidir o ser pareja como en el evento anterior
 //  4. DESEMPATE — posición en pista (drive/revés)
+const NO_CONTACT_PENALTY = 100_000_000
 const RULE_PENALTY = 10_000_000
 const HARD_PENALTY = 1_000_000
 const MIXED_PAIRS_PENALTY = 300_000
@@ -196,6 +199,39 @@ function violatesExclusion(a: MixingParticipant, b: MixingParticipant, relation:
   })
 }
 
+const isNoContact = (ex: ExclusionRule, a: string, b: string) =>
+  ex.type === 'no_contact' && ((ex.playerA === a && ex.playerB === b) || (ex.playerA === b && ex.playerB === a))
+
+/** Pairs of players with a no_contact exclusion that share this group (court), whatever their relation. */
+function noContactPairs(group: MixingParticipant[], exclusions: ExclusionRule[]): number {
+  let n = 0
+  for (let i = 0; i < group.length; i++) {
+    for (let j = i + 1; j < group.length; j++) {
+      if (exclusions.some(ex => isNoContact(ex, group[i].id, group[j].id))) n++
+    }
+  }
+  return n
+}
+
+/**
+ * The no_contact exclusions a draw breaks (empty when it keeps them all): each pair of players that share a court,
+ * with the 1-based round.
+ */
+export function brokenNoContact(rounds: RoundProposal[], exclusions: ExclusionRule[]): { players: [string, string]; round: number }[] {
+  const broken: { players: [string, string]; round: number }[] = []
+  rounds.forEach((round, i) => {
+    for (const m of round.matches) {
+      const ids = [m.player1.id, m.player2.id, m.player3.id, m.player4.id]
+      for (let x = 0; x < ids.length; x++) {
+        for (let y = x + 1; y < ids.length; y++) {
+          if (exclusions.some(ex => isNoContact(ex, ids[x], ids[y]))) broken.push({ players: [ids[x], ids[y]], round: i + 1 })
+        }
+      }
+    }
+  })
+  return broken
+}
+
 // Las 3 formas distintas de partir un grupo de 4 en dos parejas.
 function pairingsOf(group: MixingParticipant[]): Pairing[] {
   const [p1, p2, p3, p4] = group
@@ -299,7 +335,7 @@ function groupCost(
   overallAvgRating: number,
   config: MixingConfig
 ): GroupsCost {
-  let primary = RULE_PENALTY * ruleViolations(group, config)
+  let primary = NO_CONTACT_PENALTY * noContactPairs(group, exclusions) + RULE_PENALTY * ruleViolations(group, config)
   let secondary = 0
 
   for (let i = 0; i < group.length; i++) {
