@@ -28,7 +28,7 @@ export default async function ExclusionsPage() {
         isAdmin
         adminView={await isAdminView(profile.role)}
       />
-      <PageIntro title="Exclusiones" subtitle="Jugadores que el sorteo separa; con «Sin contacto», tampoco coinciden en un partido" />
+      <PageIntro title="Exclusiones" subtitle="Jugadores que el sorteo separa. Los jugadores no lo ven" />
 
       <Content>
         <ExclusionsManager exclusions={exclusions} players={players ?? []} />
